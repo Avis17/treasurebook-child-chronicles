@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useTheme } from "@/providers/ThemeProvider";
 
 interface AcademicData {
   subject: string;
@@ -19,6 +20,8 @@ const sampleData: AcademicData[] = [
 
 const AcademicChart = () => {
   const [chartWidth, setChartWidth] = useState(0);
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
   
   useEffect(() => {
     const handleResize = () => {
@@ -38,9 +41,9 @@ const AcademicChart = () => {
   }, []);
 
   return (
-    <Card>
+    <Card className="dark:bg-gray-800">
       <CardHeader>
-        <CardTitle className="text-lg text-treasure-blue">Academic Performance</CardTitle>
+        <CardTitle className="text-lg text-treasure-blue dark:text-blue-400">Academic Performance</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -53,10 +56,16 @@ const AcademicChart = () => {
               bottom: 5,
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="subject" />
-            <YAxis domain={[0, 100]} />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#444" : "#ccc"} />
+            <XAxis dataKey="subject" stroke={isDarkMode ? "#aaa" : "#666"} />
+            <YAxis domain={[0, 100]} stroke={isDarkMode ? "#aaa" : "#666"} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: isDarkMode ? "#333" : "#fff",
+                border: `1px solid ${isDarkMode ? "#444" : "#ddd"}`,
+                color: isDarkMode ? "#fff" : "#333",
+              }}
+            />
             <Bar dataKey="score" fill="#4361EE" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

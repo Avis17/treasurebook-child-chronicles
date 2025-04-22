@@ -1,14 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, db, storage } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
-import { ref, uploadString, getDownloadURL } from "firebase/storage";
+import { db } from "@/lib/firebase";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Pencil } from "lucide-react";
+import { uploadProfileImage } from "@/lib/supabase-storage";
 
 interface ProfileData {
   childName: string;
@@ -81,9 +83,12 @@ const ProfileHeader = () => {
 
     setUploading(true);
     try {
-      const storageRef = ref(storage, `profile-photos/${auth.currentUser.uid}`);
-      await uploadString(storageRef, imageFile, 'data_url');
-      const downloadURL = await getDownloadURL(storageRef);
+      // Upload to Supabase storage
+      const downloadURL = await uploadProfileImage(auth.currentUser.uid, imageFile);
+      
+      if (!downloadURL) {
+        throw new Error("Failed to upload image");
+      }
 
       const profileRef = doc(db, "profiles", auth.currentUser.uid);
       const profileDoc = await getDoc(profileRef);
@@ -128,22 +133,22 @@ const ProfileHeader = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center space-x-4 p-6 bg-white rounded-lg shadow-sm animate-pulse">
-        <div className="w-16 h-16 rounded-full bg-gray-200"></div>
+      <div className="flex items-center space-x-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm animate-pulse">
+        <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700"></div>
         <div className="space-y-2">
-          <div className="h-4 w-32 bg-gray-200 rounded"></div>
-          <div className="h-3 w-24 bg-gray-200 rounded"></div>
+          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+          <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 bg-white rounded-lg shadow-sm">
+    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
       <div className="relative">
         <Avatar className="h-24 w-24 border-2 border-treasure-blue">
           <AvatarImage src={profileData?.photoURL} alt={profileData?.childName} />
-          <AvatarFallback className="text-2xl bg-treasure-lightBlue text-treasure-blue">
+          <AvatarFallback className="text-2xl bg-treasure-lightBlue text-treasure-blue dark:bg-blue-950 dark:text-blue-300">
             {profileData?.childName ? profileData.childName[0].toUpperCase() : "?"}
           </AvatarFallback>
         </Avatar>
@@ -153,12 +158,12 @@ const ProfileHeader = () => {
             <Button 
               size="icon" 
               variant="outline" 
-              className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white"
+              className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white dark:bg-gray-800"
             >
               <Pencil className="h-4 w-4" />
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="dark:bg-gray-800">
             <DialogHeader>
               <DialogTitle>Update Profile Photo</DialogTitle>
             </DialogHeader>
@@ -175,7 +180,8 @@ const ProfileHeader = () => {
               <Input 
                 type="file" 
                 accept="image/*" 
-                onChange={handleImageChange} 
+                onChange={handleImageChange}
+                className="dark:bg-gray-700 dark:text-white" 
               />
               <Button 
                 onClick={handleImageUpload} 
@@ -190,9 +196,9 @@ const ProfileHeader = () => {
       </div>
       
       <div className="text-center sm:text-left">
-        <h1 className="text-2xl font-bold text-gray-800">{profileData?.childName || "Child's Name"}</h1>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-gray-600 mt-1">
-          <span className="bg-treasure-lightBlue text-treasure-blue px-2 py-1 rounded-full text-sm font-medium">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">{profileData?.childName || "Child's Name"}</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-gray-600 dark:text-gray-300 mt-1">
+          <span className="bg-treasure-lightBlue text-treasure-blue dark:bg-blue-950 dark:text-blue-300 px-2 py-1 rounded-full text-sm font-medium">
             {profileData?.currentClass || "Pre-KG"}
           </span>
           <span className="text-sm">{profileData?.age || "3+"} years old</span>

@@ -29,6 +29,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<ProfileData>>({});
+  const [isDirty, setIsDirty] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -69,6 +70,16 @@ const Profile = () => {
     fetchProfileData();
   }, [toast]);
 
+  useEffect(() => {
+    // Check if form data is different from profile data
+    if (profileData) {
+      const isChanged = Object.keys(formData).some(key => {
+        return formData[key as keyof ProfileData] !== profileData[key as keyof ProfileData];
+      });
+      setIsDirty(isChanged);
+    }
+  }, [formData, profileData]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -101,6 +112,7 @@ const Profile = () => {
       }
 
       setProfileData((prev) => ({ ...prev, ...formData } as ProfileData));
+      setIsDirty(false);
 
       toast({
         title: "Profile updated",
@@ -122,8 +134,8 @@ const Profile = () => {
     return (
       <AppLayout title="Profile">
         <div className="animate-pulse space-y-4">
-          <div className="h-32 bg-gray-200 rounded-lg dark:bg-gray-700"></div>
-          <div className="h-64 bg-gray-200 rounded-lg dark:bg-gray-700"></div>
+          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+          <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
         </div>
       </AppLayout>
     );
@@ -134,45 +146,47 @@ const Profile = () => {
       <div className="space-y-6">
         <ProfileHeader />
 
-        <Card>
+        <Card className="dark:bg-gray-800">
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
-            <CardDescription>Update your child's personal information here</CardDescription>
+            <CardDescription className="dark:text-gray-300">Update your child's personal information here</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="childName">Child's Name</Label>
+                  <Label htmlFor="childName" className="dark:text-gray-300">Child's Name</Label>
                   <Input
                     id="childName"
                     name="childName"
                     value={formData.childName || ""}
                     onChange={handleChange}
+                    className="dark:bg-gray-700 dark:text-white"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="dark:text-gray-300">Email</Label>
                   <Input
                     id="email"
                     name="email"
                     value={formData.email || ""}
                     onChange={handleChange}
                     disabled
+                    className="dark:bg-gray-700 dark:text-gray-400"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="currentClass">Current Class</Label>
+                  <Label htmlFor="currentClass" className="dark:text-gray-300">Current Class</Label>
                   <Select
                     value={formData.currentClass || ""}
                     onValueChange={(value) => handleSelectChange("currentClass", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="dark:bg-gray-700 dark:text-white">
                       <SelectValue placeholder="Select class" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="dark:bg-gray-700">
                       <SelectItem value="Pre-KG">Pre-KG</SelectItem>
                       <SelectItem value="KG">KG</SelectItem>
                       <SelectItem value="Grade 1">Grade 1</SelectItem>
@@ -183,64 +197,71 @@ const Profile = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
+                  <Label htmlFor="age" className="dark:text-gray-300">Age</Label>
                   <Input
                     id="age"
                     name="age"
                     value={formData.age || ""}
                     onChange={handleChange}
+                    className="dark:bg-gray-700 dark:text-white"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="birthdate">Birth Date</Label>
+                  <Label htmlFor="birthdate" className="dark:text-gray-300">Birth Date</Label>
                   <Input
                     id="birthdate"
                     name="birthdate"
                     type="date"
                     value={formData.birthdate || ""}
                     onChange={handleChange}
+                    className="dark:bg-gray-700 dark:text-white"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address" className="dark:text-gray-300">Address</Label>
                   <Input
                     id="address"
                     name="address"
                     value={formData.address || ""}
                     onChange={handleChange}
+                    className="dark:bg-gray-700 dark:text-white"
                   />
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="dark:bg-gray-600" />
 
               <div className="space-y-2">
-                <Label htmlFor="allergies">Allergies or Health Concerns</Label>
+                <Label htmlFor="allergies" className="dark:text-gray-300">Allergies or Health Concerns</Label>
                 <Input
                   id="allergies"
                   name="allergies"
                   value={formData.allergies || ""}
                   onChange={handleChange}
                   placeholder="List any allergies or health concerns"
+                  className="dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="emergencyContact">Emergency Contact</Label>
+                <Label htmlFor="emergencyContact" className="dark:text-gray-300">Emergency Contact</Label>
                 <Input
                   id="emergencyContact"
                   name="emergencyContact"
                   value={formData.emergencyContact || ""}
                   onChange={handleChange}
                   placeholder="Name and phone number"
+                  className="dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400"
                 />
               </div>
 
-              <Button type="submit" disabled={saving}>
-                {saving ? "Saving..." : "Save Changes"}
-              </Button>
+              {isDirty && (
+                <Button type="submit" disabled={saving}>
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              )}
             </form>
           </CardContent>
         </Card>

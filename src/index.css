@@ -102,17 +102,17 @@
 }
 
 .card-academic {
-  @apply bg-treasure-lightBlue border-treasure-blue;
+  @apply bg-treasure-lightBlue border-treasure-blue dark:bg-blue-950 dark:border-blue-700;
 }
 
 .card-sports {
-  @apply bg-treasure-lightOrange border-treasure-orange;
+  @apply bg-treasure-lightOrange border-treasure-orange dark:bg-amber-950 dark:border-amber-700;
 }
 
 .card-talents {
-  @apply bg-treasure-lightGreen border-treasure-green;
+  @apply bg-treasure-lightGreen border-treasure-green dark:bg-green-950 dark:border-green-700;
 }
 
 .card-health {
-  @apply bg-gray-100 border-gray-400;
+  @apply bg-gray-100 border-gray-400 dark:bg-gray-800 dark:border-gray-600;
 }
