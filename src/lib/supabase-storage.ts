@@ -6,11 +6,10 @@ import { storage } from "@/lib/firebase";
 // Upload a profile image to Firebase storage
 export const uploadProfileImage = async (userId: string, file: File | string): Promise<string | null> => {
   try {
-    // Check file size (1MB limit)
+    // Convert file to blob if it's a data URL
     let fileData: File | Blob;
     
     if (typeof file === 'string' && file.startsWith('data:')) {
-      // Convert data URL to blob
       const res = await fetch(file);
       fileData = await res.blob();
     } else if (file instanceof File) {
@@ -53,11 +52,8 @@ export const uploadProfileImage = async (userId: string, file: File | string): P
 // Delete a profile image from Firebase storage
 export const deleteProfileImage = async (url: string): Promise<boolean> => {
   try {
-    // Extract file path from Firebase Storage URL
     const storageRef = ref(storage, url);
-    
     await deleteObject(storageRef);
-    
     return true;
   } catch (error) {
     console.error("Error deleting profile image:", error);
