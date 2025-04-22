@@ -1,24 +1,10 @@
 
 import { useState, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { ActionColumn } from "./ActionColumn";
+import { SearchBar } from "./data-table/SearchBar";
+import { TableHeader } from "./data-table/TableHeader";
+import { TablePagination } from "./data-table/TablePagination";
 
 type SortDirection = "asc" | "desc" | null;
 
@@ -64,7 +50,6 @@ export function DataTable<T extends Record<string, any>>({
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredData, setFilteredData] = useState<T[]>(data);
 
-  // Make sure the action column follows the Column interface structure
   const allColumns: Column<T>[] = [
     ...columns,
     ...(onEdit || onDelete
@@ -118,10 +103,7 @@ export function DataTable<T extends Record<string, any>>({
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
   const handleSort = (key: keyof T) => {
     setSortConfig((prevConfig) => {
@@ -137,90 +119,19 @@ export function DataTable<T extends Record<string, any>>({
     });
   };
 
-  const getPageNumbers = () => {
-    const pageNumbers = [];
-    const maxVisiblePages = 3;
-    
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pageNumbers.push(i);
-      }
-    } else {
-      pageNumbers.push(1);
-      
-      if (currentPage > 2) {
-        pageNumbers.push(-1);
-      }
-      
-      if (currentPage !== 1 && currentPage !== totalPages) {
-        pageNumbers.push(currentPage);
-      }
-      
-      if (currentPage < totalPages - 1) {
-        pageNumbers.push(-2);
-      }
-      
-      pageNumbers.push(totalPages);
-    }
-    
-    return pageNumbers;
-  };
-
   return (
     <div className="space-y-4">
       {searchable && searchFields && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <SearchBar value={searchTerm} onChange={setSearchTerm} />
       )}
 
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
-            <TableRow>
-              {allColumns.map((column) => (
-                <TableHead
-                  key={String(column.accessor)}
-                  className={column.sortable ? "cursor-pointer select-none" : ""}
-                  onClick={() => {
-                    if (column.sortable) {
-                      handleSort(column.accessor);
-                    }
-                  }}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>{column.header}</span>
-                    {column.sortable && (
-                      <div className="flex flex-col">
-                        <ChevronUp
-                          className={`h-3 w-3 ${
-                            sortConfig.key === column.accessor &&
-                            sortConfig.direction === "asc"
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }`}
-                        />
-                        <ChevronDown
-                          className={`h-3 w-3 ${
-                            sortConfig.key === column.accessor &&
-                            sortConfig.direction === "desc"
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }`}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
+          <TableHeader
+            columns={allColumns}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+          />
           <TableBody>
             {paginatedData.length > 0 ? (
               paginatedData.map((item, index) => (
@@ -236,10 +147,7 @@ export function DataTable<T extends Record<string, any>>({
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={allColumns.length}
-                  className="h-24 text-center"
-                >
+                <TableCell colSpan={allColumns.length} className="h-24 text-center">
                   No results found
                 </TableCell>
               </TableRow>
@@ -249,55 +157,11 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {totalPages > 1 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setCurrentPage((prev) => Math.max(prev - 1, 1));
-                }}
-                className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-            
-            {getPageNumbers().map((pageNum, index) => {
-              if (pageNum < 0) {
-                return (
-                  <PaginationItem key={`ellipsis-${index}`}>
-                    <span className="flex h-9 w-9 items-center justify-center">...</span>
-                  </PaginationItem>
-                );
-              }
-              return (
-                <PaginationItem key={pageNum}>
-                  <PaginationLink
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCurrentPage(pageNum);
-                    }}
-                    isActive={currentPage === pageNum}
-                  >
-                    {pageNum}
-                  </PaginationLink>
-                </PaginationItem>
-              );
-            })}
-            
-            <PaginationItem>
-              <PaginationNext
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-                }}
-                className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       )}
     </div>
   );
