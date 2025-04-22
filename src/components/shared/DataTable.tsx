@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -63,7 +64,8 @@ export function DataTable<T extends Record<string, any>>({
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredData, setFilteredData] = useState<T[]>(data);
 
-  const allColumns = [
+  // Make sure the action column follows the Column interface structure
+  const allColumns: Column<T>[] = [
     ...columns,
     ...(onEdit || onDelete
       ? [{
@@ -76,6 +78,7 @@ export function DataTable<T extends Record<string, any>>({
               deleteDialogProps={deleteDialogProps}
             />
           ),
+          sortable: false,
         }]
       : []),
   ];
