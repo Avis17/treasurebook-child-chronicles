@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useState, useEffect } from "react";
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
@@ -20,6 +20,7 @@ import {
 import { DataTable } from "@/components/shared/DataTable";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Resource {
   id: string;
@@ -31,52 +32,18 @@ interface Resource {
   createdBy: string;
 }
 
-const mockResources: Resource[] = [
-  {
-    id: "1",
-    title: "Khan Academy Kids",
-    url: "https://learn.khanacademy.org/khan-academy-kids/",
-    description: "Free educational games for children ages 2-8",
-    category: "Learning",
-    createdAt: new Date().toISOString(),
-    createdBy: "Admin",
-  },
-  {
-    id: "2",
-    title: "PBS Kids",
-    url: "https://pbskids.org/",
-    description: "Games and videos featuring PBS characters",
-    category: "Entertainment",
-    createdAt: new Date().toISOString(),
-    createdBy: "Admin",
-  },
-  {
-    id: "3",
-    title: "National Geographic Kids",
-    url: "https://kids.nationalgeographic.com/",
-    description: "Educational resources about animals and nature",
-    category: "Science",
-    createdAt: new Date().toISOString(),
-    createdBy: "Admin",
-  },
-  {
-    id: "4",
-    title: "Storyline Online",
-    url: "https://storylineonline.net/",
-    description: "Celebrities reading children's books aloud",
-    category: "Reading",
-    createdAt: new Date().toISOString(),
-    createdBy: "Admin",
-  },
-  {
-    id: "5",
-    title: "ABCmouse",
-    url: "https://www.abcmouse.com/",
-    description: "Comprehensive early learning curriculum",
-    category: "Learning",
-    createdAt: new Date().toISOString(),
-    createdBy: "Admin",
-  },
+// Predefined categories
+const resourceCategories = [
+  "Learning",
+  "Entertainment",
+  "Science",
+  "Reading",
+  "Math",
+  "Art",
+  "Music",
+  "Physical Education",
+  "Social Studies",
+  "Languages"
 ];
 
 const Resources = () => {
@@ -90,11 +57,22 @@ const Resources = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: resources = mockResources, refetch } = useQuery({
+  const { data: resources = [], refetch } = useQuery({
     queryKey: ["resources"],
     queryFn: async () => {
-      // In a real app, this would fetch from Firestore
-      return mockResources;
+      try {
+        const resourcesCollection = collection(db, "resources");
+        const q = query(resourcesCollection, orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        
+        return querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Resource[];
+      } catch (error) {
+        console.error("Error fetching resources:", error);
+        return [];
+      }
     },
   });
 
@@ -105,21 +83,23 @@ const Resources = () => {
     setNewResource((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleSelectChange = (value: string) => {
+    setNewResource((prev) => ({ ...prev, category: value }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // In a real app, this would save to Firestore
-      // Example:
-      // const user = auth.currentUser;
-      // if (!user) throw new Error("User not authenticated");
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
       
-      // const docRef = await addDoc(collection(db, "resources"), {
-      //   ...newResource,
-      //   createdAt: serverTimestamp(),
-      //   createdBy: user.uid,
-      // });
+      const docRef = await addDoc(collection(db, "resources"), {
+        ...newResource,
+        createdAt: serverTimestamp(),
+        createdBy: user.uid,
+      });
 
       toast({
         title: "Resource added",
@@ -227,13 +207,21 @@ const Resources = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    name="category"
+                  <Select
                     value={newResource.category}
-                    onChange={handleInputChange}
-                    required
-                  />
+                    onValueChange={handleSelectChange}
+                  >
+                    <SelectTrigger id="category" className="w-full">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {resourceCategories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="description">Description</Label>

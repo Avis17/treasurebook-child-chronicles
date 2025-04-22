@@ -15,12 +15,20 @@ export interface GalleryItem {
 // Create a bucket for gallery images if it doesn't exist
 export const createGalleryBucket = async () => {
   try {
+    // Check if bucket exists
     const { data, error } = await supabase.storage.getBucket('gallery-images');
+    
     if (error && error.message.includes('does not exist')) {
-      await supabase.storage.createBucket('gallery-images', {
+      // Create bucket if it doesn't exist
+      const { error: createError } = await supabase.storage.createBucket('gallery-images', {
         public: true,
         fileSizeLimit: 5 * 1024 * 1024, // 5MB
       });
+      
+      if (createError) {
+        console.error("Error creating bucket:", createError);
+        return false;
+      }
     }
     return true;
   } catch (error) {
@@ -38,7 +46,10 @@ export const uploadGalleryImage = async (
 ): Promise<GalleryItem | null> => {
   try {
     // Create bucket if not exists
-    await createGalleryBucket();
+    const bucketCreated = await createGalleryBucket();
+    if (!bucketCreated) {
+      throw new Error("Failed to create or access storage bucket");
+    }
     
     const fileId = uuidv4();
     const fileName = `${userId}/${fileId}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
@@ -52,6 +63,7 @@ export const uploadGalleryImage = async (
       });
       
     if (error) {
+      console.error("Upload error:", error);
       throw error;
     }
     

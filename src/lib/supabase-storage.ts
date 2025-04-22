@@ -5,16 +5,24 @@ import { toast } from "@/components/ui/use-toast";
 // Create a bucket for profile images if it doesn't exist
 export const createProfileImageBucket = async () => {
   try {
+    // Correct API call - using getBucket instead of 'bucket'
     const { data, error } = await supabase.storage.getBucket('profile-images');
+    
     if (error && error.message.includes('does not exist')) {
-      await supabase.storage.createBucket('profile-images', {
+      // Create the bucket if it doesn't exist
+      const { error: createError } = await supabase.storage.createBucket('profile-images', {
         public: true,
         fileSizeLimit: 1024 * 1024, // 1MB
       });
+      
+      if (createError) {
+        console.error("Error creating bucket:", createError);
+        return false;
+      }
     }
     return true;
   } catch (error) {
-    console.error("Error creating bucket:", error);
+    console.error("Error checking/creating bucket:", error);
     return false;
   }
 };
@@ -23,7 +31,10 @@ export const createProfileImageBucket = async () => {
 export const uploadProfileImage = async (userId: string, file: File | string): Promise<string | null> => {
   try {
     // Create bucket if not exists
-    await createProfileImageBucket();
+    const bucketCreated = await createProfileImageBucket();
+    if (!bucketCreated) {
+      throw new Error("Failed to create or access storage bucket");
+    }
     
     // Upload the image
     let fileData: File | Blob;
@@ -47,6 +58,7 @@ export const uploadProfileImage = async (userId: string, file: File | string): P
       });
       
     if (error) {
+      console.error("Upload error:", error);
       throw error;
     }
     
