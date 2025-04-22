@@ -1,11 +1,23 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Book, Calendar, Image, Settings, List, User } from "lucide-react";
+import { 
+  Book, 
+  Calendar, 
+  Image, 
+  Settings, 
+  List, 
+  User, 
+  Sun, 
+  Moon, 
+  FileText, 
+  Users 
+} from "lucide-react";
+import { useTheme } from "@/providers/ThemeProvider";
 
 interface SidebarProps {
   isMobile: boolean;
@@ -16,6 +28,7 @@ interface SidebarProps {
 const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, toggleTheme } = useTheme();
   
   const handleLogout = async () => {
     try {
@@ -45,6 +58,8 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
     { name: "Dashboard", icon: <List className="w-5 h-5" />, path: "/dashboard" },
     { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
     { name: "Gallery", icon: <Image className="w-5 h-5" />, path: "/gallery" },
+    { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
+    { name: "Directory", icon: <Users className="w-5 h-5" />, path: "/directory" },
     { name: "Profile", icon: <User className="w-5 h-5" />, path: "/profile" },
     { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
   ];
@@ -53,14 +68,14 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
     <div 
       className={`${
         isMobile
-          ? `fixed inset-y-0 left-0 z-50 w-64 transform bg-white shadow-lg transition-transform duration-200 ease-in-out ${
+          ? `fixed inset-y-0 left-0 z-50 w-64 transform bg-sidebar shadow-lg transition-transform duration-200 ease-in-out ${
               isOpen ? "translate-x-0" : "-translate-x-full"
             }`
-          : "flex h-screen min-w-64 flex-col bg-white shadow-md"
+          : "flex h-screen min-w-64 flex-col bg-sidebar shadow-md"
       }`}
     >
-      <div className="flex items-center justify-center p-4 border-b">
-        <h1 className="text-xl font-bold text-treasure-blue">TreasureBook</h1>
+      <div className="flex items-center justify-center p-4 border-b border-sidebar-border">
+        <h1 className="text-xl font-bold text-treasure-blue dark:text-blue-400">TreasureBook</h1>
       </div>
 
       <nav className="flex-1 overflow-auto p-4">
@@ -73,8 +88,8 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-treasure-blue text-white"
-                      : "hover:bg-treasure-lightBlue hover:text-treasure-blue"
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                      : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   }`
                 }
               >
@@ -86,7 +101,25 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
         </ul>
       </nav>
 
-      <div className="border-t p-4">
+      <div className="border-t border-sidebar-border p-4 space-y-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start text-left font-normal"
+          onClick={toggleTheme}
+        >
+          {theme === "light" ? (
+            <>
+              <Moon className="mr-2 h-4 w-4" />
+              Dark Mode
+            </>
+          ) : (
+            <>
+              <Sun className="mr-2 h-4 w-4" />
+              Light Mode
+            </>
+          )}
+        </Button>
         <Button 
           variant="outline" 
           className="w-full justify-start text-left font-normal" 
