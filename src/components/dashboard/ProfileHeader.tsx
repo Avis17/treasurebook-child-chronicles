@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db, storage } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,21 @@ const ProfileHeader = () => {
       await uploadString(storageRef, imageFile, 'data_url');
       const downloadURL = await getDownloadURL(storageRef);
 
-      await getDoc(doc(db, "profiles", auth.currentUser.uid));
+      const profileRef = doc(db, "profiles", auth.currentUser.uid);
+      const profileDoc = await getDoc(profileRef);
+      
+      if (profileDoc.exists()) {
+        await updateDoc(profileRef, { photoURL: downloadURL });
+      } else {
+        await setDoc(profileRef, {
+          photoURL: downloadURL,
+          childName: "",
+          currentClass: "Pre-KG",
+          age: "",
+          email: auth.currentUser.email || "",
+          createdAt: new Date(),
+        });
+      }
       
       setProfileData(prev => {
         if (prev) {

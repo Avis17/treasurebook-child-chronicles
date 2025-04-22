@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +42,17 @@ const Profile = () => {
           const data = profileDoc.data() as ProfileData;
           setProfileData(data);
           setFormData(data);
+        } else {
+          // Initialize with default values if document doesn't exist
+          const defaultData = {
+            childName: "",
+            email: user.email || "",
+            currentClass: "Pre-KG",
+            age: "",
+            photoURL: "",
+          };
+          setProfileData(defaultData as ProfileData);
+          setFormData(defaultData);
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -75,7 +86,20 @@ const Profile = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      await updateDoc(doc(db, "profiles", user.uid), formData);
+      const profileDocRef = doc(db, "profiles", user.uid);
+      const profileDoc = await getDoc(profileDocRef);
+      
+      if (profileDoc.exists()) {
+        await updateDoc(profileDocRef, formData);
+      } else {
+        // Create the document if it doesn't exist
+        await setDoc(profileDocRef, {
+          ...formData,
+          email: user.email || "",
+          createdAt: new Date(),
+        });
+      }
+
       setProfileData((prev) => ({ ...prev, ...formData } as ProfileData));
 
       toast({
