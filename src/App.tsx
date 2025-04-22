@@ -16,6 +16,8 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Resources from "./pages/Resources";
 import Directory from "./pages/Directory";
+import Sports from "./pages/Sports";
+import Extracurricular from "./pages/Extracurricular";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +36,8 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/academics" element={<AcademicRecords />} />
+            <Route path="/sports" element={<Sports />} />
+            <Route path="/extracurricular" element={<Extracurricular />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />

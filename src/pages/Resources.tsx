@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
@@ -49,6 +49,8 @@ const resourceCategories = [
 const Resources = () => {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentResourceId, setCurrentResourceId] = useState<string | null>(null);
   const [newResource, setNewResource] = useState({
     title: "",
     url: "",
@@ -56,6 +58,7 @@ const Resources = () => {
     category: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: resources = [], refetch } = useQuery({
     queryKey: ["resources"],
@@ -87,6 +90,59 @@ const Resources = () => {
     setNewResource((prev) => ({ ...prev, category: value }));
   };
 
+  const resetForm = () => {
+    setNewResource({
+      title: "",
+      url: "",
+      description: "",
+      category: "",
+    });
+    setIsEditing(false);
+    setCurrentResourceId(null);
+  };
+
+  const handleEdit = async (resource: Resource) => {
+    try {
+      setIsEditing(true);
+      setCurrentResourceId(resource.id);
+      setNewResource({
+        title: resource.title,
+        url: resource.url,
+        description: resource.description,
+        category: resource.category,
+      });
+      setIsDialogOpen(true);
+    } catch (error) {
+      console.error("Error setting up edit:", error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare resource for editing",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (resource: Resource) => {
+    try {
+      setIsDeleting(true);
+      await deleteDoc(doc(db, "resources", resource.id));
+      toast({
+        title: "Resource deleted",
+        description: "The resource has been successfully deleted",
+      });
+      await refetch();
+    } catch (error) {
+      console.error("Error deleting resource:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete resource",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -95,36 +151,49 @@ const Resources = () => {
       const user = auth.currentUser;
       if (!user) throw new Error("User not authenticated");
       
-      const docRef = await addDoc(collection(db, "resources"), {
-        ...newResource,
-        createdAt: serverTimestamp(),
-        createdBy: user.uid,
-      });
+      if (isEditing && currentResourceId) {
+        // Update existing resource
+        await updateDoc(doc(db, "resources", currentResourceId), {
+          ...newResource,
+          updatedAt: serverTimestamp(),
+        });
 
-      toast({
-        title: "Resource added",
-        description: "Your resource has been successfully added",
-      });
+        toast({
+          title: "Resource updated",
+          description: "Your resource has been successfully updated",
+        });
+      } else {
+        // Add new resource
+        await addDoc(collection(db, "resources"), {
+          ...newResource,
+          createdAt: serverTimestamp(),
+          createdBy: user.uid,
+        });
+
+        toast({
+          title: "Resource added",
+          description: "Your resource has been successfully added",
+        });
+      }
       
-      setNewResource({
-        title: "",
-        url: "",
-        description: "",
-        category: "",
-      });
-      
+      resetForm();
       setIsDialogOpen(false);
       await refetch();
     } catch (error) {
-      console.error("Error adding resource:", error);
+      console.error("Error saving resource:", error);
       toast({
         title: "Error",
-        description: "Failed to add resource",
+        description: "Failed to save resource",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDialogClose = () => {
+    resetForm();
+    setIsDialogOpen(false);
   };
 
   const columns = [
@@ -175,13 +244,17 @@ const Resources = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold">Educational Resources</h2>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
             <DialogTrigger asChild>
-              <Button>Add Resource</Button>
+              <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+                Add Resource
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Resource</DialogTitle>
+                <DialogTitle>
+                  {isEditing ? "Edit Resource" : "Add New Resource"}
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -236,7 +309,9 @@ const Resources = () => {
                 </div>
                 <DialogFooter>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Adding..." : "Add Resource"}
+                    {isSubmitting 
+                      ? (isEditing ? "Updating..." : "Adding...") 
+                      : (isEditing ? "Update Resource" : "Add Resource")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -258,6 +333,12 @@ const Resources = () => {
               searchable
               searchFields={["title", "description", "category"]}
               itemsPerPage={5}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              deleteDialogProps={{
+                title: "Delete Resource",
+                description: "Are you sure you want to delete this resource? This action cannot be undone."
+              }}
             />
           </CardContent>
         </Card>

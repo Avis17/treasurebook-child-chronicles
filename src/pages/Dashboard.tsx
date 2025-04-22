@@ -7,9 +7,13 @@ import AppLayout from "@/components/layout/AppLayout";
 import ProfileHeader from "@/components/dashboard/ProfileHeader";
 import SummaryCards from "@/components/dashboard/SummaryCards";
 import AcademicChart from "@/components/dashboard/AcademicChart";
+import SportsChart from "@/components/dashboard/SportsChart";
+import ExtracurricularChart from "@/components/dashboard/ExtracurricularChart";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("academics");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -32,7 +36,25 @@ const Dashboard = () => {
         </div>
         
         <div className="mt-8">
-          <AcademicChart />
+          <Tabs defaultValue="academics" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="academics">Academics</TabsTrigger>
+              <TabsTrigger value="sports">Sports</TabsTrigger>
+              <TabsTrigger value="extracurricular">Extracurricular</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="academics" className="mt-0">
+              <AcademicChart />
+            </TabsContent>
+            
+            <TabsContent value="sports" className="mt-0">
+              <SportsChart />
+            </TabsContent>
+            
+            <TabsContent value="extracurricular" className="mt-0">
+              <ExtracurricularChart />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </AppLayout>
