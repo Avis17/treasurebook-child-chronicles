@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -18,6 +17,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { ChevronDown, ChevronUp, Search } from "lucide-react";
+import { ActionColumn } from "./ActionColumn";
 
 type SortDirection = "asc" | "desc" | null;
 
@@ -34,6 +34,12 @@ interface DataTableProps<T> {
   itemsPerPage?: number;
   searchable?: boolean;
   searchFields?: Array<keyof T>;
+  onEdit?: (item: T) => void;
+  onDelete?: (item: T) => void;
+  deleteDialogProps?: {
+    title?: string;
+    description?: string;
+  };
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -42,6 +48,9 @@ export function DataTable<T extends Record<string, any>>({
   itemsPerPage = 5,
   searchable = true,
   searchFields,
+  onEdit,
+  onDelete,
+  deleteDialogProps,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{
@@ -54,11 +63,26 @@ export function DataTable<T extends Record<string, any>>({
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredData, setFilteredData] = useState<T[]>(data);
 
-  // Filter and sort data when dependencies change
+  const allColumns = [
+    ...columns,
+    ...(onEdit || onDelete
+      ? [{
+          header: "Actions",
+          accessor: "actions" as keyof T,
+          render: (item: T) => (
+            <ActionColumn
+              onEdit={onEdit ? () => onEdit(item) : undefined}
+              onDelete={onDelete ? () => onDelete(item) : undefined}
+              deleteDialogProps={deleteDialogProps}
+            />
+          ),
+        }]
+      : []),
+  ];
+
   useEffect(() => {
     let result = [...data];
 
-    // Filter by search term
     if (searchTerm && searchFields) {
       result = result.filter((item) =>
         searchFields.some((field) => {
@@ -68,7 +92,6 @@ export function DataTable<T extends Record<string, any>>({
       );
     }
 
-    // Sort data
     if (sortConfig.key && sortConfig.direction) {
       result = [...result].sort((a, b) => {
         const valueA = a[sortConfig.key as keyof T];
@@ -87,10 +110,9 @@ export function DataTable<T extends Record<string, any>>({
     }
 
     setFilteredData(result);
-    setCurrentPage(1); // Reset to first page when data changes
+    setCurrentPage(1);
   }, [data, sortConfig, searchTerm, searchFields]);
 
-  // Calculate pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(
@@ -98,7 +120,6 @@ export function DataTable<T extends Record<string, any>>({
     startIndex + itemsPerPage
   );
 
-  // Handle sorting
   const handleSort = (key: keyof T) => {
     setSortConfig((prevConfig) => {
       if (prevConfig.key === key) {
@@ -113,39 +134,30 @@ export function DataTable<T extends Record<string, any>>({
     });
   };
 
-  // Generate page numbers
   const getPageNumbers = () => {
     const pageNumbers = [];
     const maxVisiblePages = 3;
     
     if (totalPages <= maxVisiblePages) {
-      // Show all pages if there are few
       for (let i = 1; i <= totalPages; i++) {
         pageNumbers.push(i);
       }
     } else {
-      // Always show first page
       pageNumbers.push(1);
       
-      // Add current page and surrounding pages
       if (currentPage > 2) {
-        pageNumbers.push(-1); // Ellipsis
+        pageNumbers.push(-1);
       }
       
-      // Current page (if not 1 or totalPages)
       if (currentPage !== 1 && currentPage !== totalPages) {
         pageNumbers.push(currentPage);
       }
       
-      // Add ellipsis if needed
       if (currentPage < totalPages - 1) {
-        pageNumbers.push(-2); // Ellipsis
+        pageNumbers.push(-2);
       }
       
-      // Always show last page
-      if (totalPages > 1) {
-        pageNumbers.push(totalPages);
-      }
+      pageNumbers.push(totalPages);
     }
     
     return pageNumbers;
@@ -169,7 +181,7 @@ export function DataTable<T extends Record<string, any>>({
         <Table>
           <TableHeader>
             <TableRow>
-              {columns.map((column) => (
+              {allColumns.map((column) => (
                 <TableHead
                   key={String(column.accessor)}
                   className={column.sortable ? "cursor-pointer select-none" : ""}
@@ -210,7 +222,7 @@ export function DataTable<T extends Record<string, any>>({
             {paginatedData.length > 0 ? (
               paginatedData.map((item, index) => (
                 <TableRow key={index}>
-                  {columns.map((column) => (
+                  {allColumns.map((column) => (
                     <TableCell key={`${index}-${String(column.accessor)}`}>
                       {column.render
                         ? column.render(item)
@@ -222,7 +234,7 @@ export function DataTable<T extends Record<string, any>>({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={allColumns.length}
                   className="h-24 text-center"
                 >
                   No results found
