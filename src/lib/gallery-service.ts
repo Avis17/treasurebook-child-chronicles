@@ -1,9 +1,8 @@
-
 import { toast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { db, storage } from "@/lib/firebase";
 import { collection, addDoc, deleteDoc, doc, query, where, getDocs } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 export interface GalleryItem {
   id: string;
@@ -14,7 +13,7 @@ export interface GalleryItem {
   userId: string;
 }
 
-// Upload a gallery image to Firebase storage
+// Upload a gallery image to Firebase storage with 1MB limit
 export const uploadGalleryImage = async (
   userId: string, 
   file: File,
@@ -22,6 +21,16 @@ export const uploadGalleryImage = async (
   category: string
 ): Promise<GalleryItem | null> => {
   try {
+    // Check file size (1MB limit)
+    if (file.size > 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "File size must be less than 1MB",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     const fileId = uuidv4();
     const fileName = `gallery-images/${userId}/${fileId}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     

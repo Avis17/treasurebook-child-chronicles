@@ -1,37 +1,12 @@
-import { supabase } from "@/integrations/supabase/client";
+
 import { toast } from "@/components/ui/use-toast";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { storage } from "@/lib/firebase";
 
-// This function is kept for future Supabase storage use if needed
-export const createProfileImageBucket = async () => {
-  try {
-    // Correct API call - using getBucket instead of 'bucket'
-    const { data, error } = await supabase.storage.getBucket('profile-images');
-    
-    if (error && error.message.includes('does not exist')) {
-      // Create the bucket if it doesn't exist
-      const { error: createError } = await supabase.storage.createBucket('profile-images', {
-        public: true,
-        fileSizeLimit: 1024 * 1024, // 1MB
-      });
-      
-      if (createError) {
-        console.error("Error creating bucket:", createError);
-        return false;
-      }
-    }
-    return true;
-  } catch (error) {
-    console.error("Error checking/creating bucket:", error);
-    return false;
-  }
-};
-
-// Upload a profile image to Firebase storage instead of Supabase
+// Upload a profile image to Firebase storage
 export const uploadProfileImage = async (userId: string, file: File | string): Promise<string | null> => {
   try {
-    // Upload the image to Firebase Storage
+    // Check file size (1MB limit)
     let fileData: File | Blob;
     
     if (typeof file === 'string' && file.startsWith('data:')) {
@@ -42,6 +17,16 @@ export const uploadProfileImage = async (userId: string, file: File | string): P
       fileData = file;
     } else {
       throw new Error("Invalid file format");
+    }
+    
+    // Check file size (1MB limit)
+    if (fileData.size > 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "File size must be less than 1MB",
+        variant: "destructive",
+      });
+      return null;
     }
     
     const fileName = `profile-images/${userId}-${Date.now()}`;
