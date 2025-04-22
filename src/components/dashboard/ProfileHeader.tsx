@@ -5,6 +5,9 @@ import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Edit, Camera } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import ProfileImagePreview from "./ProfileImagePreview";
 
 interface UserProfile {
@@ -18,30 +21,47 @@ interface UserProfile {
 const ProfileHeader = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          const docRef = doc(db, "users", user.uid);
-          const docSnap = await getDoc(docRef);
+          // Check profiles collection first (where Profile page saves data)
+          const profileDocRef = doc(db, "profiles", user.uid);
+          const profileDoc = await getDoc(profileDocRef);
           
-          if (docSnap.exists()) {
+          if (profileDoc.exists()) {
+            const profileData = profileDoc.data();
             setProfile({
-              displayName: docSnap.data().displayName || user.displayName || "Student",
-              email: docSnap.data().email || user.email || "",
-              photoURL: docSnap.data().photoURL || user.photoURL || "",
-              role: docSnap.data().role || "Student",
-              grade: docSnap.data().grade || "Grade 8",
+              displayName: profileData.childName || user.displayName || "Student",
+              email: profileData.email || user.email || "",
+              photoURL: profileData.photoURL || user.photoURL || "",
+              role: "Student",
+              grade: profileData.currentClass || "Grade 8",
             });
           } else {
-            setProfile({
-              displayName: user.displayName || "Student",
-              email: user.email || "",
-              photoURL: user.photoURL || "",
-              role: "Student",
-              grade: "Grade 8",
-            });
+            // Fall back to users collection if no profile document
+            const userDocRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+            
+            if (userDoc.exists()) {
+              setProfile({
+                displayName: userDoc.data().displayName || user.displayName || "Student",
+                email: userDoc.data().email || user.email || "",
+                photoURL: userDoc.data().photoURL || user.photoURL || "",
+                role: userDoc.data().role || "Student",
+                grade: userDoc.data().grade || "Grade 8",
+              });
+            } else {
+              setProfile({
+                displayName: user.displayName || "Student",
+                email: user.email || "",
+                photoURL: user.photoURL || "",
+                role: "Student",
+                grade: "Grade 8",
+              });
+            }
           }
         } catch (error) {
           console.error("Error fetching user profile:", error);
@@ -56,6 +76,10 @@ const ProfileHeader = () => {
 
     return () => unsubscribe();
   }, []);
+
+  const handleEditProfile = () => {
+    navigate("/profile");
+  };
 
   if (loading) {
     return (
@@ -77,7 +101,7 @@ const ProfileHeader = () => {
     <Card className="bg-background/60 backdrop-blur-sm">
       <CardContent className="p-6">
         <div className="flex flex-col md:flex-row items-center gap-4">
-          <div className="w-20 h-20">
+          <div className="relative w-20 h-20 group">
             {profile?.photoURL ? (
               <ProfileImagePreview
                 imageUrl={profile.photoURL}
@@ -90,13 +114,32 @@ const ProfileHeader = () => {
                 </AvatarFallback>
               </Avatar>
             )}
+            <div 
+              className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-full transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+              onClick={handleEditProfile}
+            >
+              <Camera className="text-white h-6 w-6 cursor-pointer" />
+            </div>
           </div>
           <div className="flex-1 text-center md:text-left">
-            <h2 className="text-2xl font-semibold">{profile?.displayName}</h2>
-            <p className="text-muted-foreground">
-              {profile?.role} · {profile?.grade}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">{profile?.email}</p>
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold">{profile?.displayName}</h2>
+                <p className="text-muted-foreground">
+                  {profile?.role} · {profile?.grade}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">{profile?.email}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="md:self-start flex items-center gap-1"
+                onClick={handleEditProfile}
+              >
+                <Edit className="h-4 w-4" />
+                Edit Profile
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>

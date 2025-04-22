@@ -14,16 +14,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("academics");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
         navigate("/login");
+      } else {
+        setIsLoading(false);
       }
     });
 
     return () => unsubscribe();
   }, [navigate]);
+
+  if (isLoading) {
+    return (
+      <AppLayout title="Dashboard">
+        <div className="animate-pulse space-y-6">
+          <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+          <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+          <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout title="Dashboard">

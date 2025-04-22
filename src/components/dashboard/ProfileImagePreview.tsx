@@ -21,18 +21,26 @@ const ProfileImagePreview = ({
   altText = "Profile Image",
 }: ProfileImagePreviewProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   return (
     <>
       <div
-        className="cursor-pointer transition-all hover:opacity-80 hover:shadow-lg"
+        className="cursor-pointer transition-all hover:opacity-80 hover:shadow-lg w-full h-full"
         onClick={() => setIsOpen(true)}
       >
         <img
           src={imageUrl}
           alt={altText}
           className="rounded-full object-cover w-full h-full"
+          onError={() => setImageError(true)}
+          style={{ display: imageError ? 'none' : 'block' }}
         />
+        {imageError && (
+          <div className="w-full h-full rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xl">
+            {altText?.charAt(0) || "?"}
+          </div>
+        )}
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -46,11 +54,18 @@ const ProfileImagePreview = ({
             </DialogClose>
           </DialogHeader>
           <div className="flex items-center justify-center">
-            <img
-              src={imageUrl}
-              alt={altText}
-              className="max-h-[70vh] max-w-full object-contain"
-            />
+            {!imageError ? (
+              <img
+                src={imageUrl}
+                alt={altText}
+                className="max-h-[70vh] max-w-full object-contain"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-40 h-40 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-4xl">
+                {altText?.charAt(0) || "?"}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
