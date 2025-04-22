@@ -1,11 +1,10 @@
-
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
@@ -15,7 +14,6 @@ import { useToast } from '@/components/ui/use-toast';
 const RegisterForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [childName, setChildName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,38 +23,28 @@ const RegisterForm = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password should be at least 6 characters');
-      return;
-    }
-
     setLoading(true);
-    
+
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const userId = userCredential.user.uid;
-      
-      // Create user profile in Firestore
-      await setDoc(doc(db, 'profiles', userId), {
-        childName,
-        email,
-        createdAt: new Date(),
+      const user = userCredential.user;
+
+      await updateProfile(user, {
+        displayName: childName,
+      });
+
+      await setDoc(doc(db, 'profiles', user.uid), {
+        childName: childName,
+        email: email,
         currentClass: 'Pre-KG',
         age: '3+',
         photoURL: '',
       });
 
       toast({
-        title: "Account created successfully!",
-        description: "Welcome to TreasureBook! Your journey begins now.",
+        title: "Registration successful",
+        description: "Welcome to TreasureBook!",
       });
-      
       navigate('/dashboard');
     } catch (error: any) {
       console.error(error);
@@ -69,8 +57,8 @@ const RegisterForm = () => {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl">Create a TreasureBook Account</CardTitle>
-        <CardDescription>Start documenting your child's precious journey</CardDescription>
+        <CardTitle className="text-2xl">Create an Account</CardTitle>
+        <CardDescription>Start documenting your child's journey today</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleRegister} className="space-y-4">
@@ -82,10 +70,10 @@ const RegisterForm = () => {
           )}
           <div className="space-y-2">
             <Label htmlFor="childName">Child's Name</Label>
-            <Input 
+            <Input
               id="childName"
-              type="text" 
-              placeholder="Child's name" 
+              type="text"
+              placeholder="Enter child's name"
               value={childName}
               onChange={(e) => setChildName(e.target.value)}
               required
@@ -94,10 +82,10 @@ const RegisterForm = () => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input 
+            <Input
               id="email"
-              type="email" 
-              placeholder="your@email.com" 
+              type="email"
+              placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -106,30 +94,18 @@ const RegisterForm = () => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input 
+            <Input
               id="password"
-              type="password" 
-              placeholder="••••••••" 
+              type="password"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input 
-              id="confirmPassword"
-              type="password" 
-              placeholder="••••••••" 
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              className="w-full"
-            />
-          </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {loading ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>
       </CardContent>
