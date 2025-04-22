@@ -1,7 +1,9 @@
 
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
+import { db, storage } from "@/lib/firebase";
+import { collection, addDoc, deleteDoc, doc, query, where, getDocs } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from "firebase/storage";
 
 export interface GalleryItem {
   id: string;
@@ -12,32 +14,7 @@ export interface GalleryItem {
   userId: string;
 }
 
-// Create a bucket for gallery images if it doesn't exist
-export const createGalleryBucket = async () => {
-  try {
-    // Check if bucket exists
-    const { data, error } = await supabase.storage.getBucket('gallery-images');
-    
-    if (error && error.message.includes('does not exist')) {
-      // Create bucket if it doesn't exist
-      const { error: createError } = await supabase.storage.createBucket('gallery-images', {
-        public: true,
-        fileSizeLimit: 5 * 1024 * 1024, // 5MB
-      });
-      
-      if (createError) {
-        console.error("Error creating bucket:", createError);
-        return false;
-      }
-    }
-    return true;
-  } catch (error) {
-    console.error("Error creating bucket:", error);
-    return false;
-  }
-};
-
-// Upload a gallery image to Supabase storage
+// Upload a gallery image to Firebase storage
 export const uploadGalleryImage = async (
   userId: string, 
   file: File,
@@ -45,42 +22,28 @@ export const uploadGalleryImage = async (
   category: string
 ): Promise<GalleryItem | null> => {
   try {
-    // Create bucket if not exists
-    const bucketCreated = await createGalleryBucket();
-    if (!bucketCreated) {
-      throw new Error("Failed to create or access storage bucket");
-    }
-    
     const fileId = uuidv4();
-    const fileName = `${userId}/${fileId}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const fileName = `gallery-images/${userId}/${fileId}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
     
-    // Upload the image
-    const { data, error } = await supabase.storage
-      .from('gallery-images')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: true,
-      });
-      
-    if (error) {
-      console.error("Upload error:", error);
-      throw error;
-    }
+    // Upload the image to Firebase Storage
+    const storageRef = ref(storage, fileName);
+    await uploadBytes(storageRef, file);
     
-    // Get the public URL
-    const { data: urlData } = await supabase.storage
-      .from('gallery-images')
-      .getPublicUrl(data.path);
+    // Get the download URL
+    const downloadURL = await getDownloadURL(storageRef);
 
     // Create gallery item
     const newItem: GalleryItem = {
       id: fileId,
       title,
-      url: urlData.publicUrl,
+      url: downloadURL,
       date: new Date().toISOString().split('T')[0],
       category,
       userId
     };
+    
+    // Save metadata to Firestore
+    await addDoc(collection(db, "gallery"), newItem);
     
     return newItem;
   } catch (error) {
@@ -94,32 +57,62 @@ export const uploadGalleryImage = async (
   }
 };
 
-// Delete a gallery image from Supabase storage
+// Delete a gallery image from Firebase storage
 export const deleteGalleryImage = async (userId: string, fileId: string): Promise<boolean> => {
   try {
-    // Get all user's files
-    const { data } = await supabase.storage
-      .from('gallery-images')
-      .list(userId);
-      
-    if (!data) return false;
+    // Find the metadata record in Firestore
+    const galleryQuery = query(
+      collection(db, "gallery"), 
+      where("id", "==", fileId),
+      where("userId", "==", userId)
+    );
     
-    // Find the file with the matching ID
-    const fileToDelete = data.find(file => file.name.includes(fileId));
-    if (!fileToDelete) return false;
+    const querySnapshot = await getDocs(galleryQuery);
     
-    // Delete the file
-    const { error } = await supabase.storage
-      .from('gallery-images')
-      .remove([`${userId}/${fileToDelete.name}`]);
-      
-    if (error) {
-      throw error;
+    if (querySnapshot.empty) {
+      return false;
     }
+    
+    const galleryDoc = querySnapshot.docs[0];
+    const galleryData = galleryDoc.data() as GalleryItem;
+    
+    // Delete from Firebase Storage
+    if (galleryData.url) {
+      try {
+        // Extract storage reference from URL
+        const fileRef = ref(storage, galleryData.url);
+        await deleteObject(fileRef);
+      } catch (storageError) {
+        console.error("Error deleting from storage:", storageError);
+      }
+    }
+    
+    // Delete metadata from Firestore
+    await deleteDoc(doc(db, "gallery", galleryDoc.id));
     
     return true;
   } catch (error) {
     console.error("Error deleting gallery image:", error);
     return false;
+  }
+};
+
+// Get all gallery images for a user
+export const getUserGalleryImages = async (userId: string): Promise<GalleryItem[]> => {
+  try {
+    const galleryQuery = query(
+      collection(db, "gallery"), 
+      where("userId", "==", userId)
+    );
+    
+    const querySnapshot = await getDocs(galleryQuery);
+    
+    return querySnapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.data().id || doc.id,
+    })) as GalleryItem[];
+  } catch (error) {
+    console.error("Error fetching gallery images:", error);
+    return [];
   }
 };

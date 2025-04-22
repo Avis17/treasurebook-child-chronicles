@@ -1,8 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { storage as firebaseStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 
-// Create a bucket for profile images if it doesn't exist
+// This function is kept for future Supabase storage use if needed
 export const createProfileImageBucket = async () => {
   try {
     // Correct API call - using getBucket instead of 'bucket'
@@ -27,16 +29,10 @@ export const createProfileImageBucket = async () => {
   }
 };
 
-// Upload a profile image to Supabase storage
+// Upload a profile image to Firebase storage instead of Supabase
 export const uploadProfileImage = async (userId: string, file: File | string): Promise<string | null> => {
   try {
-    // Create bucket if not exists
-    const bucketCreated = await createProfileImageBucket();
-    if (!bucketCreated) {
-      throw new Error("Failed to create or access storage bucket");
-    }
-    
-    // Upload the image
+    // Upload the image to Firebase Storage
     let fileData: File | Blob;
     
     if (typeof file === 'string' && file.startsWith('data:')) {
@@ -49,25 +45,16 @@ export const uploadProfileImage = async (userId: string, file: File | string): P
       throw new Error("Invalid file format");
     }
     
-    const fileName = `${userId}-${Date.now()}`;
-    const { data, error } = await supabase.storage
-      .from('profile-images')
-      .upload(fileName, fileData, {
-        cacheControl: '3600',
-        upsert: true,
-      });
-      
-    if (error) {
-      console.error("Upload error:", error);
-      throw error;
-    }
+    const fileName = `profile-images/${userId}-${Date.now()}`;
+    const storageRef = ref(storage, fileName);
     
-    // Get the public URL
-    const { data: urlData } = await supabase.storage
-      .from('profile-images')
-      .getPublicUrl(data.path);
-      
-    return urlData.publicUrl;
+    // Upload to Firebase Storage
+    await uploadBytes(storageRef, fileData);
+    
+    // Get download URL
+    const downloadURL = await getDownloadURL(storageRef);
+    
+    return downloadURL;
   } catch (error) {
     console.error("Error uploading profile image:", error);
     toast({
@@ -79,19 +66,13 @@ export const uploadProfileImage = async (userId: string, file: File | string): P
   }
 };
 
-// Delete a profile image from Supabase storage
+// Delete a profile image from Firebase storage
 export const deleteProfileImage = async (url: string): Promise<boolean> => {
   try {
-    const path = url.split('/').pop();
-    if (!path) return false;
+    // Extract file path from Firebase Storage URL
+    const storageRef = ref(storage, url);
     
-    const { error } = await supabase.storage
-      .from('profile-images')
-      .remove([path]);
-      
-    if (error) {
-      throw error;
-    }
+    await deleteObject(storageRef);
     
     return true;
   } catch (error) {

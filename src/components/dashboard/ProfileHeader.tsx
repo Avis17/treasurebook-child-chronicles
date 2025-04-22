@@ -83,7 +83,7 @@ const ProfileHeader = () => {
 
     setUploading(true);
     try {
-      // Upload to Supabase storage
+      // Upload to Firebase Storage instead of Supabase
       const downloadURL = await uploadProfileImage(auth.currentUser.uid, imageFile);
       
       if (!downloadURL) {

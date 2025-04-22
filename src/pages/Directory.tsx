@@ -1,5 +1,7 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc, where } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,9 +18,10 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useQuery } from "@tanstack/react-query";
-import { Mail, Phone, Globe, Facebook, Twitter, Instagram } from "lucide-react";
+import { Mail, Phone, Globe, Facebook, Twitter, Instagram, Trash2, Edit } from "lucide-react";
 
 interface ContactSocial {
   facebook?: string;
@@ -36,71 +39,17 @@ interface Contact {
   photoURL?: string;
   social?: ContactSocial;
   type: "teacher" | "friend" | "other";
+  createdBy?: string;
 }
-
-const mockContacts: Contact[] = [
-  {
-    id: "1",
-    name: "Ms. Sarah Johnson",
-    role: "Head Teacher",
-    email: "sarah.johnson@school.edu",
-    phone: "555-123-4567",
-    photoURL: "",
-    social: {
-      website: "https://school.edu/staff/sjohnson"
-    },
-    type: "teacher",
-  },
-  {
-    id: "2",
-    name: "Mr. Robert Chen",
-    role: "Math Teacher",
-    email: "robert.chen@school.edu",
-    phone: "555-234-5678",
-    photoURL: "",
-    type: "teacher",
-  },
-  {
-    id: "3",
-    name: "Mrs. Diana Patel",
-    role: "Art Teacher",
-    email: "diana.patel@school.edu",
-    photoURL: "",
-    social: {
-      instagram: "artwithdianapatel"
-    },
-    type: "teacher",
-  },
-  {
-    id: "4",
-    name: "Ethan Smith",
-    role: "Classmate",
-    email: "ethan.parent@email.com",
-    photoURL: "",
-    type: "friend",
-  },
-  {
-    id: "5",
-    name: "Olivia Garcia",
-    role: "Classmate",
-    email: "olivia.parent@email.com",
-    photoURL: "",
-    type: "friend",
-  },
-  {
-    id: "6",
-    name: "Noah Wilson",
-    role: "Friend from Art Class",
-    email: "noah.parent@email.com",
-    photoURL: "",
-    type: "friend",
-  },
-];
 
 const Directory = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("teachers");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [contactToEdit, setContactToEdit] = useState<Contact | null>(null);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [newContact, setNewContact] = useState<Omit<Contact, "id">>({
     name: "",
     role: "",
@@ -111,11 +60,25 @@ const Directory = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: contacts = mockContacts } = useQuery({
+  const { data: contacts = [], refetch } = useQuery({
     queryKey: ["contacts"],
     queryFn: async () => {
-      // In a real app, this would fetch from Firestore
-      return mockContacts;
+      try {
+        const user = auth.currentUser;
+        if (!user) return [];
+        
+        const contactsCollection = collection(db, "contacts");
+        const q = query(contactsCollection, where("createdBy", "==", user.uid), orderBy("name"));
+        const querySnapshot = await getDocs(q);
+        
+        return querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Contact[];
+      } catch (error) {
+        console.error("Error fetching contacts:", error);
+        return [];
+      }
     },
   });
 
@@ -131,15 +94,30 @@ const Directory = () => {
     const { name, value } = e.target;
     if (name.startsWith("social.")) {
       const socialField = name.split(".")[1];
-      setNewContact(prev => ({
-        ...prev,
-        social: {
-          ...prev.social,
-          [socialField]: value
-        }
-      }));
+      
+      if (contactToEdit) {
+        setContactToEdit(prev => ({
+          ...prev!,
+          social: {
+            ...prev!.social,
+            [socialField]: value
+          }
+        }));
+      } else {
+        setNewContact(prev => ({
+          ...prev,
+          social: {
+            ...prev.social,
+            [socialField]: value
+          }
+        }));
+      }
     } else {
-      setNewContact(prev => ({ ...prev, [name]: value }));
+      if (contactToEdit) {
+        setContactToEdit(prev => ({ ...prev!, [name]: value }));
+      } else {
+        setNewContact(prev => ({ ...prev, [name]: value }));
+      }
     }
   };
 
@@ -148,7 +126,15 @@ const Directory = () => {
     setIsSubmitting(true);
 
     try {
-      // In a real app, this would save to Firestore
+      const user = auth.currentUser;
+      if (!user) throw new Error("User not authenticated");
+      
+      await addDoc(collection(db, "contacts"), {
+        ...newContact,
+        createdBy: user.uid,
+        createdAt: new Date(),
+      });
+
       toast({
         title: "Contact added",
         description: "Your contact has been successfully added",
@@ -163,7 +149,8 @@ const Directory = () => {
         social: {},
       });
       
-      setIsDialogOpen(false);
+      setIsCreateDialogOpen(false);
+      refetch();
     } catch (error) {
       console.error("Error adding contact:", error);
       toast({
@@ -176,19 +163,114 @@ const Directory = () => {
     }
   };
 
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactToEdit) return;
+    
+    setIsSubmitting(true);
+
+    try {
+      const contactRef = doc(db, "contacts", contactToEdit.id);
+      await updateDoc(contactRef, {
+        name: contactToEdit.name,
+        role: contactToEdit.role,
+        email: contactToEdit.email,
+        phone: contactToEdit.phone || "",
+        type: contactToEdit.type,
+        social: contactToEdit.social || {},
+        updatedAt: new Date(),
+      });
+
+      toast({
+        title: "Contact updated",
+        description: "Your contact has been successfully updated",
+      });
+      
+      setContactToEdit(null);
+      setIsEditDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Error updating contact:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update contact",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!contactToDelete) return;
+    
+    setIsSubmitting(true);
+
+    try {
+      await deleteDoc(doc(db, "contacts", contactToDelete.id));
+      
+      toast({
+        title: "Contact deleted",
+        description: "Your contact has been successfully deleted",
+      });
+      
+      setContactToDelete(null);
+      setIsDeleteDialogOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete contact",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openEditDialog = (contact: Contact) => {
+    setContactToEdit(contact);
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (contact: Contact) => {
+    setContactToDelete(contact);
+    setIsDeleteDialogOpen(true);
+  };
+
   const renderContactCard = (contact: Contact) => (
     <Card key={contact.id} className="overflow-hidden">
       <CardHeader className="pb-2">
-        <div className="flex items-center space-x-4">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={contact.photoURL} alt={contact.name} />
-            <AvatarFallback>
-              {contact.name.split(" ").map(n => n[0]).join("")}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <CardTitle className="text-lg">{contact.name}</CardTitle>
-            <CardDescription>{contact.role}</CardDescription>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={contact.photoURL} alt={contact.name} />
+              <AvatarFallback>
+                {contact.name.split(" ").map(n => n[0]).join("")}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <CardTitle className="text-lg">{contact.name}</CardTitle>
+              <CardDescription>{contact.role}</CardDescription>
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => openEditDialog(contact)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              className="text-destructive"
+              onClick={() => openDeleteDialog(contact)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -351,6 +433,29 @@ const Directory = () => {
         </div>
       ),
     },
+    {
+      header: "Actions",
+      accessor: "id" as keyof Contact,
+      render: (contact: Contact) => (
+        <div className="flex space-x-2">
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            onClick={() => openEditDialog(contact)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="text-destructive"
+            onClick={() => openDeleteDialog(contact)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -365,7 +470,7 @@ const Directory = () => {
             </TabsList>
           </Tabs>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button className="ml-2">Add Contact</Button>
             </DialogTrigger>
@@ -468,6 +573,135 @@ const Directory = () => {
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Contact Dialog */}
+          {contactToEdit && (
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Contact</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleEditSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-name">Name</Label>
+                    <Input
+                      id="edit-name"
+                      name="name"
+                      value={contactToEdit.name}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-type">Type</Label>
+                    <select
+                      id="edit-type"
+                      name="type"
+                      value={contactToEdit.type}
+                      onChange={handleInputChange}
+                      className="w-full p-2 rounded-md border"
+                      required
+                    >
+                      <option value="teacher">Teacher</option>
+                      <option value="friend">Friend</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-role">Role</Label>
+                    <Input
+                      id="edit-role"
+                      name="role"
+                      value={contactToEdit.role}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-email">Email</Label>
+                    <Input
+                      id="edit-email"
+                      name="email"
+                      type="email"
+                      value={contactToEdit.email}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-phone">Phone (optional)</Label>
+                    <Input
+                      id="edit-phone"
+                      name="phone"
+                      value={contactToEdit.phone || ""}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Social Media (optional)</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        name="social.facebook"
+                        value={contactToEdit.social?.facebook || ""}
+                        onChange={handleInputChange}
+                        placeholder="Facebook username"
+                      />
+                      <Input
+                        name="social.twitter"
+                        value={contactToEdit.social?.twitter || ""}
+                        onChange={handleInputChange}
+                        placeholder="Twitter username"
+                      />
+                      <Input
+                        name="social.instagram"
+                        value={contactToEdit.social?.instagram || ""}
+                        onChange={handleInputChange}
+                        placeholder="Instagram username"
+                      />
+                      <Input
+                        name="social.website"
+                        value={contactToEdit.social?.website || ""}
+                        onChange={handleInputChange}
+                        placeholder="Website URL"
+                      />
+                    </div>
+                  </div>
+                  
+                  <DialogFooter>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
+          
+          {/* Delete Contact Dialog */}
+          {contactToDelete && (
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete Contact</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete {contactToDelete.name}? This action cannot be undone.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="flex space-x-2 justify-end">
+                  <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDelete}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Deleting..." : "Delete"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <Card>
