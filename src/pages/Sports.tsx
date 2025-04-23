@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -228,7 +229,6 @@ const Sports = () => {
   return (
     <AppLayout title="Sports Records">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Sports Records</h1>
         <Button onClick={() => setIsFormOpen(true)}>
           <PlusCircle className="mr-2 h-4 w-4" /> Add New Record
         </Button>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -32,7 +31,12 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [formData, setFormData] = useState<Partial<ProfileData>>({});
+  const [formData, setFormData] = useState<Partial<ProfileData & {
+    parentName?: string;
+    parentContact?: string;
+    bloodGroup?: string;
+    additionalInfo?: string;
+  }>>({});
   const [isDirty, setIsDirty] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -49,14 +53,13 @@ const Profile = () => {
           setProfileData(data);
           setFormData(data);
         } else {
-          // Initialize with default values if document doesn't exist
           const defaultData = {
             childName: "",
             email: user.email || "",
             currentClass: "Pre-KG",
             age: "",
             photoURL: "",
-            userId: user.uid, // Add userId to default data
+            userId: user.uid,
           };
           setProfileData(defaultData as ProfileData);
           setFormData(defaultData);
@@ -77,7 +80,6 @@ const Profile = () => {
   }, [toast]);
 
   useEffect(() => {
-    // Check if form data is different from profile data
     if (profileData) {
       const isChanged = Object.keys(formData).some(key => {
         return formData[key as keyof ProfileData] !== profileData[key as keyof ProfileData];
@@ -86,7 +88,7 @@ const Profile = () => {
     }
   }, [formData, profileData]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -111,19 +113,14 @@ const Profile = () => {
     setUploadingImage(true);
     
     try {
-      // Create a storage reference
       const storageRef = ref(storage, `profile-images/${user.uid}/${file.name}`);
       
-      // Upload the file
       await uploadBytes(storageRef, file);
       
-      // Get the download URL
       const photoURL = await getDownloadURL(storageRef);
       
-      // Update form data with the new photo URL
       setFormData((prev) => ({ ...prev, photoURL }));
       
-      // Update the document in Firestore
       const profileDocRef = doc(db, "profiles", user.uid);
       const profileDoc = await getDoc(profileDocRef);
       
@@ -162,7 +159,6 @@ const Profile = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      // Add userId to the form data
       const updatedFormData = { 
         ...formData, 
         userId: user.uid 
@@ -174,7 +170,6 @@ const Profile = () => {
       if (profileDoc.exists()) {
         await updateDoc(profileDocRef, updatedFormData);
       } else {
-        // Create the document if it doesn't exist
         await setDoc(profileDocRef, {
           ...updatedFormData,
           email: user.email || "",
@@ -272,7 +267,9 @@ const Profile = () => {
         <Card className="dark:bg-gray-800">
           <CardHeader>
             <CardTitle>Personal Information</CardTitle>
-            <CardDescription className="dark:text-gray-300">Update your child's personal information here</CardDescription>
+            <CardDescription className="dark:text-gray-300">
+              Update your child's personal information here
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -363,6 +360,52 @@ const Profile = () => {
                     value={formData.address || ""}
                     onChange={handleChange}
                     className="dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="parentName" className="dark:text-gray-300">Parent's Name</Label>
+                  <Input
+                    id="parentName"
+                    name="parentName"
+                    value={formData.parentName || ""}
+                    onChange={handleChange}
+                    className="dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="parentContact" className="dark:text-gray-300">Parent's Contact</Label>
+                  <Input
+                    id="parentContact"
+                    name="parentContact"
+                    value={formData.parentContact || ""}
+                    onChange={handleChange}
+                    className="dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bloodGroup" className="dark:text-gray-300">Blood Group</Label>
+                  <Input
+                    id="bloodGroup"
+                    name="bloodGroup"
+                    value={formData.bloodGroup || ""}
+                    onChange={handleChange}
+                    className="dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="additionalInfo" className="dark:text-gray-300">Additional Information</Label>
+                  <textarea
+                    id="additionalInfo"
+                    name="additionalInfo"
+                    rows={3}
+                    value={formData.additionalInfo || ""}
+                    onChange={handleChange}
+                    placeholder="Provide any other important information here"
+                    className="w-full p-2 rounded dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 border"
                   />
                 </div>
               </div>

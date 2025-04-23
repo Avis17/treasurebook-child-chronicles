@@ -12,7 +12,7 @@ interface AcademicTableProps {
   hasActiveFilters: boolean;
   onClearFilters: () => void;
   onEdit?: (item: AcademicRecord) => void; // for future extensibility
-  onDelete?: (item: AcademicRecord) => void; // for future extensibility
+  onDelete?: (item: AcademicRecord) => void; // now functional!
 }
 
 export const AcademicTable = ({
@@ -30,11 +30,9 @@ export const AcademicTable = ({
     key: null,
     direction: null,
   });
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 10;
-
-  // For view dialog
   const [viewOpen, setViewOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState<AcademicRecord | null>(null);
 
@@ -53,18 +51,13 @@ export const AcademicTable = ({
   // Sort records
   const sortedRecords = [...filteredRecords].sort((a, b) => {
     if (!sortConfig.key || !sortConfig.direction) return 0;
-    
     const aValue = a[sortConfig.key];
     const bValue = b[sortConfig.key];
-    
     if (aValue === bValue) return 0;
-    
     const direction = sortConfig.direction === "asc" ? 1 : -1;
-    
     if (typeof aValue === "string" && typeof bValue === "string") {
       return aValue.localeCompare(bValue) * direction;
     }
-    
     return ((aValue < bValue ? -1 : 1) * direction);
   });
 
@@ -112,21 +105,22 @@ export const AcademicTable = ({
     );
   }
 
-  // Map record fields for dialog
+  // Map record fields for dialog -- add rawKey for hiding, ensure Notes are displayed as such
   function getFields(record: AcademicRecord) {
     return [
-      { label: "Class", value: record.class },
-      { label: "Year", value: record.year },
-      { label: "Term", value: record.term },
-      { label: "Subject", value: record.subject },
-      { label: "Exam Type", value: record.examType },
-      { label: "Score", value: record.isPercentage ? `${record.score}%` : `${record.score}/${record.maxScore}` },
-      { label: "Grade", value: record.grade },
-      { label: "Remarks", value: record.remarks },
+      { label: "Class", value: record.class, rawKey: "class" },
+      { label: "Year", value: record.year, rawKey: "year" },
+      { label: "Term", value: record.term, rawKey: "term" },
+      { label: "Subject", value: record.subject, rawKey: "subject" },
+      { label: "Exam Type", value: record.examType, rawKey: "examType" },
+      { label: "Score", value: record.isPercentage ? `${record.score}%` : `${record.score}/${record.maxScore}`, rawKey: "score" },
+      { label: "Grade", value: record.grade, rawKey: "grade" },
+      { label: "Remarks", value: record.remarks, rawKey: "remarks" },
+      { label: "Notes", value: record.notes || "–", rawKey: "notes" },
+      // technical fields omitted via RecordViewDialog itself
     ];
   }
 
-  // Simple delete (you can wire up onDelete externally)
   function handleDelete(record: AcademicRecord) {
     if (onDelete) onDelete(record);
   }
@@ -149,45 +143,13 @@ export const AcademicTable = ({
         <Table>
           <TableHeader>
             <TableRow className="dark:bg-gray-900 dark:hover:bg-gray-800">
-              <TableHead 
-                className="dark:text-gray-300 cursor-pointer"
-                onClick={() => handleSort('class')}
-              >
-                Class/Year {renderSortIcon('class')}
-              </TableHead>
-              <TableHead 
-                className="dark:text-gray-300 cursor-pointer"
-                onClick={() => handleSort('term')}
-              >
-                Term {renderSortIcon('term')}
-              </TableHead>
-              <TableHead 
-                className="dark:text-gray-300 cursor-pointer"
-                onClick={() => handleSort('subject')}
-              >
-                Subject {renderSortIcon('subject')}
-              </TableHead>
-              <TableHead 
-                className="dark:text-gray-300 cursor-pointer"
-                onClick={() => handleSort('examType')}
-              >
-                Exam {renderSortIcon('examType')}
-              </TableHead>
-              <TableHead 
-                className="dark:text-gray-300 cursor-pointer"
-                onClick={() => handleSort('score')}
-              >
-                Score {renderSortIcon('score')}
-              </TableHead>
-              <TableHead 
-                className="dark:text-gray-300 cursor-pointer"
-                onClick={() => handleSort('grade')}
-              >
-                Grade {renderSortIcon('grade')}
-              </TableHead>
-              <TableHead className="hidden md:table-cell dark:text-gray-300">
-                Remarks
-              </TableHead>
+              <TableHead onClick={() => handleSort('class')} className="dark:text-gray-300 cursor-pointer">Class/Year {renderSortIcon('class')}</TableHead>
+              <TableHead onClick={() => handleSort('term')} className="dark:text-gray-300 cursor-pointer">Term {renderSortIcon('term')}</TableHead>
+              <TableHead onClick={() => handleSort('subject')} className="dark:text-gray-300 cursor-pointer">Subject {renderSortIcon('subject')}</TableHead>
+              <TableHead onClick={() => handleSort('examType')} className="dark:text-gray-300 cursor-pointer">Exam {renderSortIcon('examType')}</TableHead>
+              <TableHead onClick={() => handleSort('score')} className="dark:text-gray-300 cursor-pointer">Score {renderSortIcon('score')}</TableHead>
+              <TableHead onClick={() => handleSort('grade')} className="dark:text-gray-300 cursor-pointer">Grade {renderSortIcon('grade')}</TableHead>
+              <TableHead className="hidden md:table-cell dark:text-gray-300">Remarks</TableHead>
               <TableHead className="dark:text-gray-300">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -232,7 +194,6 @@ export const AcademicTable = ({
                     >
                       <Eye />
                     </Button>
-                    {/* Example for delete, wire up onDelete for real action */}
                     {onDelete && (
                       <Button
                         variant="destructive"
@@ -240,10 +201,14 @@ export const AcademicTable = ({
                         onClick={() => handleDelete(record)}
                         title="Delete"
                       >
-                        🗑️
+                        <span className="sr-only">Delete</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <path d="M3 6h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m4 6v6m4-6v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
                       </Button>
                     )}
-                    {/* Example for edit, wire up onEdit for real action */}
                     {onEdit && (
                       <Button
                         variant="secondary"
@@ -279,8 +244,6 @@ export const AcademicTable = ({
             </Button>
             {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
               let pageNumber: number;
-              
-              // Calculate which page numbers to show
               if (totalPages <= 5) {
                 pageNumber = i + 1;
               } else if (currentPage <= 3) {
@@ -290,7 +253,6 @@ export const AcademicTable = ({
               } else {
                 pageNumber = currentPage - 2 + i;
               }
-              
               return (
                 <Button
                   key={i}
