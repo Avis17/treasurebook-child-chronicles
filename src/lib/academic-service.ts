@@ -16,6 +16,7 @@ export interface AcademicRecord {
   remarks: string;
   isPercentage: boolean;
   userId: string;
+  notes?: string;
   createdAt?: any;
   updatedAt?: any;
 }
