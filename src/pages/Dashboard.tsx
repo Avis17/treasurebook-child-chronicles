@@ -13,6 +13,7 @@ import ExtracurricularChart from "@/components/dashboard/ExtracurricularChart";
 import MarksSummaryCard from "@/components/dashboard/MarksSummaryCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,

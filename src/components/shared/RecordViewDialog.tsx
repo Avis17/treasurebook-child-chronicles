@@ -30,11 +30,23 @@ export function RecordViewDialog<T>({
   // Custom visible fields mapping (hiding unnecessary keys)
   const visibleFields = fields.filter((f) => {
     const key = (f as any).rawKey || f.label?.toLowerCase().replace(/\s/g, '');
-    if (key && highlightKeys.some(hkey => key.toLowerCase().includes(hkey))) {
+    
+    // Check if this is a field that should be hidden
+    if (hideFields.some(hideKey => 
+      key && key.toLowerCase().includes(hideKey.toLowerCase()) || 
+      f.label?.toLowerCase().includes(hideKey.toLowerCase())
+    )) {
+      return false;
+    }
+    
+    // Check if this is a field that should be highlighted
+    if (key && highlightKeys.some(hkey => key.toLowerCase().includes(hkey) || 
+        f.label?.toLowerCase().includes(hkey))) {
       highlightFields.push(f);
       return false;
     }
-    return !hideFields.some(hideKey => key && key.toLowerCase().includes(hideKey.toLowerCase()));
+    
+    return true;
   });
 
   return (
