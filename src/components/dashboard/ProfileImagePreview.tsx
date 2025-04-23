@@ -15,12 +15,14 @@ interface ProfileImagePreviewProps {
   imageUrl: string;
   altText?: string;
   onEditClick?: () => void;
+  navigateOnClick?: boolean;
 }
 
 const ProfileImagePreview = ({
   imageUrl,
   altText = "Profile Image",
   onEditClick,
+  navigateOnClick = false,
 }: ProfileImagePreviewProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -28,6 +30,12 @@ const ProfileImagePreview = ({
   const handleImageClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (navigateOnClick && onEditClick) {
+      onEditClick();
+      return;
+    }
+    
     setIsOpen(true);
   };
 
@@ -50,7 +58,7 @@ const ProfileImagePreview = ({
           </div>
         )}
         
-        {onEditClick && (
+        {onEditClick && !navigateOnClick && (
           <div 
             className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-full transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
             onClick={(e) => {

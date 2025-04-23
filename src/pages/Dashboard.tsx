@@ -10,6 +10,7 @@ import SummaryCards from "@/components/dashboard/SummaryCards";
 import AcademicChart from "@/components/dashboard/AcademicChart";
 import SportsChart from "@/components/dashboard/SportsChart";
 import ExtracurricularChart from "@/components/dashboard/ExtracurricularChart";
+import MarksSummaryCard from "@/components/dashboard/MarksSummaryCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -205,6 +206,10 @@ const Dashboard = () => {
             talents={dashboardStats.talents}
             gallery={dashboardStats.gallery}
           />
+        </div>
+
+        <div className="mt-4">
+          <MarksSummaryCard />
         </div>
         
         <div className="mt-8">

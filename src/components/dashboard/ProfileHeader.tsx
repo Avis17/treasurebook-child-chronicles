@@ -16,12 +16,26 @@ interface UserProfile {
   photoURL: string;
   role: string;
   grade: string;
+  birthdate?: string;
+  age?: string;
 }
 
 const ProfileHeader = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const calculateAge = (birthdate: string): string => {
+    if (!birthdate) return '';
+    const today = new Date();
+    const birthDate = new Date(birthdate);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age.toString();
+  };
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -35,12 +49,16 @@ const ProfileHeader = () => {
           
         if (profileDoc.exists()) {
           const profileData = profileDoc.data();
+          const calculatedAge = profileData.birthdate ? calculateAge(profileData.birthdate) : profileData.age || "";
+          
           setProfile({
             displayName: profileData.childName || user.displayName || "Student",
             email: profileData.email || user.email || "",
             photoURL: profileData.photoURL || user.photoURL || "",
             role: "Student",
             grade: profileData.currentClass || "Grade 8",
+            birthdate: profileData.birthdate || "",
+            age: calculatedAge,
           });
         } else {
           // Fall back to users collection if no profile document
@@ -48,12 +66,17 @@ const ProfileHeader = () => {
           const userDoc = await getDoc(userDocRef);
           
           if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const calculatedAge = userData.birthdate ? calculateAge(userData.birthdate) : userData.age || "";
+            
             setProfile({
-              displayName: userDoc.data().displayName || user.displayName || "Student",
-              email: userDoc.data().email || user.email || "",
-              photoURL: userDoc.data().photoURL || user.photoURL || "",
-              role: userDoc.data().role || "Student",
-              grade: userDoc.data().grade || "Grade 8",
+              displayName: userData.displayName || user.displayName || "Student",
+              email: userData.email || user.email || "",
+              photoURL: userData.photoURL || user.photoURL || "",
+              role: userData.role || "Student",
+              grade: userData.grade || "Grade 8",
+              birthdate: userData.birthdate || "",
+              age: calculatedAge,
             });
           } else {
             setProfile({
@@ -62,6 +85,7 @@ const ProfileHeader = () => {
               photoURL: user.photoURL || "",
               role: "Student",
               grade: "Grade 8",
+              age: "",
             });
           }
         }
@@ -115,6 +139,7 @@ const ProfileHeader = () => {
                 imageUrl={profile.photoURL}
                 altText={`${profile.displayName}'s profile`}
                 onEditClick={handleEditProfile}
+                navigateOnClick={false}
               />
             ) : (
               <Avatar className="w-20 h-20">
@@ -129,7 +154,7 @@ const ProfileHeader = () => {
               <div>
                 <h2 className="text-2xl font-semibold">{profile?.displayName}</h2>
                 <p className="text-muted-foreground">
-                  {profile?.role} · {profile?.grade}
+                  {profile?.role} · {profile?.grade}{profile?.age ? ` · ${profile.age} years old` : ''}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">{profile?.email}</p>
               </div>

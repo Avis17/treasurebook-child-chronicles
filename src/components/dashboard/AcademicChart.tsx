@@ -1,25 +1,28 @@
 
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface GradeScore {
   subject: string;
   score: number;
   maxScore: number;
   percentage: number;
+  createdAt: Date;
 }
 
 const AcademicChart = () => {
   const [chartData, setChartData] = useState<GradeScore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAcademicData = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         const user = auth.currentUser;
         if (!user) return;
 
@@ -27,35 +30,42 @@ const AcademicChart = () => {
         const academicRef = collection(db, "academicRecords");
         const q = query(
           academicRef, 
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc"),
-          limit(10)
+          where("userId", "==", user.uid)
         );
+        
+        console.log("Fetching academic records for user:", user.uid);
         const querySnapshot = await getDocs(q);
+        console.log("Records found:", querySnapshot.size);
         
         // Process the data
         const academicData: GradeScore[] = [];
         
         querySnapshot.forEach((doc) => {
           const record = doc.data();
+          console.log("Processing record:", record);
+          
           const score = parseFloat(record.score) || 0;
           const maxScore = parseFloat(record.maxScore) || 100;
           const percentage = record.isPercentage ? score : (score / maxScore) * 100;
+          const createdAtDate = record.createdAt ? new Date(record.createdAt.toDate()) : new Date();
           
           academicData.push({
             subject: record.subject || 'Unknown',
             score,
             maxScore,
-            percentage: Math.round(percentage)
+            percentage: Math.round(percentage),
+            createdAt: createdAtDate
           });
         });
         
         // Sort by subject name for consistent display
         academicData.sort((a, b) => a.subject.localeCompare(b.subject));
+        console.log("Processed academic data:", academicData);
         
         setChartData(academicData);
       } catch (error) {
         console.error('Error fetching academic data:', error);
+        setError('Failed to load academic data. Please try again later.');
         setChartData([]);
       } finally {
         setIsLoading(false);
@@ -79,6 +89,22 @@ const AcademicChart = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Academic Performance</CardTitle>
+          <CardDescription>Subject-wise performance in percentage</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center items-center h-64 text-red-500">
+            {error}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -97,12 +123,13 @@ const AcademicChart = () => {
                   formatter={(value) => [`${value}%`, 'Score']}
                   labelFormatter={(label) => `Subject: ${label}`}
                 />
+                <Legend />
                 <Line
                   type="monotone"
                   dataKey="percentage"
                   stroke="#4f46e5"
                   activeDot={{ r: 8 }}
-                  name="Score"
+                  name="Score (%)"
                 />
               </LineChart>
             </ResponsiveContainer>

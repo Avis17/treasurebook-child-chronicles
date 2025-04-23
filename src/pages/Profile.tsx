@@ -24,6 +24,7 @@ interface ProfileData {
   birthdate?: string;
   allergies?: string;
   emergencyContact?: string;
+  userId?: string;
 }
 
 const Profile = () => {
@@ -55,6 +56,7 @@ const Profile = () => {
             currentClass: "Pre-KG",
             age: "",
             photoURL: "",
+            userId: user.uid, // Add userId to default data
           };
           setProfileData(defaultData as ProfileData);
           setFormData(defaultData);
@@ -160,21 +162,27 @@ const Profile = () => {
       const user = auth.currentUser;
       if (!user) return;
 
+      // Add userId to the form data
+      const updatedFormData = { 
+        ...formData, 
+        userId: user.uid 
+      };
+
       const profileDocRef = doc(db, "profiles", user.uid);
       const profileDoc = await getDoc(profileDocRef);
       
       if (profileDoc.exists()) {
-        await updateDoc(profileDocRef, formData);
+        await updateDoc(profileDocRef, updatedFormData);
       } else {
         // Create the document if it doesn't exist
         await setDoc(profileDocRef, {
-          ...formData,
+          ...updatedFormData,
           email: user.email || "",
           createdAt: new Date(),
         });
       }
 
-      setProfileData((prev) => ({ ...prev, ...formData } as ProfileData));
+      setProfileData((prev) => ({ ...prev, ...updatedFormData } as ProfileData));
       setIsDirty(false);
 
       toast({
