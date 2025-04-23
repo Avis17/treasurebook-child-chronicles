@@ -68,13 +68,17 @@ const Directory = () => {
         if (!user) return [];
         
         const contactsCollection = collection(db, "contacts");
-        const q = query(contactsCollection, where("createdBy", "==", user.uid), orderBy("name"));
+        // Fix the query to avoid the index error - remove orderBy or create separate queries
+        const q = query(contactsCollection, where("createdBy", "==", user.uid));
         const querySnapshot = await getDocs(q);
         
-        return querySnapshot.docs.map(doc => ({
+        // Sort the data in memory instead of in the query
+        const contactData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Contact[];
+        
+        return contactData.sort((a, b) => a.name.localeCompare(b.name));
       } catch (error) {
         console.error("Error fetching contacts:", error);
         return [];
