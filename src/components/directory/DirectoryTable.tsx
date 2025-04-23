@@ -37,9 +37,10 @@ interface Contact {
 interface DirectoryTableProps {
   contacts: Contact[];
   onContactDeleted: () => void;
+  onContactUpdated: (newContact: Contact) => void;
 }
 
-export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTableProps) => {
+export const DirectoryTable = ({ contacts, onContactDeleted, onContactUpdated }: DirectoryTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -50,7 +51,6 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
   const [viewOpen, setViewOpen] = useState(false);
   const [viewContact, setViewContact] = useState<Contact | null>(null);
 
-  const [editOpen, setEditOpen] = useState(false);
   const [contactToEdit, setContactToEdit] = useState<Contact | null>(null);
 
   const filteredContacts = contacts.filter((contact) => {
@@ -94,17 +94,11 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
 
   const handleEditContact = (contact: Contact) => {
     setContactToEdit(contact);
-    setEditOpen(true);
   };
 
   const handleContactUpdated = () => {
-    setEditOpen(false);
     setContactToEdit(null);
-    onContactDeleted(); // Refetch contacts after update
-    toast({
-      title: "Contact updated",
-      description: "The contact has been updated successfully.",
-    });
+    onContactUpdated({} as Contact); // Call parent update handler
   };
 
   const confirmDelete = (contact: Contact) => {
@@ -131,7 +125,7 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
       { label: "Phone", value: contact.phone },
       { label: "Email", value: contact.email },
       { label: "Address", value: contact.address },
-      { label: "Notes", value: contact.notes },
+      { label: "Notes", value: contact.notes, highlight: true },
       { label: "Facebook", value: contact.facebook },
       { label: "Twitter", value: contact.twitter },
       { label: "Instagram", value: contact.instagram },
@@ -358,11 +352,9 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
         </DialogContent>
       </Dialog>
 
-      {/* Edit contact dialog */}
+      {/* Edit contact form */}
       {contactToEdit && (
-        <DirectoryForm 
-          isOpen={editOpen} 
-          onOpenChange={setEditOpen}
+        <DirectoryForm
           onContactAdded={handleContactUpdated}
           existingContact={contactToEdit}
         />

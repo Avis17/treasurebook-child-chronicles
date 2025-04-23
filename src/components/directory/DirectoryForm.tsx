@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,7 +79,7 @@ export const DirectoryForm = ({ onContactAdded, existingContact }: DirectoryForm
   });
 
   // Update form data when existingContact changes
-  useState(() => {
+  useEffect(() => {
     if (existingContact) {
       setFormData({
         name: existingContact.name || "",
