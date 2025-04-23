@@ -1,388 +1,277 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import AppLayout from "@/components/layout/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import SportsChart from "@/components/dashboard/SportsChart";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataTable } from "@/components/shared/DataTable";
-import { collection, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
-import { useToast } from "@/components/ui/use-toast";
-import { useQuery } from "@tanstack/react-query";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PlusCircle } from "lucide-react";
+import { DataTable } from "@/components/shared/DataTable";
+import { SportsRecordForm } from "@/components/sports/SportsRecordForm";
+import { useToast } from "@/components/ui/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-interface SportsRecord {
-  id: string;
-  sport: string;
-  event: string;
-  score: number;
-  rank: string;
+export interface SportsRecord {
+  id?: string;
+  userId: string;
+  eventName: string;
+  eventType: string;
   date: string;
-  notes: string;
+  position: string;
+  venue: string;
+  achievement: string;
+  level: string;
+  coach: string;
+  notes?: string;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
-const sportsTypes = [
-  "Basketball",
-  "Soccer",
-  "Swimming",
-  "Tennis",
-  "Track & Field",
-  "Volleyball",
-  "Baseball",
-  "Badminton",
-  "Cricket",
-  "Hockey"
-];
-
-const rankOptions = [
-  "1st Place",
-  "2nd Place",
-  "3rd Place",
-  "Participation",
-  "Team MVP",
-  "Captain",
-  "Honorable Mention",
-  "Personal Best"
-];
-
-const mockRecords: SportsRecord[] = [
-  {
-    id: "sp1",
-    sport: "Basketball",
-    event: "School Tournament",
-    score: 28,
-    rank: "1st Place",
-    date: "2025-03-15",
-    notes: "Scored 28 points in the final game"
-  },
-  {
-    id: "sp2",
-    sport: "Swimming",
-    event: "Regional Meet",
-    score: 0,
-    rank: "2nd Place",
-    date: "2025-02-22",
-    notes: "100m freestyle"
-  },
-  {
-    id: "sp3",
-    sport: "Track & Field",
-    event: "District Championship",
-    score: 0,
-    rank: "3rd Place",
-    date: "2025-01-10",
-    notes: "Long jump competition"
-  }
-];
-
 const Sports = () => {
+  const [sportsRecords, setSportsRecords] = useState<SportsRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<SportsRecord | null>(null);
+  
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentRecordId, setCurrentRecordId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newRecord, setNewRecord] = useState({
-    sport: "",
-    event: "",
-    score: 0,
-    rank: "",
-    date: new Date().toISOString().split('T')[0],
-    notes: ""
-  });
 
-  // In a real app, this would fetch from Firebase
-  const { data: records = mockRecords, refetch } = useQuery({
-    queryKey: ["sportsRecords"],
-    queryFn: async () => {
-      // This would be replaced with actual Firebase query
-      return mockRecords;
-    },
-  });
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setNewRecord((prev) => ({ 
-      ...prev, 
-      [name]: name === "score" ? Number(value) : value 
-    }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setNewRecord((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const resetForm = () => {
-    setNewRecord({
-      sport: "",
-      event: "",
-      score: 0,
-      rank: "",
-      date: new Date().toISOString().split('T')[0],
-      notes: ""
-    });
-    setIsEditing(false);
-    setCurrentRecordId(null);
-  };
-
-  const handleEdit = (record: SportsRecord) => {
-    setIsEditing(true);
-    setCurrentRecordId(record.id);
-    setNewRecord({
-      sport: record.sport,
-      event: record.event,
-      score: record.score,
-      rank: record.rank,
-      date: record.date,
-      notes: record.notes
-    });
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = async (record: SportsRecord) => {
-    // This would delete from Firebase in a real app
-    toast({
-      title: "Record Deleted",
-      description: "The sports record has been deleted successfully."
-    });
-    // await refetch();
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  const fetchSportsRecords = async (userId: string) => {
     try {
-      // This would add/update record in Firebase in a real app
-      toast({
-        title: isEditing ? "Record Updated" : "Record Added",
-        description: `The sports record has been ${isEditing ? "updated" : "added"} successfully.`
+      setIsLoading(true);
+      const recordsRef = collection(db, "sportsRecords");
+      const q = query(recordsRef, where("userId", "==", userId));
+      const querySnapshot = await getDocs(q);
+      
+      const fetchedRecords: SportsRecord[] = [];
+      querySnapshot.forEach((doc) => {
+        fetchedRecords.push({ id: doc.id, ...doc.data() } as SportsRecord);
       });
       
-      resetForm();
-      setIsDialogOpen(false);
-      // await refetch();
+      setSportsRecords(fetchedRecords);
     } catch (error) {
-      console.error("Error saving sports record:", error);
+      console.error("Error fetching sports records:", error);
       toast({
-        title: "Error",
-        description: "Failed to save sports record",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to load sports records",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        navigate("/login");
+      } else {
+        fetchSportsRecords(user.uid);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  const handleAddRecord = async (record: SportsRecord) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "You must be logged in to add a record",
+        });
+        return;
+      }
+
+      const newRecord = {
+        ...record,
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      const docRef = await addDoc(collection(db, "sportsRecords"), newRecord);
+      
+      setSportsRecords([...sportsRecords, { ...newRecord, id: docRef.id }]);
+      
+      toast({
+        title: "Success",
+        description: "Sports record added successfully",
+      });
+      
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error("Error adding sports record:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add sports record",
+      });
+    }
+  };
+
+  const handleEditRecord = (record: SportsRecord) => {
+    setEditingRecord(record);
+    setIsFormOpen(true);
+  };
+
+  const handleUpdateRecord = async (updatedRecord: SportsRecord) => {
+    try {
+      if (!updatedRecord.id) {
+        throw new Error("Record ID is missing");
+      }
+
+      const recordRef = doc(db, "sportsRecords", updatedRecord.id);
+      
+      await updateDoc(recordRef, {
+        ...updatedRecord,
+        updatedAt: serverTimestamp(),
+      });
+
+      setSportsRecords(
+        sportsRecords.map((record) =>
+          record.id === updatedRecord.id ? updatedRecord : record
+        )
+      );
+
+      toast({
+        title: "Success",
+        description: "Sports record updated successfully",
+      });
+      
+      setIsFormOpen(false);
+      setEditingRecord(null);
+    } catch (error) {
+      console.error("Error updating sports record:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update sports record",
+      });
+    }
+  };
+
+  const handleDeleteRecord = async (record: SportsRecord) => {
+    try {
+      if (!record.id) {
+        throw new Error("Record ID is missing");
+      }
+
+      await deleteDoc(doc(db, "sportsRecords", record.id));
+      
+      setSportsRecords(sportsRecords.filter((r) => r.id !== record.id));
+      
+      toast({
+        title: "Success",
+        description: "Sports record deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting sports record:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete sports record",
+      });
+    }
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditingRecord(null);
   };
 
   const columns = [
     {
-      header: "Sport",
-      accessor: "sport" as keyof SportsRecord,
-      sortable: true,
+      header: "Event Name",
+      accessor: "eventName" as keyof SportsRecord,
     },
     {
-      header: "Event",
-      accessor: "event" as keyof SportsRecord,
-      sortable: true,
-    },
-    {
-      header: "Score/Points",
-      accessor: "score" as keyof SportsRecord,
-      render: (record: SportsRecord) => (
-        record.score > 0 ? record.score : "N/A"
-      ),
-      sortable: true,
-    },
-    {
-      header: "Rank/Position",
-      accessor: "rank" as keyof SportsRecord,
-      sortable: true,
-      render: (record: SportsRecord) => (
-        <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs inline-block">
-          {record.rank}
-        </div>
-      ),
+      header: "Event Type",
+      accessor: "eventType" as keyof SportsRecord,
     },
     {
       header: "Date",
       accessor: "date" as keyof SportsRecord,
-      sortable: true,
     },
     {
-      header: "Notes",
-      accessor: "notes" as keyof SportsRecord,
-      render: (record: SportsRecord) => (
-        <div className="truncate max-w-xs">{record.notes}</div>
-      ),
+      header: "Position/Result",
+      accessor: "position" as keyof SportsRecord,
+      render: (record: SportsRecord) => {
+        const position = record.position?.toLowerCase();
+        return (
+          <Badge 
+            variant={
+              position?.includes("1st") || position?.includes("gold") ? "success" : 
+              position?.includes("2nd") || position?.includes("silver") ? "secondary" :
+              position?.includes("3rd") || position?.includes("bronze") ? "warning" : 
+              "outline"
+            }
+          >
+            {record.position}
+          </Badge>
+        );
+      }
+    },
+    {
+      header: "Level",
+      accessor: "level" as keyof SportsRecord,
+    },
+    {
+      header: "Venue",
+      accessor: "venue" as keyof SportsRecord,
     },
   ];
 
   return (
-    <AppLayout title="Sports">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Sports Performance</h2>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-                Add Record
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {isEditing ? "Edit Sports Record" : "Add Sports Record"}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sport">Sport</Label>
-                  <Select
-                    value={newRecord.sport}
-                    onValueChange={(value) => handleSelectChange("sport", value)}
-                  >
-                    <SelectTrigger id="sport" className="w-full">
-                      <SelectValue placeholder="Select a sport" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sportsTypes.map((sport) => (
-                        <SelectItem key={sport} value={sport}>
-                          {sport}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="event">Event</Label>
-                  <Input
-                    id="event"
-                    name="event"
-                    value={newRecord.event}
-                    onChange={handleInputChange}
-                    placeholder="Tournament, Meet, etc."
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="score">Score/Points (optional)</Label>
-                    <Input
-                      id="score"
-                      name="score"
-                      type="number"
-                      value={newRecord.score}
-                      onChange={handleInputChange}
-                      placeholder="0"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="rank">Rank/Position</Label>
-                    <Select
-                      value={newRecord.rank}
-                      onValueChange={(value) => handleSelectChange("rank", value)}
-                    >
-                      <SelectTrigger id="rank" className="w-full">
-                        <SelectValue placeholder="Select rank" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {rankOptions.map((rank) => (
-                          <SelectItem key={rank} value={rank}>
-                            {rank}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    name="date"
-                    type="date"
-                    value={newRecord.date}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Input
-                    id="notes"
-                    name="notes"
-                    value={newRecord.notes}
-                    onChange={handleInputChange}
-                    placeholder="Additional details..."
-                  />
-                </div>
-                
-                <DialogFooter>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting 
-                      ? (isEditing ? "Updating..." : "Adding...") 
-                      : (isEditing ? "Update Record" : "Add Record")}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <Tabs defaultValue="chart">
-          <TabsList>
-            <TabsTrigger value="chart">Performance Chart</TabsTrigger>
-            <TabsTrigger value="records">Records</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="chart" className="mt-6">
-            <SportsChart />
-          </TabsContent>
-          
-          <TabsContent value="records" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sports Records</CardTitle>
-                <CardDescription>
-                  Track all your sports achievements and activities
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataTable
-                  data={records}
-                  columns={columns}
-                  searchable
-                  searchFields={["sport", "event", "rank", "notes"]}
-                  itemsPerPage={5}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  deleteDialogProps={{
-                    title: "Delete Sports Record",
-                    description: "Are you sure you want to delete this sports record? This action cannot be undone."
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+    <AppLayout title="Sports Records">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Sports Records</h1>
+        <Button onClick={() => setIsFormOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add New Record
+        </Button>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>My Sports Achievements</CardTitle>
+          <CardDescription>
+            Track and manage all your sports activities and achievements
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+            </div>
+          ) : (
+            <DataTable
+              data={sportsRecords}
+              columns={columns}
+              searchable={true}
+              searchFields={["eventName", "eventType", "venue", "level", "position"]}
+              onEdit={handleEditRecord}
+              onDelete={handleDeleteRecord}
+              deleteDialogProps={{
+                title: "Delete Sports Record",
+                description: "Are you sure you want to delete this sports record? This action cannot be undone.",
+              }}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      {isFormOpen && (
+        <SportsRecordForm
+          isOpen={isFormOpen}
+          onClose={closeForm}
+          onSubmit={editingRecord ? handleUpdateRecord : handleAddRecord}
+          initialData={editingRecord || undefined}
+        />
+      )}
     </AppLayout>
   );
 };

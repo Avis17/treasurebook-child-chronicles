@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Image, Calendar, Settings } from "lucide-react";
+import { Book, Image, Calendar, Award } from "lucide-react";
 
 interface SummaryCardProps {
   title: string;
@@ -8,6 +8,25 @@ interface SummaryCardProps {
   description: string;
   icon: React.ReactNode;
   className: string;
+}
+
+interface SummaryCardsProps {
+  academics: {
+    grade: string;
+    lastAssessment: string;
+  };
+  sports: {
+    events: number;
+    recent: string;
+  };
+  talents: {
+    count: number;
+    latest: string;
+  };
+  gallery: {
+    count: number;
+    lastUpdate: string;
+  };
 }
 
 const SummaryCard = ({ title, value, description, icon, className }: SummaryCardProps) => (
@@ -23,36 +42,36 @@ const SummaryCard = ({ title, value, description, icon, className }: SummaryCard
   </Card>
 );
 
-const SummaryCards = () => {
+const SummaryCards = ({ academics, sports, talents, gallery }: SummaryCardsProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       <SummaryCard
         title="Academics"
-        value="Grade A"
-        description="Last assessment: Mathematics"
+        value={academics.grade}
+        description={`Last assessment: ${academics.lastAssessment}`}
         icon={<Book className="h-4 w-4 text-treasure-blue" />}
-        className="card-academic"
+        className="border-blue-500"
       />
       <SummaryCard
         title="Sports"
-        value="3 Events"
-        description="Recent: Swimming competition"
+        value={`${sports.events} Events`}
+        description={`Recent: ${sports.recent}`}
         icon={<Calendar className="h-4 w-4 text-treasure-orange" />}
-        className="card-sports"
+        className="border-orange-500"
       />
       <SummaryCard
         title="Talents"
-        value="5 Skills"
-        description="Latest: Piano - Intermediate"
-        icon={<Settings className="h-4 w-4 text-treasure-green" />}
-        className="card-talents"
+        value={`${talents.count} Skills`}
+        description={`Latest: ${talents.latest}`}
+        icon={<Award className="h-4 w-4 text-treasure-green" />}
+        className="border-green-500"
       />
       <SummaryCard
         title="Gallery"
-        value="32 Photos"
-        description="Last update: 2 days ago"
+        value={`${gallery.count} Photos`}
+        description={`Last update: ${gallery.lastUpdate}`}
         icon={<Image className="h-4 w-4 text-gray-500" />}
-        className="card-health"
+        className="border-gray-500"
       />
     </div>
   );

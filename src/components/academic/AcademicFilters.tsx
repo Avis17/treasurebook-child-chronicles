@@ -91,7 +91,7 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
                   <SelectValue placeholder="Select year" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-700">
-                  <SelectItem value="">All Years</SelectItem>
+                  <SelectItem value="all">All Years</SelectItem>
                   {years.map((year) => (
                     <SelectItem key={year} value={year}>{year}</SelectItem>
                   ))}
@@ -109,7 +109,7 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
                   <SelectValue placeholder="Select term" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-700">
-                  <SelectItem value="">All Terms</SelectItem>
+                  <SelectItem value="all">All Terms</SelectItem>
                   <SelectItem value="1st Term">1st Term</SelectItem>
                   <SelectItem value="2nd Term">2nd Term</SelectItem>
                   <SelectItem value="3rd Term">3rd Term</SelectItem>
@@ -130,7 +130,7 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-700">
-                  <SelectItem value="">All Classes</SelectItem>
+                  <SelectItem value="all">All Classes</SelectItem>
                   <SelectItem value="Pre-KG">Pre-KG</SelectItem>
                   <SelectItem value="KG">KG</SelectItem>
                   <SelectItem value="Grade 1">Grade 1</SelectItem>
@@ -163,7 +163,7 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
                   <SelectValue placeholder="Select exam type" />
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-700">
-                  <SelectItem value="">All Exam Types</SelectItem>
+                  <SelectItem value="all">All Exam Types</SelectItem>
                   <SelectItem value="Unit Test">Unit Test</SelectItem>
                   <SelectItem value="Mid-Term">Mid-Term</SelectItem>
                   <SelectItem value="Final">Final</SelectItem>
