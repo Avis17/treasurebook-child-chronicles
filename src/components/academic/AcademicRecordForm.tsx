@@ -63,35 +63,57 @@ export const AcademicRecordForm = ({ onRecordAdded }: AcademicRecordFormProps) =
   };
 
   const handleAddRecord = async () => {
-    if (!auth.currentUser || !formData.subject) return;
+    if (!auth.currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to add records",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!formData.subject) {
+      toast({
+        title: "Error",
+        description: "Subject is required",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
-      const newRecord = createAcademicRecord({
+      const recordData = {
         ...formData,
         userId: auth.currentUser.uid,
-      });
+      };
       
-      onRecordAdded(newRecord);
+      const newRecord = await createAcademicRecord(recordData);
       
-      toast({
-        title: "Success",
-        description: "Academic record added",
-      });
-      
-      // Reset form to defaults
-      setFormData({
-        year: new Date().getFullYear().toString(),
-        term: "1st Term",
-        examType: "Unit Test",
-        class: "Pre-KG",
-        subject: "",
-        score: 0,
-        maxScore: 100,
-        remarks: "",
-        isPercentage: false,
-      });
-      
-      setIsAddDialogOpen(false);
+      if (newRecord) {
+        onRecordAdded(newRecord);
+        
+        toast({
+          title: "Success",
+          description: "Academic record added",
+        });
+        
+        // Reset form to defaults
+        setFormData({
+          year: new Date().getFullYear().toString(),
+          term: "1st Term",
+          examType: "Unit Test",
+          class: "Pre-KG",
+          subject: "",
+          score: 0,
+          maxScore: 100,
+          remarks: "",
+          isPercentage: false,
+        });
+        
+        setIsAddDialogOpen(false);
+      } else {
+        throw new Error("Failed to create record");
+      }
     } catch (error) {
       console.error("Error adding record:", error);
       toast({

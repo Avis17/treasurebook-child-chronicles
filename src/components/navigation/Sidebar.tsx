@@ -15,7 +15,9 @@ import {
   Sun, 
   Moon, 
   FileText, 
-  Users 
+  Users,
+  Trophy,
+  Award
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 
@@ -57,6 +59,8 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
   const navItems = [
     { name: "Dashboard", icon: <List className="w-5 h-5" />, path: "/dashboard" },
     { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
+    { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
+    { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
     { name: "Gallery", icon: <Image className="w-5 h-5" />, path: "/gallery" },
     { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
     { name: "Directory", icon: <Users className="w-5 h-5" />, path: "/directory" },

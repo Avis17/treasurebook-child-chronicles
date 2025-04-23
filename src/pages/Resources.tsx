@@ -1,349 +1,369 @@
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
-import { db, auth } from "@/lib/firebase";
-import AppLayout from "@/components/layout/AppLayout";
-import { useToast } from "@/components/ui/use-toast";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { DataTable } from "@/components/shared/DataTable";
-import { useQuery } from "@tanstack/react-query";
-import { ExternalLink } from "lucide-react";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
+import Sidebar from "@/components/navigation/Sidebar";
+import { List, Link, Star, Trash2, ExternalLink } from "lucide-react";
+import { ResourceForm } from "@/components/resources/ResourceForm";
+import { Resource, fetchResources, toggleResourceFavorite, deleteResource } from "@/lib/resource-service";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface Resource {
-  id: string;
-  title: string;
-  url: string;
-  description: string;
-  category: string;
-  createdAt: string;
-  createdBy: string;
-}
-
-// Predefined categories
-const resourceCategories = [
-  "Learning",
-  "Entertainment",
-  "Science",
-  "Reading",
-  "Math",
-  "Art",
-  "Music",
-  "Physical Education",
-  "Social Studies",
-  "Languages"
-];
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Resources = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeTab, setActiveTab] = useState("all");
+  
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentResourceId, setCurrentResourceId] = useState<string | null>(null);
-  const [newResource, setNewResource] = useState({
-    title: "",
-    url: "",
-    description: "",
-    category: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: resources = [], refetch } = useQuery({
-    queryKey: ["resources"],
-    queryFn: async () => {
-      try {
-        const resourcesCollection = collection(db, "resources");
-        const q = query(resourcesCollection, orderBy("createdAt", "desc"));
-        const querySnapshot = await getDocs(q);
-        
-        return querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Resource[];
-      } catch (error) {
-        console.error("Error fetching resources:", error);
-        return [];
-      }
-    },
-  });
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setNewResource((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (value: string) => {
-    setNewResource((prev) => ({ ...prev, category: value }));
-  };
-
-  const resetForm = () => {
-    setNewResource({
-      title: "",
-      url: "",
-      description: "",
-      category: "",
-    });
-    setIsEditing(false);
-    setCurrentResourceId(null);
-  };
-
-  const handleEdit = async (resource: Resource) => {
+  // Fetch resources from Firebase
+  const fetchUserResources = async (userId: string) => {
     try {
-      setIsEditing(true);
-      setCurrentResourceId(resource.id);
-      setNewResource({
-        title: resource.title,
-        url: resource.url,
-        description: resource.description,
-        category: resource.category,
-      });
-      setIsDialogOpen(true);
+      setLoading(true);
+      const fetchedResources = await fetchResources(userId);
+      setResources(fetchedResources);
     } catch (error) {
-      console.error("Error setting up edit:", error);
+      console.error("Error fetching resources:", error);
       toast({
-        title: "Error",
-        description: "Failed to prepare resource for editing",
         variant: "destructive",
+        title: "Error",
+        description: "Failed to load resources"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        navigate("/login");
+      } else {
+        fetchUserResources(user.uid);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  const handleResourceAdded = (newResource: Resource) => {
+    setResources([...resources, newResource]);
+  };
+
+  const handleToggleFavorite = async (resource: Resource) => {
+    const success = await toggleResourceFavorite(resource);
+    if (success) {
+      setResources(resources.map(r => 
+        r.id === resource.id ? { ...r, isFavorite: !r.isFavorite } : r
+      ));
+      
+      toast({
+        title: resource.isFavorite ? "Removed from favorites" : "Added to favorites",
+        description: `"${resource.title}" has been ${resource.isFavorite ? "removed from" : "added to"} favorites`,
       });
     }
   };
 
-  const handleDelete = async (resource: Resource) => {
-    try {
-      setIsDeleting(true);
-      await deleteDoc(doc(db, "resources", resource.id));
+  const handleDeleteResource = async (resource: Resource) => {
+    const success = await deleteResource(resource.id);
+    if (success) {
+      setResources(resources.filter(r => r.id !== resource.id));
+      
       toast({
         title: "Resource deleted",
-        description: "The resource has been successfully deleted",
+        description: `"${resource.title}" has been removed`,
       });
-      await refetch();
-    } catch (error) {
-      console.error("Error deleting resource:", error);
+    } else {
       toast({
+        variant: "destructive",
         title: "Error",
         description: "Failed to delete resource",
-        variant: "destructive",
       });
-    } finally {
-      setIsDeleting(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  // Extract unique categories
+  const categories = ["all", ...Array.from(new Set(resources.map(r => r.category)))];
 
-    try {
-      const user = auth.currentUser;
-      if (!user) throw new Error("User not authenticated");
-      
-      if (isEditing && currentResourceId) {
-        // Update existing resource
-        await updateDoc(doc(db, "resources", currentResourceId), {
-          ...newResource,
-          updatedAt: serverTimestamp(),
-        });
+  // Filter resources
+  const filteredResources = resources.filter(resource => {
+    const matchesSearch = searchTerm === "" || 
+      resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resource.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      resource.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesCategory = activeCategory === "all" || resource.category === activeCategory;
+    
+    const matchesTab = activeTab === "all" || 
+      (activeTab === "favorites" && resource.isFavorite);
+    
+    return matchesSearch && matchesCategory && matchesTab;
+  });
 
-        toast({
-          title: "Resource updated",
-          description: "Your resource has been successfully updated",
-        });
-      } else {
-        // Add new resource
-        await addDoc(collection(db, "resources"), {
-          ...newResource,
-          createdAt: serverTimestamp(),
-          createdBy: user.uid,
-        });
-
-        toast({
-          title: "Resource added",
-          description: "Your resource has been successfully added",
-        });
-      }
-      
-      resetForm();
-      setIsDialogOpen(false);
-      await refetch();
-    } catch (error) {
-      console.error("Error saving resource:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save resource",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+  const openResourceLink = (url: string) => {
+    let fullUrl = url;
+    if (!/^https?:\/\//i.test(url)) {
+      fullUrl = 'https://' + url;
     }
+    window.open(fullUrl, '_blank', 'noopener,noreferrer');
   };
-
-  const handleDialogClose = () => {
-    resetForm();
-    setIsDialogOpen(false);
-  };
-
-  const columns = [
-    {
-      header: "Title",
-      accessor: "title" as keyof Resource,
-      render: (resource: Resource) => (
-        <div className="font-medium">{resource.title}</div>
-      ),
-      sortable: true,
-    },
-    {
-      header: "Category",
-      accessor: "category" as keyof Resource,
-      render: (resource: Resource) => (
-        <div className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs inline-block">
-          {resource.category}
-        </div>
-      ),
-      sortable: true,
-    },
-    {
-      header: "Description",
-      accessor: "description" as keyof Resource,
-      render: (resource: Resource) => (
-        <div className="truncate max-w-xs">{resource.description}</div>
-      ),
-    },
-    {
-      header: "Link",
-      accessor: "url" as keyof Resource,
-      render: (resource: Resource) => (
-        <a
-          href={resource.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center text-blue-600 hover:underline"
-        >
-          <ExternalLink className="h-4 w-4 mr-1" />
-          Visit
-        </a>
-      ),
-    },
-  ];
 
   return (
-    <AppLayout title="Resources">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Educational Resources</h2>
-          <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-                Add Resource
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {isEditing ? "Edit Resource" : "Add New Resource"}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title</Label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={newResource.title}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="url">URL</Label>
-                  <Input
-                    id="url"
-                    name="url"
-                    type="url"
-                    value={newResource.url}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select
-                    value={newResource.category}
-                    onValueChange={handleSelectChange}
-                  >
-                    <SelectTrigger id="category" className="w-full">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {resourceCategories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={newResource.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                    required
-                  />
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting 
-                      ? (isEditing ? "Updating..." : "Adding...") 
-                      : (isEditing ? "Update Resource" : "Add Resource")}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      <Sidebar isMobile={isMobile} isOpen={isOpen} setIsOpen={setIsOpen} />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>All Resources</CardTitle>
-            <CardDescription>
-              A collection of educational resources for your child
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DataTable
-              data={resources}
-              columns={columns}
-              searchable
-              searchFields={["title", "description", "category"]}
-              itemsPerPage={5}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              deleteDialogProps={{
-                title: "Delete Resource",
-                description: "Are you sure you want to delete this resource? This action cannot be undone."
-              }}
-            />
-          </CardContent>
-        </Card>
+      <div className="flex-1 overflow-auto">
+        {isMobile && (
+          <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b shadow-sm z-10">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(true)}
+              >
+                <List className="h-6 w-6" />
+              </Button>
+              <h1 className="text-xl font-bold text-treasure-blue dark:text-blue-400">
+                TreasureBook
+              </h1>
+              <div className="w-6"></div>
+            </div>
+          </div>
+        )}
+
+        <main className="container mx-auto px-4 py-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+            <h1 className="text-2xl font-bold dark:text-white">Learning Resources</h1>
+            <div className="flex items-center space-x-2">
+              <ResourceForm onResourceAdded={handleResourceAdded} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            <Card className="dark:bg-gray-800">
+              <CardHeader>
+                <CardTitle className="dark:text-white">My Resources</CardTitle>
+                <CardDescription className="dark:text-gray-300">
+                  Organize and access your learning materials
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Search resources..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  <div className="w-full md:w-48">
+                    <Select value={activeCategory} onValueChange={setActiveCategory}>
+                      <SelectTrigger className="dark:bg-gray-700 dark:text-white">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-gray-700">
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category} className="capitalize">
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="all">All Resources</TabsTrigger>
+                    <TabsTrigger value="favorites">Favorites</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="all" className="mt-0">
+                    {loading ? (
+                      <div className="flex items-center justify-center py-10">
+                        <div className="animate-spin w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+                      </div>
+                    ) : filteredResources.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredResources.map((resource) => (
+                          <Card key={resource.id} className="dark:bg-gray-700">
+                            <CardHeader className="pb-2">
+                              <div className="flex justify-between items-start">
+                                <CardTitle className="text-lg dark:text-white">{resource.title}</CardTitle>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-yellow-500 dark:text-yellow-400"
+                                  onClick={() => handleToggleFavorite(resource)}
+                                >
+                                  <Star className={`h-5 w-5 ${resource.isFavorite ? 'fill-current' : ''}`} />
+                                </Button>
+                              </div>
+                              <CardDescription className="dark:text-gray-300">
+                                {resource.category}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="pb-2">
+                              <p className="text-sm dark:text-gray-300 line-clamp-2">
+                                {resource.description || "No description provided"}
+                              </p>
+                              {resource.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {resource.tags.map((tag, index) => (
+                                    <Badge key={index} variant="outline" className="dark:bg-gray-600 dark:text-white">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </CardContent>
+                            <CardFooter className="flex justify-between pt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="dark:bg-gray-600 dark:text-white"
+                                onClick={() => openResourceLink(resource.link)}
+                              >
+                                <Link className="h-4 w-4 mr-2" />
+                                Open
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteResource(resource)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10">
+                        <p className="text-gray-500 dark:text-gray-400">No resources found.</p>
+                        {(searchTerm || activeCategory !== "all") && (
+                          <Button
+                            variant="link"
+                            onClick={() => {
+                              setSearchTerm("");
+                              setActiveCategory("all");
+                            }}
+                            className="mt-2"
+                          >
+                            Clear filters
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="favorites" className="mt-0">
+                    {loading ? (
+                      <div className="flex items-center justify-center py-10">
+                        <div className="animate-spin w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+                      </div>
+                    ) : filteredResources.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredResources.map((resource) => (
+                          <Card key={resource.id} className="dark:bg-gray-700">
+                            <CardHeader className="pb-2">
+                              <div className="flex justify-between items-start">
+                                <CardTitle className="text-lg dark:text-white">{resource.title}</CardTitle>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-yellow-500 dark:text-yellow-400"
+                                  onClick={() => handleToggleFavorite(resource)}
+                                >
+                                  <Star className="h-5 w-5 fill-current" />
+                                </Button>
+                              </div>
+                              <CardDescription className="dark:text-gray-300">
+                                {resource.category}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="pb-2">
+                              <p className="text-sm dark:text-gray-300 line-clamp-2">
+                                {resource.description || "No description provided"}
+                              </p>
+                              {resource.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {resource.tags.map((tag, index) => (
+                                    <Badge key={index} variant="outline" className="dark:bg-gray-600 dark:text-white">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </CardContent>
+                            <CardFooter className="flex justify-between pt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="dark:bg-gray-600 dark:text-white"
+                                onClick={() => openResourceLink(resource.link)}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Open
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDeleteResource(resource)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </Button>
+                            </CardFooter>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-10">
+                        <p className="text-gray-500 dark:text-gray-400">No favorite resources found.</p>
+                        {(searchTerm || activeCategory !== "all") && (
+                          <Button
+                            variant="link"
+                            onClick={() => {
+                              setSearchTerm("");
+                              setActiveCategory("all");
+                            }}
+                            className="mt-2"
+                          >
+                            Clear filters
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
-    </AppLayout>
+    </div>
   );
 };
 

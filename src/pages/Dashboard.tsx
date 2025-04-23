@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import AppLayout from "@/components/layout/AppLayout";
 import ProfileHeader from "@/components/dashboard/ProfileHeader";
 import SummaryCards from "@/components/dashboard/SummaryCards";
@@ -69,108 +69,127 @@ const Dashboard = () => {
   }, [navigate]);
 
   const fetchDashboardData = async (userId: string) => {
-    // Fetch Academic Records
-    const academicQuery = query(
-      collection(db, "academicRecords"),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc"),
-      limit(10)
-    );
-    const academicSnapshot = await getDocs(academicQuery);
-    const academicRecords = academicSnapshot.docs.map(doc => doc.data());
-    
-    // Find the most recent academic record
-    let bestGrade = "N/A";
-    let lastAssessment = "None";
-    
-    if (academicRecords.length > 0) {
-      // Sort by date if available, otherwise just use the first one
-      const latestRecord = academicRecords[0]; // Already sorted by createdAt desc
-      bestGrade = latestRecord.grade || "N/A";
-      lastAssessment = latestRecord.subject || "None";
-    }
-
-    // Fetch Sports Records
-    const sportsQuery = query(
-      collection(db, "sportsRecords"),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc"),
-      limit(10)
-    );
-    const sportsSnapshot = await getDocs(sportsQuery);
-    const sportsRecords = sportsSnapshot.docs.map(doc => doc.data());
-    
-    let recentSport = "None";
-    if (sportsRecords.length > 0) {
-      recentSport = sportsRecords[0].eventName || "None"; // Already sorted by createdAt desc
-    }
-
-    // Fetch Extracurricular Records
-    const extraCurricularQuery = query(
-      collection(db, "extraCurricularRecords"),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc"),
-      limit(10)
-    );
-    const extraCurricularSnapshot = await getDocs(extraCurricularQuery);
-    const extraCurricularRecords = extraCurricularSnapshot.docs.map(doc => doc.data());
-    
-    let latestTalent = "None";
-    if (extraCurricularRecords.length > 0) {
-      latestTalent = `${extraCurricularRecords[0].activity || "Unknown"} - ${extraCurricularRecords[0].level || "Beginner"}`;
-    }
-
-    // Fetch Gallery Images Count
-    const galleryQuery = query(
-      collection(db, "gallery"),
-      where("userId", "==", userId)
-    );
-    const gallerySnapshot = await getDocs(galleryQuery);
-    const galleryCount = gallerySnapshot.size;
-    
-    let lastUpdate = "Never";
-    if (galleryCount > 0) {
-      // Create a sorted array of gallery items by createdAt
-      const galleryItems = gallerySnapshot.docs.map(doc => doc.data());
-      const sortedGallery = galleryItems.sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0;
-        return dateB - dateA;
-      });
+    try {
+      // Fetch Academic Records - removed orderBy to fix indexing issue
+      const academicQuery = query(
+        collection(db, "academicRecords"),
+        where("userId", "==", userId)
+      );
+      const academicSnapshot = await getDocs(academicQuery);
+      const academicRecords = academicSnapshot.docs.map(doc => doc.data());
       
-      if (sortedGallery[0].createdAt) {
-        const uploadDate = new Date(sortedGallery[0].createdAt.toDate());
-        const now = new Date();
-        const diffDays = Math.round((now.getTime() - uploadDate.getTime()) / (1000 * 60 * 60 * 24));
+      // Find the most recent academic record
+      let bestGrade = "N/A";
+      let lastAssessment = "None";
+      
+      if (academicRecords.length > 0) {
+        // Sort manually instead of using orderBy in the query
+        const sortedAcademicRecords = academicRecords.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0;
+          return dateB - dateA;
+        });
         
-        if (diffDays === 0) {
-          lastUpdate = "Today";
-        } else if (diffDays === 1) {
-          lastUpdate = "Yesterday";
-        } else {
-          lastUpdate = `${diffDays} days ago`;
+        const latestRecord = sortedAcademicRecords[0];
+        bestGrade = latestRecord.grade || "N/A";
+        lastAssessment = latestRecord.subject || "None";
+      }
+  
+      // Fetch Sports Records - removed orderBy to fix indexing issue
+      const sportsQuery = query(
+        collection(db, "sportsRecords"),
+        where("userId", "==", userId)
+      );
+      const sportsSnapshot = await getDocs(sportsQuery);
+      const sportsRecords = sportsSnapshot.docs.map(doc => doc.data());
+      
+      let recentSport = "None";
+      if (sportsRecords.length > 0) {
+        // Sort manually
+        const sortedSportsRecords = sportsRecords.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0;
+          return dateB - dateA;
+        });
+        
+        recentSport = sortedSportsRecords[0].eventName || "None";
+      }
+  
+      // Fetch Extracurricular Records - removed orderBy to fix indexing issue
+      const extraCurricularQuery = query(
+        collection(db, "extraCurricularRecords"),
+        where("userId", "==", userId)
+      );
+      const extraCurricularSnapshot = await getDocs(extraCurricularQuery);
+      const extraCurricularRecords = extraCurricularSnapshot.docs.map(doc => doc.data());
+      
+      let latestTalent = "None";
+      if (extraCurricularRecords.length > 0) {
+        // Sort manually
+        const sortedExtraCurricularRecords = extraCurricularRecords.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0;
+          return dateB - dateA;
+        });
+        
+        latestTalent = `${sortedExtraCurricularRecords[0].activity || "Unknown"} - ${sortedExtraCurricularRecords[0].level || "Beginner"}`;
+      }
+  
+      // Fetch Gallery Images Count
+      const galleryQuery = query(
+        collection(db, "gallery"),
+        where("userId", "==", userId)
+      );
+      const gallerySnapshot = await getDocs(galleryQuery);
+      const galleryCount = gallerySnapshot.size;
+      
+      let lastUpdate = "Never";
+      if (galleryCount > 0) {
+        // Create a sorted array of gallery items
+        const galleryItems = gallerySnapshot.docs.map(doc => doc.data());
+        const sortedGallery = galleryItems.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0;
+          return dateB - dateA;
+        });
+        
+        if (sortedGallery[0].createdAt) {
+          const uploadDate = new Date(sortedGallery[0].createdAt.toDate());
+          const now = new Date();
+          const diffDays = Math.round((now.getTime() - uploadDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (diffDays === 0) {
+            lastUpdate = "Today";
+          } else if (diffDays === 1) {
+            lastUpdate = "Yesterday";
+          } else {
+            lastUpdate = `${diffDays} days ago`;
+          }
         }
       }
+  
+      setDashboardStats({
+        academics: {
+          grade: bestGrade,
+          lastAssessment
+        },
+        sports: {
+          events: sportsRecords.length,
+          recent: recentSport
+        },
+        talents: {
+          count: extraCurricularRecords.length,
+          latest: latestTalent
+        },
+        gallery: {
+          count: galleryCount,
+          lastUpdate
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      throw error;
     }
-
-    setDashboardStats({
-      academics: {
-        grade: bestGrade,
-        lastAssessment
-      },
-      sports: {
-        events: sportsRecords.length,
-        recent: recentSport
-      },
-      talents: {
-        count: extraCurricularRecords.length,
-        latest: latestTalent
-      },
-      gallery: {
-        count: galleryCount,
-        lastUpdate
-      }
-    });
   };
 
   return (

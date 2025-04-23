@@ -21,7 +21,7 @@ const SportsChart = () => {
         const user = auth.currentUser;
         if (!user) return;
 
-        // Fetch sports records from Firebase
+        // Fetch sports records from Firebase - removing orderBy to avoid index error
         const sportsRef = collection(db, "sportsRecords");
         const q = query(sportsRef, where("userId", "==", user.uid));
         const querySnapshot = await getDocs(q);
