@@ -3,16 +3,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowUp, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, Search, Eye } from "lucide-react";
 import { AcademicRecord } from "@/lib/academic-service";
+import { RecordViewDialog } from "../shared/RecordViewDialog";
 
 interface AcademicTableProps {
   records: AcademicRecord[];
   hasActiveFilters: boolean;
   onClearFilters: () => void;
+  onEdit?: (item: AcademicRecord) => void; // for future extensibility
+  onDelete?: (item: AcademicRecord) => void; // for future extensibility
 }
 
-export const AcademicTable = ({ records, hasActiveFilters, onClearFilters }: AcademicTableProps) => {
+export const AcademicTable = ({
+  records,
+  hasActiveFilters,
+  onClearFilters,
+  onEdit,
+  onDelete,
+}: AcademicTableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{
     key: keyof AcademicRecord | null;
@@ -24,6 +33,10 @@ export const AcademicTable = ({ records, hasActiveFilters, onClearFilters }: Aca
   
   const [currentPage, setCurrentPage] = useState(1);
   const recordsPerPage = 10;
+
+  // For view dialog
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewRecord, setViewRecord] = useState<AcademicRecord | null>(null);
 
   // Filter records by search term
   const filteredRecords = records.filter((record) => {
@@ -75,7 +88,6 @@ export const AcademicTable = ({ records, hasActiveFilters, onClearFilters }: Aca
 
   const renderSortIcon = (columnKey: keyof AcademicRecord) => {
     if (sortConfig.key !== columnKey) return null;
-    
     return sortConfig.direction === "asc" ? (
       <ArrowUp className="inline-block ml-1 h-4 w-4" />
     ) : (
@@ -98,6 +110,25 @@ export const AcademicTable = ({ records, hasActiveFilters, onClearFilters }: Aca
         )}
       </div>
     );
+  }
+
+  // Map record fields for dialog
+  function getFields(record: AcademicRecord) {
+    return [
+      { label: "Class", value: record.class },
+      { label: "Year", value: record.year },
+      { label: "Term", value: record.term },
+      { label: "Subject", value: record.subject },
+      { label: "Exam Type", value: record.examType },
+      { label: "Score", value: record.isPercentage ? `${record.score}%` : `${record.score}/${record.maxScore}` },
+      { label: "Grade", value: record.grade },
+      { label: "Remarks", value: record.remarks },
+    ];
+  }
+
+  // Simple delete (you can wire up onDelete externally)
+  function handleDelete(record: AcademicRecord) {
+    if (onDelete) onDelete(record);
   }
 
   return (
@@ -157,6 +188,7 @@ export const AcademicTable = ({ records, hasActiveFilters, onClearFilters }: Aca
               <TableHead className="hidden md:table-cell dark:text-gray-300">
                 Remarks
               </TableHead>
+              <TableHead className="dark:text-gray-300">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -189,6 +221,40 @@ export const AcademicTable = ({ records, hasActiveFilters, onClearFilters }: Aca
                 </TableCell>
                 <TableCell className="hidden md:table-cell dark:text-gray-300">
                   {record.remarks}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {setViewRecord(record); setViewOpen(true);}}
+                      title="View details"
+                    >
+                      <Eye />
+                    </Button>
+                    {/* Example for delete, wire up onDelete for real action */}
+                    {onDelete && (
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDelete(record)}
+                        title="Delete"
+                      >
+                        🗑️
+                      </Button>
+                    )}
+                    {/* Example for edit, wire up onEdit for real action */}
+                    {onEdit && (
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={() => onEdit(record)}
+                        title="Edit"
+                      >
+                        ✏️
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -247,6 +313,16 @@ export const AcademicTable = ({ records, hasActiveFilters, onClearFilters }: Aca
           </div>
         </div>
       )}
+
+      {/* View dialog */}
+      <RecordViewDialog
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        record={viewRecord}
+        fields={viewRecord ? getFields(viewRecord) : []}
+        onEdit={onEdit && viewRecord ? () => { setViewOpen(false); onEdit(viewRecord); } : undefined}
+        editLabel="Edit"
+      />
     </div>
   );
 };

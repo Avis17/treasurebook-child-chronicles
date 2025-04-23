@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, ExternalLink } from "lucide-react";
+import { Search, ExternalLink, Eye, Edit, Trash2 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/components/ui/use-toast";
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { RecordViewDialog } from "../shared/RecordViewDialog";
 
 interface Contact {
   id: string;
@@ -43,6 +44,11 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const { toast } = useToast();
   const contactsPerPage = 8;
+
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewContact, setViewContact] = useState<Contact | null>(null);
+
+  const [editOpen, setEditOpen] = useState(false);
 
   const filteredContacts = contacts.filter((contact) => {
     const searchTermLower = searchTerm.toLowerCase();
@@ -100,6 +106,22 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
     window.open(fullUrl, '_blank', 'noopener,noreferrer');
   };
 
+  function getFields(contact: Contact) {
+    return [
+      { label: "Name", value: contact.name },
+      { label: "Relationship", value: contact.relationship },
+      { label: "Phone", value: contact.phone },
+      { label: "Email", value: contact.email },
+      { label: "Address", value: contact.address },
+      { label: "Notes", value: contact.notes },
+      { label: "Facebook", value: contact.facebook },
+      { label: "Twitter", value: contact.twitter },
+      { label: "Instagram", value: contact.instagram },
+      { label: "LinkedIn", value: contact.linkedin },
+      { label: "User ID", value: contact.userId },
+    ].filter(f => !!f.value);
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center">
@@ -122,7 +144,7 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
               <TableHead className="w-[150px] dark:text-gray-300">Relationship</TableHead>
               <TableHead className="dark:text-gray-300">Contact</TableHead>
               <TableHead className="hidden md:table-cell dark:text-gray-300">Social Media</TableHead>
-              <TableHead className="w-[100px] dark:text-gray-300">Actions</TableHead>
+              <TableHead className="w-[160px] dark:text-gray-300">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -195,13 +217,37 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => confirmDelete(contact)}
-                    >
-                      Delete
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setViewContact(contact);
+                          setViewOpen(true);
+                        }}
+                        title="View"
+                      >
+                        <Eye />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="icon"
+                        onClick={() => {
+                          setEditOpen(true);
+                        }}
+                        title="Edit"
+                      >
+                        <Edit />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => confirmDelete(contact)}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -294,6 +340,15 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RecordViewDialog
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        record={viewContact}
+        fields={viewContact ? getFields(viewContact) : []}
+        onEdit={undefined}
+        editLabel="Edit"
+      />
     </div>
   );
 };

@@ -5,6 +5,9 @@ import { ActionColumn } from "./ActionColumn";
 import { SearchBar } from "./data-table/SearchBar";
 import { TableHeader } from "./data-table/TableHeader";
 import { TablePagination } from "./data-table/TablePagination";
+import { Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RecordViewDialog } from "./RecordViewDialog";
 
 type SortDirection = "asc" | "desc" | null;
 
@@ -50,22 +53,34 @@ export function DataTable<T extends Record<string, any>>({
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredData, setFilteredData] = useState<T[]>(data);
 
+  // State for view modal
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewRecord, setViewRecord] = useState<T | null>(null);
+
   const allColumns: Column<T>[] = [
     ...columns,
-    ...(onEdit || onDelete
-      ? [{
-          header: "Actions",
-          accessor: "actions" as keyof T,
-          render: (item: T) => (
-            <ActionColumn
-              onEdit={onEdit ? () => onEdit(item) : undefined}
-              onDelete={onDelete ? () => onDelete(item) : undefined}
-              deleteDialogProps={deleteDialogProps}
-            />
-          ),
-          sortable: false,
-        }]
-      : []),
+    {
+      header: "Actions",
+      accessor: "actions" as keyof T,
+      render: (item: T) => (
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => { setViewRecord(item); setViewOpen(true); }}
+            title="View details"
+          >
+            <Eye />
+          </Button>
+          <ActionColumn
+            onEdit={onEdit ? () => onEdit(item) : undefined}
+            onDelete={onDelete ? () => onDelete(item) : undefined}
+            deleteDialogProps={deleteDialogProps}
+          />
+        </div>
+      ),
+      sortable: false,
+    },
   ];
 
   useEffect(() => {
@@ -119,6 +134,26 @@ export function DataTable<T extends Record<string, any>>({
     });
   };
 
+  // Build fields for dialog from columns and all props of item
+  function getFields(item: T) {
+    const fields: Array<{ label: string; value: React.ReactNode }> = [];
+    // Use columns first, then add any extra keys
+    const used = new Set();
+    columns.forEach(col => {
+      fields.push({
+        label: col.header,
+        value: col.render ? col.render(item) : String(item[col.accessor]),
+      });
+      used.add(col.accessor);
+    });
+    Object.keys(item).forEach((k) => {
+      if (!used.has(k)) {
+        fields.push({ label: k, value: String(item[k]) });
+      }
+    });
+    return fields;
+  }
+
   return (
     <div className="space-y-4">
       {searchable && searchFields && (
@@ -163,6 +198,15 @@ export function DataTable<T extends Record<string, any>>({
           onPageChange={setCurrentPage}
         />
       )}
+
+      <RecordViewDialog
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        record={viewRecord}
+        fields={viewRecord ? getFields(viewRecord) : []}
+        onEdit={onEdit && viewRecord ? () => { setViewOpen(false); onEdit(viewRecord); } : undefined}
+        editLabel="Edit"
+      />
     </div>
   );
 }
