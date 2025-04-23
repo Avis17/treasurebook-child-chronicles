@@ -23,18 +23,18 @@ export function RecordViewDialog<T>({
   // If Notes or Remarks is present, group for highlight
   let highlightFields: { label: string; value: React.ReactNode }[] = [];
 
-  // Keys to hide everywhere
+  // Keys to hide everywhere - added userId, createdAt, updatedAt to ensure they're hidden in ALL views
   const hideFields = ["createdAt", "updatedAt", "userId", "id"];
   const highlightKeys = ["notes", "remarks"];
 
   // Custom visible fields mapping (hiding unnecessary keys)
   const visibleFields = fields.filter((f) => {
-    const key = (f as any).rawKey || f.label?.replace(/\s/g, '').toLowerCase();
-    if (key && highlightKeys.some(hkey => key.includes(hkey))) {
+    const key = (f as any).rawKey || f.label?.toLowerCase().replace(/\s/g, '');
+    if (key && highlightKeys.some(hkey => key.toLowerCase().includes(hkey))) {
       highlightFields.push(f);
       return false;
     }
-    return !hideFields.includes(key);
+    return !hideFields.some(hideKey => key && key.toLowerCase().includes(hideKey.toLowerCase()));
   });
 
   return (
@@ -71,7 +71,8 @@ export function RecordViewDialog<T>({
                     fontSize: '1.05rem',
                     background: 'rgba(30,64,175,0.06)',
                     borderRadius: '6px',
-                    padding: '0.25rem 0.5rem'
+                    padding: '0.75rem 1rem',
+                    margin: '0.25rem 0'
                   }}
                 >
                   {typeof field.value === "string" && !field.value.trim()

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RecordViewDialog } from "../shared/RecordViewDialog";
+import { DirectoryForm } from "./DirectoryForm";
 
 interface Contact {
   id: string;
@@ -49,6 +51,7 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
   const [viewContact, setViewContact] = useState<Contact | null>(null);
 
   const [editOpen, setEditOpen] = useState(false);
+  const [contactToEdit, setContactToEdit] = useState<Contact | null>(null);
 
   const filteredContacts = contacts.filter((contact) => {
     const searchTermLower = searchTerm.toLowerCase();
@@ -89,6 +92,21 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
     }
   };
 
+  const handleEditContact = (contact: Contact) => {
+    setContactToEdit(contact);
+    setEditOpen(true);
+  };
+
+  const handleContactUpdated = () => {
+    setEditOpen(false);
+    setContactToEdit(null);
+    onContactDeleted(); // Refetch contacts after update
+    toast({
+      title: "Contact updated",
+      description: "The contact has been updated successfully.",
+    });
+  };
+
   const confirmDelete = (contact: Contact) => {
     setContactToDelete(contact);
     setDeleteDialogOpen(true);
@@ -118,7 +136,6 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
       { label: "Twitter", value: contact.twitter },
       { label: "Instagram", value: contact.instagram },
       { label: "LinkedIn", value: contact.linkedin },
-      { label: "User ID", value: contact.userId },
     ].filter(f => !!f.value);
   }
 
@@ -227,17 +244,15 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
                         }}
                         title="View"
                       >
-                        <Eye />
+                        <Eye className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="secondary"
                         size="icon"
-                        onClick={() => {
-                          setEditOpen(true);
-                        }}
+                        onClick={() => handleEditContact(contact)}
                         title="Edit"
                       >
-                        <Edit />
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="destructive"
@@ -262,6 +277,7 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
         </Table>
       </div>
 
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4">
           <div className="text-sm text-muted-foreground dark:text-gray-400">
@@ -315,6 +331,7 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
         </div>
       )}
 
+      {/* Delete confirmation dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="dark:bg-gray-800">
           <DialogHeader>
@@ -341,12 +358,23 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
         </DialogContent>
       </Dialog>
 
+      {/* Edit contact dialog */}
+      {contactToEdit && (
+        <DirectoryForm 
+          isOpen={editOpen} 
+          onOpenChange={setEditOpen}
+          onContactAdded={handleContactUpdated}
+          existingContact={contactToEdit}
+        />
+      )}
+
+      {/* View contact dialog */}
       <RecordViewDialog
         open={viewOpen}
         onOpenChange={setViewOpen}
         record={viewContact}
         fields={viewContact ? getFields(viewContact) : []}
-        onEdit={undefined}
+        onEdit={viewContact ? () => handleEditContact(viewContact) : undefined}
         editLabel="Edit"
       />
     </div>

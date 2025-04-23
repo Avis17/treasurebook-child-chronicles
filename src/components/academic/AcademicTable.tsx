@@ -6,6 +6,17 @@ import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, Search, Eye, Edit2, Trash } from "lucide-react";
 import { AcademicRecord } from "@/lib/academic-service";
 import { RecordViewDialog } from "../shared/RecordViewDialog";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface AcademicTableProps {
   records: AcademicRecord[];
@@ -35,6 +46,10 @@ export const AcademicTable = ({
   const recordsPerPage = 10;
   const [viewOpen, setViewOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState<AcademicRecord | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<AcademicRecord | null>(null);
+  
+  const { toast } = useToast();
 
   const filteredRecords = records.filter((record) => {
     const searchTermLower = searchTerm.toLowerCase();
@@ -87,6 +102,23 @@ export const AcademicTable = ({
     );
   };
 
+  const confirmDelete = (record: AcademicRecord) => {
+    setRecordToDelete(record);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (recordToDelete && onDelete) {
+      onDelete(recordToDelete);
+      setDeleteDialogOpen(false);
+      setRecordToDelete(null);
+      toast({
+        title: "Record deleted",
+        description: "The academic record has been deleted successfully.",
+      });
+    }
+  };
+
   if (records.length === 0) {
     return (
       <div className="text-center py-10">
@@ -116,11 +148,10 @@ export const AcademicTable = ({
       { label: "Grade", value: record.grade, rawKey: "grade" },
       { label: "Remarks", value: record.remarks ?? "", rawKey: "remarks" },
       { label: "Notes", value: record.notes ?? "", rawKey: "notes" },
+      { label: "Created At", value: record.createdAt ? new Date(record.createdAt).toLocaleString() : "", rawKey: "createdAt" },
+      { label: "Updated At", value: record.updatedAt ? new Date(record.updatedAt).toLocaleString() : "", rawKey: "updatedAt" },
+      { label: "User ID", value: record.userId ?? "", rawKey: "userId" },
     ];
-  }
-
-  function handleDelete(record: AcademicRecord) {
-    if (onDelete) onDelete(record);
   }
 
   return (
@@ -190,18 +221,8 @@ export const AcademicTable = ({
                       onClick={() => {setViewRecord(record); setViewOpen(true);}}
                       title="View details"
                     >
-                      <Eye />
+                      <Eye className="h-4 w-4" />
                     </Button>
-                    {onDelete && (
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => handleDelete(record)}
-                        title="Delete"
-                      >
-                        <Trash />
-                      </Button>
-                    )}
                     {onEdit && (
                       <Button
                         variant="secondary"
@@ -209,7 +230,17 @@ export const AcademicTable = ({
                         onClick={() => onEdit(record)}
                         title="Edit"
                       >
-                        <Edit2 />
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => confirmDelete(record)}
+                        title="Delete"
+                      >
+                        <Trash className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
@@ -278,6 +309,24 @@ export const AcademicTable = ({
         onEdit={onEdit && viewRecord ? () => { setViewOpen(false); onEdit(viewRecord); } : undefined}
         editLabel="Edit"
       />
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this academic record.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
