@@ -85,7 +85,10 @@ const Directory = () => {
   }, [navigate]);
 
   const handleContactAdded = (newContact: Contact) => {
-    setContacts([...contacts, newContact]);
+    // Refetch the contacts list after a contact is added or updated
+    if (auth.currentUser) {
+      fetchContacts(auth.currentUser.uid);
+    }
   };
 
   const handleContactDeleted = () => {
@@ -140,6 +143,7 @@ const Directory = () => {
                 <DirectoryTable 
                   contacts={contacts}
                   onContactDeleted={handleContactDeleted}
+                  onContactUpdated={handleContactAdded}
                 />
               )}
             </CardContent>
