@@ -1,5 +1,7 @@
 
 import { v4 as uuidv4 } from "uuid";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, deleteDoc, doc, updateDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 
 export interface AcademicRecord {
   id: string;
@@ -14,6 +16,8 @@ export interface AcademicRecord {
   remarks: string;
   isPercentage: boolean;
   userId: string;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 // Helper function to calculate grade based on score
@@ -30,27 +34,93 @@ export const calculateGrade = (score: number, maxScore: number, isPercentage: bo
   return "F";
 };
 
-// Function to create a new academic record
-export const createAcademicRecord = (
-  data: Omit<AcademicRecord, "id" | "grade">, 
-): AcademicRecord => {
-  const grade = calculateGrade(data.score, data.maxScore, data.isPercentage);
-  
-  const record: AcademicRecord = {
-    id: uuidv4(),
-    grade,
-    ...data,
-  };
-  
-  return record;
+// Function to create and save a new academic record to Firebase
+export const createAcademicRecord = async (
+  data: Omit<AcademicRecord, "id" | "grade" | "createdAt" | "updatedAt">, 
+): Promise<AcademicRecord | null> => {
+  try {
+    const grade = calculateGrade(data.score, data.maxScore, data.isPercentage);
+    
+    const recordData = {
+      ...data,
+      grade,
+      id: uuidv4(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    
+    const docRef = await addDoc(collection(db, "academicRecords"), recordData);
+    
+    return {
+      ...recordData,
+      id: docRef.id
+    };
+  } catch (error) {
+    console.error("Error creating academic record:", error);
+    return null;
+  }
 };
 
-// Function to save academic records to localStorage
+// Function to update an academic record
+export const updateAcademicRecord = async (record: AcademicRecord): Promise<boolean> => {
+  try {
+    const { id, ...data } = record;
+    
+    await updateDoc(doc(db, "academicRecords", id), {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error("Error updating academic record:", error);
+    return false;
+  }
+};
+
+// Function to delete an academic record
+export const deleteAcademicRecord = async (id: string): Promise<boolean> => {
+  try {
+    await deleteDoc(doc(db, "academicRecords", id));
+    return true;
+  } catch (error) {
+    console.error("Error deleting academic record:", error);
+    return false;
+  }
+};
+
+// Function to fetch all academic records for a user
+export const fetchAcademicRecords = async (userId: string): Promise<AcademicRecord[]> => {
+  try {
+    const recordsQuery = query(
+      collection(db, "academicRecords"),
+      where("userId", "==", userId)
+    );
+    
+    const querySnapshot = await getDocs(recordsQuery);
+    
+    const records: AcademicRecord[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      records.push({
+        ...data,
+        id: doc.id,
+      } as AcademicRecord);
+    });
+    
+    return records;
+  } catch (error) {
+    console.error("Error fetching academic records:", error);
+    return [];
+  }
+};
+
+// For backward compatibility
 export const saveAcademicRecords = (records: AcademicRecord[]): void => {
   localStorage.setItem('academicRecords', JSON.stringify(records));
 };
 
-// Function to load academic records from localStorage
+// For backward compatibility
 export const loadAcademicRecords = (): AcademicRecord[] => {
   const records = localStorage.getItem('academicRecords');
   return records ? JSON.parse(records) : [];
@@ -67,10 +137,10 @@ export const filterAcademicRecords = (
   }
 ): AcademicRecord[] => {
   return records.filter(record => {
-    if (filters.year && record.year !== filters.year) return false;
-    if (filters.term && record.term !== filters.term) return false;
-    if (filters.class && record.class !== filters.class) return false;
-    if (filters.examType && record.examType !== filters.examType) return false;
+    if (filters.year && filters.year !== 'all' && record.year !== filters.year) return false;
+    if (filters.term && filters.term !== 'all' && record.term !== filters.term) return false;
+    if (filters.class && filters.class !== 'all' && record.class !== filters.class) return false;
+    if (filters.examType && filters.examType !== 'all' && record.examType !== filters.examType) return false;
     return true;
   });
 };

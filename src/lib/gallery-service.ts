@@ -1,7 +1,8 @@
+
 import { toast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { db, storage } from "@/lib/firebase";
-import { collection, addDoc, deleteDoc, doc, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, deleteDoc, doc, query, where, getDocs, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 export interface GalleryItem {
@@ -13,7 +14,7 @@ export interface GalleryItem {
   userId: string;
 }
 
-// Upload a gallery image to Firebase storage with 1MB limit
+// Upload a gallery image to Firebase storage
 export const uploadGalleryImage = async (
   userId: string, 
   file: File,
@@ -21,11 +22,11 @@ export const uploadGalleryImage = async (
   category: string
 ): Promise<GalleryItem | null> => {
   try {
-    // Check file size (1MB limit)
-    if (file.size > 1024 * 1024) {
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "Error",
-        description: "File size must be less than 1MB",
+        description: "File size must be less than 5MB",
         variant: "destructive",
       });
       return null;
@@ -52,7 +53,10 @@ export const uploadGalleryImage = async (
     };
     
     // Save metadata to Firestore
-    await addDoc(collection(db, "gallery"), newItem);
+    await addDoc(collection(db, "gallery"), {
+      ...newItem,
+      createdAt: serverTimestamp()
+    });
     
     return newItem;
   } catch (error) {

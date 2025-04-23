@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs, limit } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
 import AppLayout from "@/components/layout/AppLayout";
 import ProfileHeader from "@/components/dashboard/ProfileHeader";
 import SummaryCards from "@/components/dashboard/SummaryCards";
@@ -73,6 +73,7 @@ const Dashboard = () => {
     const academicQuery = query(
       collection(db, "academicRecords"),
       where("userId", "==", userId),
+      orderBy("createdAt", "desc"),
       limit(10)
     );
     const academicSnapshot = await getDocs(academicQuery);
@@ -84,13 +85,7 @@ const Dashboard = () => {
     
     if (academicRecords.length > 0) {
       // Sort by date if available, otherwise just use the first one
-      const sortedRecords = [...academicRecords].sort((a, b) => {
-        const dateA = a.date ? new Date(a.date).getTime() : 0;
-        const dateB = b.date ? new Date(b.date).getTime() : 0;
-        return dateB - dateA;
-      });
-      
-      const latestRecord = sortedRecords[0];
+      const latestRecord = academicRecords[0]; // Already sorted by createdAt desc
       bestGrade = latestRecord.grade || "N/A";
       lastAssessment = latestRecord.subject || "None";
     }
@@ -99,6 +94,7 @@ const Dashboard = () => {
     const sportsQuery = query(
       collection(db, "sportsRecords"),
       where("userId", "==", userId),
+      orderBy("createdAt", "desc"),
       limit(10)
     );
     const sportsSnapshot = await getDocs(sportsQuery);
@@ -106,18 +102,14 @@ const Dashboard = () => {
     
     let recentSport = "None";
     if (sportsRecords.length > 0) {
-      const sortedSports = [...sportsRecords].sort((a, b) => {
-        const dateA = a.date ? new Date(a.date).getTime() : 0;
-        const dateB = b.date ? new Date(b.date).getTime() : 0;
-        return dateB - dateA;
-      });
-      recentSport = sortedSports[0].eventName || "None";
+      recentSport = sportsRecords[0].eventName || "None"; // Already sorted by createdAt desc
     }
 
     // Fetch Extracurricular Records
     const extraCurricularQuery = query(
       collection(db, "extraCurricularRecords"),
       where("userId", "==", userId),
+      orderBy("createdAt", "desc"),
       limit(10)
     );
     const extraCurricularSnapshot = await getDocs(extraCurricularQuery);
@@ -125,12 +117,7 @@ const Dashboard = () => {
     
     let latestTalent = "None";
     if (extraCurricularRecords.length > 0) {
-      const sortedExtra = [...extraCurricularRecords].sort((a, b) => {
-        const dateA = a.date ? new Date(a.date).getTime() : 0;
-        const dateB = b.date ? new Date(b.date).getTime() : 0;
-        return dateB - dateA;
-      });
-      latestTalent = `${sortedExtra[0].activity || "Unknown"} - ${sortedExtra[0].level || "Beginner"}`;
+      latestTalent = `${extraCurricularRecords[0].activity || "Unknown"} - ${extraCurricularRecords[0].level || "Beginner"}`;
     }
 
     // Fetch Gallery Images Count
@@ -143,14 +130,16 @@ const Dashboard = () => {
     
     let lastUpdate = "Never";
     if (galleryCount > 0) {
-      const sortedGallery = [...gallerySnapshot.docs].sort((a, b) => {
-        const dateA = a.data().uploadDate ? new Date(a.data().uploadDate).getTime() : 0;
-        const dateB = b.data().uploadDate ? new Date(b.data().uploadDate).getTime() : 0;
+      // Create a sorted array of gallery items by createdAt
+      const galleryItems = gallerySnapshot.docs.map(doc => doc.data());
+      const sortedGallery = galleryItems.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0;
         return dateB - dateA;
       });
       
-      if (sortedGallery[0].data().uploadDate) {
-        const uploadDate = new Date(sortedGallery[0].data().uploadDate);
+      if (sortedGallery[0].createdAt) {
+        const uploadDate = new Date(sortedGallery[0].createdAt.toDate());
         const now = new Date();
         const diffDays = Math.round((now.getTime() - uploadDate.getTime()) / (1000 * 60 * 60 * 24));
         
