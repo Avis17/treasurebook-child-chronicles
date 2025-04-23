@@ -13,14 +13,9 @@ const LoginPage = () => {
     if (currentUser) {
       if (currentUser.verificationStatus === VERIFICATION_STATUS.APPROVED) {
         navigate('/dashboard');
-      } else if (
-        currentUser.verificationStatus === VERIFICATION_STATUS.PENDING ||
-        currentUser.verificationStatus === VERIFICATION_STATUS.REJECTED
-      ) {
-        navigate('/verification-pending');
       } else {
-        // For users without a verification status yet (legacy users)
-        navigate('/dashboard');
+        // Any user that isn't approved goes to verification pending page
+        navigate('/verification-pending');
       }
     }
   }, [currentUser, navigate]);

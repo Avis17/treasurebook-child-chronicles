@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import { VERIFICATION_STATUS } from '@/lib/constants';
+import { ADMIN_EMAIL, VERIFICATION_STATUS } from '@/lib/constants';
 
 export interface AuthUser extends User {
   verificationStatus?: string;
@@ -38,18 +38,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const userData = userDoc.data();
             const enhancedUser = {
               ...user,
-              verificationStatus: userData.verificationStatus,
+              verificationStatus: userData.verificationStatus || VERIFICATION_STATUS.PENDING, // Default to PENDING if not set
             };
             setCurrentUser(enhancedUser);
-            setIsAdmin(user.email === 'ashrav.siva@gmail.com');
+            setIsAdmin(user.email === ADMIN_EMAIL);
           } else {
-            setCurrentUser(user);
-            setIsAdmin(user.email === 'ashrav.siva@gmail.com');
+            // If user document doesn't exist yet, set default values
+            setCurrentUser({
+              ...user,
+              verificationStatus: VERIFICATION_STATUS.PENDING
+            });
+            setIsAdmin(user.email === ADMIN_EMAIL);
           }
         } catch (error) {
           console.error("Error fetching user data", error);
-          setCurrentUser(user);
-          setIsAdmin(user.email === 'ashrav.siva@gmail.com');
+          setCurrentUser({
+            ...user,
+            verificationStatus: VERIFICATION_STATUS.PENDING
+          });
+          setIsAdmin(user.email === ADMIN_EMAIL);
         }
       } else {
         setCurrentUser(null);

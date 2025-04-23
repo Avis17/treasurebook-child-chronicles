@@ -14,9 +14,8 @@ const PrivateRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Check verification status
-  if (currentUser.verificationStatus === VERIFICATION_STATUS.PENDING ||
-      currentUser.verificationStatus === VERIFICATION_STATUS.REJECTED) {
+  // Strict check for verification status
+  if (currentUser.verificationStatus !== VERIFICATION_STATUS.APPROVED) {
     return <Navigate to="/verification-pending" replace />;
   }
 

@@ -9,6 +9,7 @@ const AdminRoute = () => {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
+  // Only allow the verified admin user to access admin routes
   if (!currentUser || !isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }

@@ -2,13 +2,17 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { auth } from '@/lib/firebase';
+import { signOut } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { VERIFICATION_STATUS } from '@/lib/constants';
+import { useToast } from '@/components/ui/use-toast';
 
 const VerificationPending = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!currentUser) {
@@ -18,13 +22,25 @@ const VerificationPending = () => {
 
     if (currentUser.verificationStatus === VERIFICATION_STATUS.APPROVED) {
       navigate('/dashboard');
-    } else if (currentUser.verificationStatus === VERIFICATION_STATUS.REJECTED) {
-      // We'll handle rejected users on this same page
     }
   }, [currentUser, navigate]);
 
-  const handleLogout = () => {
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out"
+      });
+      navigate('/login');
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!currentUser) {
