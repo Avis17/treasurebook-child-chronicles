@@ -6,7 +6,7 @@ import { auth } from '@/lib/firebase';
 import { signOut } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { VERIFICATION_STATUS } from '@/lib/constants';
+import { VERIFICATION_STATUS, ADMIN_EMAIL } from '@/lib/constants';
 import { useToast } from '@/components/ui/use-toast';
 
 const VerificationPending = () => {
@@ -17,6 +17,12 @@ const VerificationPending = () => {
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
+      return;
+    }
+
+    // Allow admin to bypass verification check
+    if (currentUser.email === ADMIN_EMAIL) {
+      navigate('/dashboard');
       return;
     }
 

@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import LoginForm from '@/components/auth/LoginForm';
-import { VERIFICATION_STATUS } from '@/lib/constants';
+import { VERIFICATION_STATUS, ADMIN_EMAIL } from '@/lib/constants';
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -11,10 +11,16 @@ const LoginPage = () => {
 
   useEffect(() => {
     if (currentUser) {
+      // Always allow admin to access dashboard regardless of verification status
+      if (currentUser.email === ADMIN_EMAIL) {
+        navigate('/dashboard');
+        return;
+      }
+      
       if (currentUser.verificationStatus === VERIFICATION_STATUS.APPROVED) {
         navigate('/dashboard');
       } else {
-        // Any user that isn't approved goes to verification pending page
+        // Any non-admin user that isn't approved goes to verification pending page
         navigate('/verification-pending');
       }
     }
