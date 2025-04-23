@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -32,7 +31,7 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
-  const { isAdmin } = useAuth();
+  const { isAdmin, currentUser } = useAuth();
   
   const handleLogout = async () => {
     try {
@@ -58,7 +57,6 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
     }
   };
 
-  // Base navigation items available to all verified users
   const baseNavItems = [
     { name: "Dashboard", icon: <List className="w-5 h-5" />, path: "/dashboard" },
     { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
@@ -71,14 +69,13 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
     { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
   ];
   
-  // Admin-only navigation items
   const adminNavItems = [
     { name: "User Management", icon: <Users className="w-5 h-5" />, path: "/users" }
   ];
   
-  // Combine nav items based on user role
-  const navItems = isAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
-  
+  const showAdmin = currentUser && currentUser.email === "ashrav.siva@gmail.com";
+  const navItems = showAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
+
   return (
     <div 
       className={`${
