@@ -1,11 +1,9 @@
-
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, ExternalLink } from "lucide-react";
-import { Collection } from "@/components/ui/collection";
 import { db } from "@/lib/firebase";
 import { doc, deleteDoc } from "firebase/firestore";
 import { useToast } from "@/components/ui/use-toast";
@@ -46,7 +44,6 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
   const { toast } = useToast();
   const contactsPerPage = 8;
 
-  // Filter contacts by search term
   const filteredContacts = contacts.filter((contact) => {
     const searchTermLower = searchTerm.toLowerCase();
     return (
@@ -57,7 +54,6 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
     );
   });
 
-  // Paginate contacts
   const indexOfLastContact = currentPage * contactsPerPage;
   const indexOfFirstContact = indexOfLastContact - contactsPerPage;
   const currentContacts = filteredContacts.slice(indexOfFirstContact, indexOfLastContact);
@@ -97,7 +93,6 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
   };
   
   const openSocialLink = (url: string) => {
-    // Add https:// if not present
     let fullUrl = url;
     if (!/^https?:\/\//i.test(url)) {
       fullUrl = 'https://' + url;
@@ -221,7 +216,6 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
         </Table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4">
           <div className="text-sm text-muted-foreground dark:text-gray-400">
@@ -275,7 +269,6 @@ export const DirectoryTable = ({ contacts, onContactDeleted }: DirectoryTablePro
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="dark:bg-gray-800">
           <DialogHeader>
