@@ -1,22 +1,29 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 import LoginForm from '@/components/auth/LoginForm';
+import { VERIFICATION_STATUS } from '@/lib/constants';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
+    if (currentUser) {
+      if (currentUser.verificationStatus === VERIFICATION_STATUS.APPROVED) {
+        navigate('/dashboard');
+      } else if (
+        currentUser.verificationStatus === VERIFICATION_STATUS.PENDING ||
+        currentUser.verificationStatus === VERIFICATION_STATUS.REJECTED
+      ) {
+        navigate('/verification-pending');
+      } else {
+        // For users without a verification status yet (legacy users)
         navigate('/dashboard');
       }
-    });
-
-    return () => unsubscribe();
-  }, [navigate]);
+    }
+  }, [currentUser, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">

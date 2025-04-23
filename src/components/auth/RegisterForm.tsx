@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
+import { VERIFICATION_STATUS } from '@/lib/constants';
 
 const RegisterForm = () => {
   const [email, setEmail] = useState('');
@@ -34,6 +35,7 @@ const RegisterForm = () => {
         displayName: childName,
       });
 
+      // Add user profile to Firestore
       await setDoc(doc(db, 'profiles', user.uid), {
         childName: childName,
         email: email,
@@ -42,11 +44,20 @@ const RegisterForm = () => {
         photoURL: '',
       });
 
+      // Add user to users collection with verification status
+      await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        email: email,
+        displayName: childName,
+        createdAt: new Date(),
+        verificationStatus: VERIFICATION_STATUS.PENDING,
+      });
+
       toast({
         title: "Registration successful",
-        description: "Welcome to TreasureBook!",
+        description: "Your account is pending verification. Please wait for admin approval.",
       });
-      navigate('/dashboard');
+      navigate('/verification-pending');
     } catch (error: any) {
       console.error(error);
       setError(error.message || 'Failed to register. Please try again.');

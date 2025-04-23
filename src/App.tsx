@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/providers/ThemeProvider";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -19,35 +20,50 @@ import Directory from "./pages/Directory";
 import Sports from "./pages/Sports";
 import Extracurricular from "./pages/Extracurricular";
 import NotFound from "./pages/NotFound";
+import UsersManagement from "./pages/UsersManagement";
+import VerificationPending from "./pages/VerificationPending";
+import PrivateRoute from "./components/auth/PrivateRoute";
+import AdminRoute from "./components/auth/AdminRoute";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LoginPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/academics" element={<AcademicRecords />} />
-            <Route path="/sports" element={<Sports />} />
-            <Route path="/extracurricular" element={<Extracurricular />} />
-            <Route path="/gallery" element={<Gallery />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/resources" element={<Resources />} />
-            <Route path="/directory" element={<Directory />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<LoginPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/verification-pending" element={<VerificationPending />} />
+              
+              <Route element={<PrivateRoute />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/academics" element={<AcademicRecords />} />
+                <Route path="/sports" element={<Sports />} />
+                <Route path="/extracurricular" element={<Extracurricular />} />
+                <Route path="/gallery" element={<Gallery />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/resources" element={<Resources />} />
+                <Route path="/directory" element={<Directory />} />
+              </Route>
+              
+              <Route element={<AdminRoute />}>
+                <Route path="/users" element={<UsersManagement />} />
+              </Route>
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

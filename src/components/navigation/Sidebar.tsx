@@ -20,6 +20,7 @@ import {
   Award
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   isMobile: boolean;
@@ -31,6 +32,7 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
+  const { isAdmin } = useAuth();
   
   const handleLogout = async () => {
     try {
@@ -56,7 +58,8 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
     }
   };
 
-  const navItems = [
+  // Base navigation items available to all verified users
+  const baseNavItems = [
     { name: "Dashboard", icon: <List className="w-5 h-5" />, path: "/dashboard" },
     { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
     { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
@@ -67,6 +70,14 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
     { name: "Profile", icon: <User className="w-5 h-5" />, path: "/profile" },
     { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
   ];
+  
+  // Admin-only navigation items
+  const adminNavItems = [
+    { name: "User Management", icon: <Users className="w-5 h-5" />, path: "/users" }
+  ];
+  
+  // Combine nav items based on user role
+  const navItems = isAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
   
   return (
     <div 
