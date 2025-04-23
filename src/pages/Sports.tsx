@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -205,10 +204,10 @@ const Sports = () => {
         return (
           <Badge 
             variant={
-              position?.includes("1st") || position?.includes("gold") ? "success" : 
+              position?.includes("1st") || position?.includes("gold") ? "default" : 
               position?.includes("2nd") || position?.includes("silver") ? "secondary" :
-              position?.includes("3rd") || position?.includes("bronze") ? "warning" : 
-              "outline"
+              position?.includes("3rd") || position?.includes("bronze") ? "outline" : 
+              "secondary"
             }
           >
             {record.position}

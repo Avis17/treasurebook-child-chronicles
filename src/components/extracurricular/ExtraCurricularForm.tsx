@@ -100,7 +100,16 @@ export const ExtraCurricularForm = ({
     const formattedDate = format(values.date, "yyyy-MM-dd");
     
     const recordData: ExtraCurricularRecord = {
-      ...(initialData || { userId: "" }),
+      ...(initialData || { 
+        userId: "",
+        activity: values.activity,
+        category: values.category,
+        date: formattedDate,
+        level: values.level,
+        organizer: values.organizer,
+        achievement: values.achievement,
+        certificate: values.certificate
+      }),
       ...values,
       date: formattedDate,
     };

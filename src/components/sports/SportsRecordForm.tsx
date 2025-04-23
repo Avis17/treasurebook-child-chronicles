@@ -102,7 +102,17 @@ export const SportsRecordForm = ({
     const formattedDate = format(values.date, "yyyy-MM-dd");
     
     const recordData: SportsRecord = {
-      ...(initialData || { userId: "" }),
+      ...(initialData || { 
+        userId: "",
+        eventName: values.eventName,
+        eventType: values.eventType,
+        date: formattedDate,
+        position: values.position,
+        venue: values.venue,
+        level: values.level,
+        achievement: values.achievement || "",
+        coach: values.coach || ""
+      }),
       ...values,
       date: formattedDate,
     };
