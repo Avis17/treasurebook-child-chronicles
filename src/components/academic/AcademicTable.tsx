@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowDown, ArrowUp, Search, Eye } from "lucide-react";
+import { ArrowDown, ArrowUp, Search, Eye, Edit2, Trash } from "lucide-react";
 import { AcademicRecord } from "@/lib/academic-service";
 import { RecordViewDialog } from "../shared/RecordViewDialog";
 
@@ -11,8 +11,8 @@ interface AcademicTableProps {
   records: AcademicRecord[];
   hasActiveFilters: boolean;
   onClearFilters: () => void;
-  onEdit?: (item: AcademicRecord) => void; // for future extensibility
-  onDelete?: (item: AcademicRecord) => void; // now functional!
+  onEdit?: (item: AcademicRecord) => void;
+  onDelete?: (item: AcademicRecord) => void;
 }
 
 export const AcademicTable = ({
@@ -36,7 +36,6 @@ export const AcademicTable = ({
   const [viewOpen, setViewOpen] = useState(false);
   const [viewRecord, setViewRecord] = useState<AcademicRecord | null>(null);
 
-  // Filter records by search term
   const filteredRecords = records.filter((record) => {
     const searchTermLower = searchTerm.toLowerCase();
     return (
@@ -105,7 +104,7 @@ export const AcademicTable = ({
     );
   }
 
-  // Map record fields for dialog -- add rawKey for hiding, ensure Notes are displayed as such
+  // Map record fields for dialog
   function getFields(record: AcademicRecord) {
     return [
       { label: "Class", value: record.class, rawKey: "class" },
@@ -115,9 +114,8 @@ export const AcademicTable = ({
       { label: "Exam Type", value: record.examType, rawKey: "examType" },
       { label: "Score", value: record.isPercentage ? `${record.score}%` : `${record.score}/${record.maxScore}`, rawKey: "score" },
       { label: "Grade", value: record.grade, rawKey: "grade" },
-      { label: "Remarks", value: record.remarks, rawKey: "remarks" },
-      { label: "Notes", value: record.notes || "–", rawKey: "notes" },
-      // technical fields omitted via RecordViewDialog itself
+      { label: "Remarks", value: record.remarks ?? "", rawKey: "remarks" },
+      { label: "Notes", value: record.notes ?? "", rawKey: "notes" },
     ];
   }
 
@@ -201,12 +199,7 @@ export const AcademicTable = ({
                         onClick={() => handleDelete(record)}
                         title="Delete"
                       >
-                        <span className="sr-only">Delete</span>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                          <path d="M3 6h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                          <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m4 6v6m4-6v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
+                        <Trash />
                       </Button>
                     )}
                     {onEdit && (
@@ -216,7 +209,7 @@ export const AcademicTable = ({
                         onClick={() => onEdit(record)}
                         title="Edit"
                       >
-                        ✏️
+                        <Edit2 />
                       </Button>
                     )}
                   </div>

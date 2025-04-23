@@ -1,6 +1,7 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
 
 interface RecordViewDialogProps<T> {
   open: boolean;
@@ -19,14 +20,18 @@ export function RecordViewDialog<T>({
   onEdit,
   editLabel = "Edit",
 }: RecordViewDialogProps<T>) {
-  // Hide these fields
+  // If Notes or Remarks is present, group for highlight
+  let highlightFields: { label: string; value: React.ReactNode }[] = [];
+
+  // Keys to hide everywhere
   const hideFields = ["createdAt", "updatedAt", "userId", "id"];
-  let notesField: { label: string; value: React.ReactNode } | undefined = undefined;
+  const highlightKeys = ["notes", "remarks"];
+
+  // Custom visible fields mapping (hiding unnecessary keys)
   const visibleFields = fields.filter((f) => {
-    // New version: Accept rawKey from map or fallback to label (for custom mapping)
     const key = (f as any).rawKey || f.label?.replace(/\s/g, '').toLowerCase();
-    if (key && key.toLowerCase().includes("notes")) {
-      notesField = f;
+    if (key && highlightKeys.some(hkey => key.includes(hkey))) {
+      highlightFields.push(f);
       return false;
     }
     return !hideFields.includes(key);
@@ -48,10 +53,32 @@ export function RecordViewDialog<T>({
               <span className="text-gray-900 dark:text-gray-300">{value}</span>
             </div>
           ))}
-          {notesField && (
-            <div className="mt-4 bg-blue-50 dark:bg-gray-700/50 border-l-4 border-blue-500 px-4 py-3 rounded">
-              <div className="font-semibold text-blue-700 dark:text-blue-200 mb-1">{notesField.label}</div>
-              <div className="text-gray-900 dark:text-gray-100 whitespace-pre-line">{notesField.value}</div>
+          {highlightFields.length > 0 && (
+            <div className="mt-4 bg-blue-50 dark:bg-blue-950 border-l-4 border-blue-500 px-4 py-3 rounded flex flex-col gap-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Info className="h-4 w-4 text-blue-600" />
+                <span className="font-semibold text-blue-700 dark:text-blue-200">
+                  {highlightFields.length === 1
+                    ? highlightFields[0].label
+                    : highlightFields.map(f => f.label).join(" & ")}
+                </span>
+              </div>
+              {highlightFields.map((field, idx) => (
+                <div
+                  className="text-gray-900 dark:text-blue-100 whitespace-pre-line"
+                  key={idx}
+                  style={{
+                    fontSize: '1.05rem',
+                    background: 'rgba(30,64,175,0.06)',
+                    borderRadius: '6px',
+                    padding: '0.25rem 0.5rem'
+                  }}
+                >
+                  {typeof field.value === "string" && !field.value.trim()
+                    ? <span className="italic text-gray-400">(No {field.label.toLowerCase()} provided)</span>
+                    : field.value}
+                </div>
+              ))}
             </div>
           )}
         </div>
