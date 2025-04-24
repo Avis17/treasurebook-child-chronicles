@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
 
 interface Activity {
@@ -25,18 +25,15 @@ const ActivitySummary: React.FC = () => {
         if (!user) return;
 
         console.log("Fetching upcoming activities for user:", user.uid);
-        const activities: Activity[] = [];
         const today = new Date();
         const todayStr = format(today, 'yyyy-MM-dd');
 
-        // Fetch calendar events
+        // Fetch calendar events - removing orderBy to avoid index errors
         const eventsRef = collection(db, "calendarEvents");
         const eventsQuery = query(
           eventsRef,
           where("userId", "==", user.uid),
-          where("date", ">=", todayStr),
-          orderBy("date", "asc"),
-          limit(5)
+          where("date", ">=", todayStr)
         );
 
         console.log("Fetching calendar events with query parameters:", {
@@ -46,6 +43,8 @@ const ActivitySummary: React.FC = () => {
 
         const eventsDocs = await getDocs(eventsQuery);
         console.log(`Found ${eventsDocs.size} upcoming events`);
+        
+        const activities: Activity[] = [];
         
         eventsDocs.forEach(doc => {
           const data = doc.data();
@@ -60,8 +59,19 @@ const ActivitySummary: React.FC = () => {
           });
         });
 
-        console.log("Processed activities:", activities);
-        setUpcomingActivities(activities);
+        // Sort manually by date since we removed orderBy
+        activities.sort((a, b) => {
+          // Compare dates
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          return dateA.getTime() - dateB.getTime();
+        });
+
+        // Limit to 5 events
+        const limitedActivities = activities.slice(0, 5);
+        console.log("Processed activities:", limitedActivities);
+        
+        setUpcomingActivities(limitedActivities);
       } catch (error) {
         console.error("Error fetching activities:", error);
       } finally {
@@ -113,7 +123,7 @@ const ActivitySummary: React.FC = () => {
             key={activity.id}
             className="flex items-start space-x-3 p-3 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
           >
-            <div className={`mt-0.5 p-1.5 rounded-full bg-opacity-20 ${getActivityTypeColor(activity.type).replace('text-', 'bg-')}`}>
+            <div className={`mt-0.5 p-1.5 rounded-full ${getActivityTypeColor(activity.type).replace('text-', 'bg-')}/20`}>
               <Calendar className={`h-4 w-4 ${getActivityTypeColor(activity.type)}`} />
             </div>
             <div className="flex-1">
