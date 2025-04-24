@@ -11,6 +11,7 @@ import { SummaryCards } from "@/components/dashboard/SummaryCards";
 import ExtracurricularChart from "@/components/dashboard/ExtracurricularChart";
 import Sidebar from "@/components/navigation/Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import AppLayout from "@/components/layout/AppLayout";
 
 const Dashboard = () => {
   const { currentUser, loading } = useAuth();
@@ -40,47 +41,41 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar isMobile={isMobile} />
+    <AppLayout title="Dashboard" hideHeader={true}>
+      <ProfileHeader />
 
-      <div className="flex-1 overflow-auto md:ml-64">
-        <div className="container mx-auto px-4 py-6">
-          <ProfileHeader />
+      <SummaryCards />
 
-          <SummaryCards />
-
-          <Card className="mt-4 dark:bg-gray-800">
-            <CardHeader>
-              <CardTitle className="dark:text-white">Insights</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="academic" className="w-full">
-                <TabsList>
-                  <TabsTrigger value="academic">Academic</TabsTrigger>
-                  <TabsTrigger value="sports">Sports</TabsTrigger>
-                  <TabsTrigger value="extracurricular">Extracurricular</TabsTrigger>
-                </TabsList>
-                <TabsContent value="academic">
-                  <div className="grid gap-4">
-                    <AcademicChart />
-                  </div>
-                </TabsContent>
-                <TabsContent value="sports">
-                  <div className="grid gap-4">
-                    <SportsChart />
-                  </div>
-                </TabsContent>
-                <TabsContent value="extracurricular">
-                  <div className="grid gap-4">
-                    <ExtracurricularChart />
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
+      <Card className="mt-4 dark:bg-gray-800">
+        <CardHeader>
+          <CardTitle className="dark:text-white">Insights</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="academic" className="w-full">
+            <TabsList>
+              <TabsTrigger value="academic">Academic</TabsTrigger>
+              <TabsTrigger value="sports">Sports</TabsTrigger>
+              <TabsTrigger value="extracurricular">Extracurricular</TabsTrigger>
+            </TabsList>
+            <TabsContent value="academic">
+              <div className="grid gap-4">
+                <AcademicChart />
+              </div>
+            </TabsContent>
+            <TabsContent value="sports">
+              <div className="grid gap-4">
+                <SportsChart />
+              </div>
+            </TabsContent>
+            <TabsContent value="extracurricular">
+              <div className="grid gap-4">
+                <ExtracurricularChart />
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </AppLayout>
   );
 };
 

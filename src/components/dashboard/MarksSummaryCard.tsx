@@ -42,6 +42,8 @@ const MarksSummaryCard = () => {
         
         querySnapshot.forEach((doc) => {
           const record = doc.data();
+          console.log("Processing academic record:", record);
+          
           const score = parseFloat(record.score) || 0;
           const maxScore = parseFloat(record.maxScore) || 100;
           const percentage = record.isPercentage ? score : (score / maxScore) * 100;
@@ -56,6 +58,8 @@ const MarksSummaryCard = () => {
             createdAt: record.createdAt
           });
         });
+        
+        console.log("Fetched academic records:", academicRecords.length);
         
         if (academicRecords.length > 0) {
           // Sort by percentage (highest to lowest)
@@ -72,6 +76,8 @@ const MarksSummaryCard = () => {
           
           // Get up to 5 most recent records
           setRecentRecords(sortedByDate.slice(0, 5));
+        } else {
+          console.log("No academic records found for the user");
         }
       } catch (error) {
         console.error("Error fetching academic data:", error);
@@ -168,7 +174,7 @@ const MarksSummaryCard = () => {
             </Accordion>
           </div>
         ) : (
-          <p className="text-muted-foreground">No academic records found</p>
+          <p className="text-muted-foreground">No academic records found. Add some academic records to see your performance summary.</p>
         )}
       </CardContent>
     </Card>
