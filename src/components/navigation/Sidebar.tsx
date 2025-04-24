@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -38,7 +37,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   const location = useLocation();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
-  const { isAdmin } = useAuth();
+  const { isAdmin, currentUser } = useAuth();
   
   const handleLogout = async () => {
     try {
@@ -58,27 +57,46 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
     }
   };
 
-  const navItems = [
-    { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
-    { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights" },
-    { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
-    { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
-    { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
-    { name: "Gallery", icon: <ImageIcon className="w-5 h-5" />, path: "/gallery" },
-    { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
-    { name: "Directory", icon: <Users className="w-5 h-5" />, path: "/directory" },
-    { name: "Documents", icon: <FileArchive className="w-5 h-5" />, path: "/documents" },
-    { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
-    { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
-    { name: "Milestones", icon: <Archive className="w-5 h-5" />, path: "/milestones" },
-    { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
-    { name: "Profile", icon: <User className="w-5 h-5" />, path: "/profile" },
-    { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
-  ];
+  const getNavItems = () => {
+    const baseItems = [
+      { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
+      { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights" },
+      { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
+      { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
+      { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
+    ];
 
-  if (isAdmin) {
-    navItems.push({ name: "User Management", icon: <Users className="w-5 h-5" />, path: "/users" });
-  }
+    const storageItems = [
+      { name: "Gallery", icon: <ImageIcon className="w-5 h-5" />, path: "/gallery" },
+      { name: "Documents", icon: <FileArchive className="w-5 h-5" />, path: "/documents" },
+    ];
+
+    const remainingItems = [
+      { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
+      { name: "Directory", icon: <Users className="w-5 h-5" />, path: "/directory" },
+      { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
+      { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
+      { name: "Milestones", icon: <Archive className="w-5 h-5" />, path: "/milestones" },
+      { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
+      { name: "Profile", icon: <User className="w-5 h-5" />, path: "/profile" },
+      { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
+    ];
+
+    const items = [
+      ...baseItems,
+      ...storageItems.map(item => ({
+        ...item,
+        disabled: !currentUser?.permissions?.storage,
+      })),
+      ...remainingItems
+    ];
+
+    if (isAdmin) {
+      items.push({ name: "User Management", icon: <Users className="w-5 h-5" />, path: "/users" });
+    }
+
+    return items;
+  };
 
   return (
     <div className="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
@@ -92,20 +110,25 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       {/* Navigation Items */}
       <ScrollArea className="flex-1 py-2">
         <nav className="px-3 space-y-1">
-          {navItems.map((item) => (
+          {getNavItems().map((item) => (
             <NavLink
               key={item.path}
-              to={item.path}
+              to={item.disabled ? "#" : item.path}
               className={({ isActive }) => `
                 flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
                 transition-colors duration-150 ease-in-out
-                ${isActive 
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
-                  : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
+                ${item.disabled 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : isActive 
+                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
               `}
             >
               {item.icon}
               <span>{item.name}</span>
+              {item.disabled && (
+                <span className="ml-auto text-xs text-gray-500">(Disabled)</span>
+              )}
             </NavLink>
           ))}
         </nav>

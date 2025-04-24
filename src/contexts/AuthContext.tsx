@@ -7,6 +7,9 @@ import { ADMIN_EMAIL, VERIFICATION_STATUS } from '@/lib/constants';
 
 export interface AuthUser extends User {
   verificationStatus?: string;
+  permissions?: {
+    storage: boolean;
+  };
 }
 
 interface AuthContextType {
@@ -31,22 +34,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Fetch user verification status
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
             const enhancedUser = {
               ...user,
-              verificationStatus: userData.verificationStatus || VERIFICATION_STATUS.PENDING, // Default to PENDING if not set
+              verificationStatus: userData.verificationStatus || VERIFICATION_STATUS.PENDING,
+              permissions: userData.permissions || { storage: false },
             };
             setCurrentUser(enhancedUser);
             setIsAdmin(user.email === ADMIN_EMAIL);
           } else {
-            // If user document doesn't exist yet, set default values
             setCurrentUser({
               ...user,
-              verificationStatus: VERIFICATION_STATUS.PENDING
+              verificationStatus: VERIFICATION_STATUS.PENDING,
+              permissions: { storage: false }
             });
             setIsAdmin(user.email === ADMIN_EMAIL);
           }
@@ -54,7 +57,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.error("Error fetching user data", error);
           setCurrentUser({
             ...user,
-            verificationStatus: VERIFICATION_STATUS.PENDING
+            verificationStatus: VERIFICATION_STATUS.PENDING,
+            permissions: { storage: false }
           });
           setIsAdmin(user.email === ADMIN_EMAIL);
         }

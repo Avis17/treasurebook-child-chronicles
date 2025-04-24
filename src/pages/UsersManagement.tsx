@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { VERIFICATION_STATUS } from "@/lib/constants";
@@ -24,6 +25,9 @@ interface User {
   email: string;
   displayName: string;
   verificationStatus: string;
+  permissions?: {
+    storage: boolean;
+  };
   createdAt: any;
 }
 
@@ -40,29 +44,30 @@ const UsersManagement = () => {
       return;
     }
 
-    const fetchUsers = async () => {
-      try {
-        const usersSnapshot = await getDocs(collection(db, "users"));
-        const usersData = usersSnapshot.docs.map(doc => ({
-          uid: doc.id,
-          ...doc.data()
-        } as User));
-        
-        setUsers(usersData);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load users",
-          variant: "destructive",
-        });
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, [isAdmin, navigate, toast]);
+  }, [isAdmin, navigate]);
+
+  const fetchUsers = async () => {
+    try {
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const usersData = usersSnapshot.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data(),
+        permissions: doc.data().permissions || { storage: false }
+      } as User));
+      
+      setUsers(usersData);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load users",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
     try {
@@ -85,6 +90,38 @@ const UsersManagement = () => {
       toast({
         title: "Error",
         description: "Failed to update user status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleStoragePermissionChange = async (userId: string, enabled: boolean) => {
+    try {
+      await updateDoc(doc(db, "users", userId), {
+        "permissions.storage": enabled,
+      });
+
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.uid === userId ? { 
+            ...user, 
+            permissions: { 
+              ...user.permissions, 
+              storage: enabled 
+            } 
+          } : user
+        )
+      );
+
+      toast({
+        title: "Permissions Updated",
+        description: `Storage permission ${enabled ? 'enabled' : 'disabled'} for user`,
+      });
+    } catch (error) {
+      console.error("Error updating storage permission:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update storage permission",
         variant: "destructive",
       });
     }
@@ -114,6 +151,7 @@ const UsersManagement = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Registration Date</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Storage Access</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -136,8 +174,16 @@ const UsersManagement = () => {
                         </span>
                       </TableCell>
                       <TableCell>
+                        {user.verificationStatus === VERIFICATION_STATUS.APPROVED && (
+                          <Switch
+                            checked={user.permissions?.storage || false}
+                            onCheckedChange={(checked) => handleStoragePermissionChange(user.uid, checked)}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Select
-                          defaultValue={user.verificationStatus}
+                          value={user.verificationStatus}
                           onValueChange={(value) => handleStatusChange(user.uid, value)}
                         >
                           <SelectTrigger className="w-[180px]">

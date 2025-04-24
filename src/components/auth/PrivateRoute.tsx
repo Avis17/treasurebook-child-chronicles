@@ -1,14 +1,18 @@
 
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { VERIFICATION_STATUS, ADMIN_EMAIL } from "@/lib/constants";
 
 const PrivateRoute = () => {
   const { currentUser, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
+
+  // Check for storage-related routes
+  const isStorageRoute = ['/gallery', '/documents'].includes(location.pathname);
 
   // Allow admin to always access private routes regardless of verification status
   if (currentUser && currentUser.email === ADMIN_EMAIL) {
@@ -22,6 +26,11 @@ const PrivateRoute = () => {
 
   if (currentUser.verificationStatus !== VERIFICATION_STATUS.APPROVED) {
     return <Navigate to="/verification-pending" replace />;
+  }
+
+  // Check storage permission for storage routes
+  if (isStorageRoute && !currentUser.permissions?.storage) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;
