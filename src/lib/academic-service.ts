@@ -45,11 +45,11 @@ export const createAcademicRecord = async (
     const recordData = {
       ...data,
       grade,
-      id: uuidv4(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
     
+    // Use addDoc to let Firestore generate the document ID
     const docRef = await addDoc(collection(db, "academicRecords"), recordData);
     
     return {
@@ -65,13 +65,21 @@ export const createAcademicRecord = async (
 // Function to update an academic record
 export const updateAcademicRecord = async (record: AcademicRecord): Promise<boolean> => {
   try {
+    if (!record.id) {
+      console.error("Update failed: Record ID is missing");
+      return false;
+    }
+    
+    console.log("Updating record with ID:", record.id);
     const { id, ...data } = record;
     
+    // Update the document with the specified ID
     await updateDoc(doc(db, "academicRecords", id), {
       ...data,
       updatedAt: serverTimestamp()
     });
     
+    console.log("Update successful for record:", id);
     return true;
   } catch (error) {
     console.error("Error updating academic record:", error);
@@ -82,7 +90,14 @@ export const updateAcademicRecord = async (record: AcademicRecord): Promise<bool
 // Function to delete an academic record
 export const deleteAcademicRecord = async (id: string): Promise<boolean> => {
   try {
+    if (!id) {
+      console.error("Delete failed: Record ID is missing");
+      return false;
+    }
+    
+    console.log("Deleting record with ID:", id);
     await deleteDoc(doc(db, "academicRecords", id));
+    console.log("Delete successful for record:", id);
     return true;
   } catch (error) {
     console.error("Error deleting academic record:", error);
@@ -93,6 +108,7 @@ export const deleteAcademicRecord = async (id: string): Promise<boolean> => {
 // Function to fetch all academic records for a user
 export const fetchAcademicRecords = async (userId: string): Promise<AcademicRecord[]> => {
   try {
+    console.log("Fetching academic records for user:", userId);
     const recordsQuery = query(
       collection(db, "academicRecords"),
       where("userId", "==", userId)
@@ -109,6 +125,7 @@ export const fetchAcademicRecords = async (userId: string): Promise<AcademicReco
       } as AcademicRecord);
     });
     
+    console.log("Fetched records count:", records.length);
     return records;
   } catch (error) {
     console.error("Error fetching academic records:", error);

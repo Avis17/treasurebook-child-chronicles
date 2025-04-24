@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, deleteDoc } from "firebase/firestore";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,12 +14,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
-import Sidebar from "@/components/navigation/Sidebar";
 import { 
   AcademicRecord,
   saveAcademicRecords, 
   loadAcademicRecords,
-  filterAcademicRecords
+  filterAcademicRecords,
+  deleteAcademicRecord
 } from "@/lib/academic-service";
 import { AcademicFilters, FilterOptions } from "@/components/academic/AcademicFilters";
 import { AcademicRecordForm } from "@/components/academic/AcademicRecordForm";
@@ -40,13 +41,17 @@ const AcademicRecords = () => {
   const fetchRecords = async (userId: string) => {
     try {
       setLoading(true);
+      console.log("Fetching records for user ID:", userId);
       const recordsRef = collection(db, "academicRecords");
       const q = query(recordsRef, where("userId", "==", userId));
       const querySnapshot = await getDocs(q);
       
       const fetchedRecords: AcademicRecord[] = [];
       querySnapshot.forEach((doc) => {
-        fetchedRecords.push({ id: doc.id, ...doc.data() } as AcademicRecord);
+        fetchedRecords.push({ 
+          ...doc.data(), 
+          id: doc.id 
+        } as AcademicRecord);
       });
       
       console.log("Fetched academic records:", fetchedRecords.length);
@@ -115,6 +120,7 @@ const AcademicRecords = () => {
   };
 
   const handleEditRecord = (record: AcademicRecord) => {
+    console.log("Editing record:", record);
     setEditingRecord(record);
     setIsFormOpen(true);
   };
@@ -125,23 +131,29 @@ const AcademicRecords = () => {
         throw new Error("Record ID is missing");
       }
 
-      await deleteDoc(doc(db, "academicRecords", record.id));
+      console.log("Attempting to delete record with ID:", record.id);
+      // Use the service function
+      const success = await deleteAcademicRecord(record.id);
       
-      const updatedRecords = records.filter((r) => r.id !== record.id);
-      setRecords(updatedRecords);
-      
-      const processedFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
-        acc[key] = value === "all" ? "" : value;
-        return acc;
-      }, {} as FilterOptions);
-      
-      const filtered = filterAcademicRecords(updatedRecords, processedFilters);
-      setFilteredRecords(filtered);
-      
-      toast({
-        title: "Success",
-        description: "Academic record deleted successfully",
-      });
+      if (success) {
+        const updatedRecords = records.filter((r) => r.id !== record.id);
+        setRecords(updatedRecords);
+        
+        const processedFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
+          acc[key] = value === "all" ? "" : value;
+          return acc;
+        }, {} as FilterOptions);
+        
+        const filtered = filterAcademicRecords(updatedRecords, processedFilters);
+        setFilteredRecords(filtered);
+        
+        toast({
+          title: "Success",
+          description: "Academic record deleted successfully",
+        });
+      } else {
+        throw new Error("Failed to delete record");
+      }
     } catch (error) {
       console.error("Error deleting academic record:", error);
       toast({

@@ -9,15 +9,11 @@ import AcademicChart from "@/components/dashboard/AcademicChart";
 import SportsChart from "@/components/dashboard/SportsChart";
 import { SummaryCards } from "@/components/dashboard/SummaryCards";
 import ExtracurricularChart from "@/components/dashboard/ExtracurricularChart";
-import Sidebar from "@/components/navigation/Sidebar";
-import { useIsMobile } from "@/hooks/use-mobile";
 import AppLayout from "@/components/layout/AppLayout";
 
 const Dashboard = () => {
   const { currentUser, loading } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !currentUser) {

@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth, db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface AcademicRecord {
+  id: string;
   subject: string;
   score: number;
   maxScore: number;
@@ -27,8 +28,12 @@ const MarksSummaryCard = () => {
       try {
         setLoading(true);
         const user = auth.currentUser;
-        if (!user) return;
+        if (!user) {
+          console.log("No authenticated user found");
+          return;
+        }
 
+        console.log("Fetching academic records for user:", user.uid);
         // Fetch academic records from Firebase
         const academicRef = collection(db, "academicRecords");
         const q = query(
@@ -42,13 +47,14 @@ const MarksSummaryCard = () => {
         
         querySnapshot.forEach((doc) => {
           const record = doc.data();
-          console.log("Processing academic record:", record);
+          console.log("Processing academic record:", record.subject, record.score);
           
           const score = parseFloat(record.score) || 0;
           const maxScore = parseFloat(record.maxScore) || 100;
           const percentage = record.isPercentage ? score : (score / maxScore) * 100;
           
           academicRecords.push({
+            id: doc.id,
             subject: record.subject || 'Unknown',
             score: score,
             maxScore: maxScore,

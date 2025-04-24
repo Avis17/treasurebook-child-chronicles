@@ -43,7 +43,7 @@ function App() {
             <Route path="verification-pending" element={<VerificationPending />} />
             <Route path="dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
             <Route path="academic-records" element={<PrivateRoute><AcademicRecords /></PrivateRoute>} />
-            <Route path="academics" element={<PrivateRoute><AcademicRecords /></PrivateRoute>} /> {/* Add this line for the /academics route */}
+            <Route path="academics" element={<PrivateRoute><AcademicRecords /></PrivateRoute>} /> 
             <Route path="extracurricular" element={<PrivateRoute><Extracurricular /></PrivateRoute>} />
             <Route path="sports" element={<PrivateRoute><Sports /></PrivateRoute>} />
             <Route path="goals" element={<PrivateRoute><Goals /></PrivateRoute>} />
