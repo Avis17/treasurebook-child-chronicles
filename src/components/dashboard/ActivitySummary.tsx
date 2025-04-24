@@ -20,34 +20,47 @@ const ActivitySummary: React.FC = () => {
   useEffect(() => {
     const fetchActivities = async () => {
       try {
+        setLoading(true);
         const user = auth.currentUser;
         if (!user) return;
 
+        console.log("Fetching upcoming activities for user:", user.uid);
         const activities: Activity[] = [];
         const today = new Date();
+        const todayStr = format(today, 'yyyy-MM-dd');
 
         // Fetch calendar events
         const eventsRef = collection(db, "calendarEvents");
         const eventsQuery = query(
           eventsRef,
           where("userId", "==", user.uid),
-          where("date", ">=", format(today, 'yyyy-MM-dd')),
+          where("date", ">=", todayStr),
           orderBy("date", "asc"),
           limit(5)
         );
 
+        console.log("Fetching calendar events with query parameters:", {
+          userId: user.uid,
+          dateFrom: todayStr
+        });
+
         const eventsDocs = await getDocs(eventsQuery);
+        console.log(`Found ${eventsDocs.size} upcoming events`);
+        
         eventsDocs.forEach(doc => {
           const data = doc.data();
+          console.log("Calendar event data:", data);
+          
           activities.push({
             id: doc.id,
-            title: data.title,
-            date: data.date,
+            title: data.title || "Untitled Event",
+            date: data.date || format(today, 'yyyy-MM-dd'),
             time: data.time,
-            type: data.category as Activity['type']
+            type: data.category as Activity['type'] || 'event'
           });
         });
 
+        console.log("Processed activities:", activities);
         setUpcomingActivities(activities);
       } catch (error) {
         console.error("Error fetching activities:", error);
@@ -75,8 +88,13 @@ const ActivitySummary: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return format(date, 'MMM d');
+    try {
+      const date = new Date(dateString);
+      return format(date, 'MMM d');
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
   };
 
   if (loading) {
@@ -103,18 +121,23 @@ const ActivitySummary: React.FC = () => {
                 <h4 className="font-medium text-sm">{activity.title}</h4>
                 <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(activity.date)}</span>
               </div>
-              {activity.time && (
-                <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  <Clock className="h-3 w-3 mr-1" />
-                  {activity.time}
-                </div>
-              )}
+              <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 mr-2">
+                  {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
+                </span>
+                {activity.time && (
+                  <div className="flex items-center">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {activity.time}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))
       ) : (
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
-          No upcoming activities
+          No upcoming activities. Add events in the Calendar section.
         </p>
       )}
     </div>
