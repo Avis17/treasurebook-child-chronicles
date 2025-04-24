@@ -56,7 +56,8 @@ import {
   Lightbulb,
   ChevronRight,
   ArrowUpRight,
-  BarChart as BarChartIcon
+  BarChart as BarChartIcon,
+  AlertCircle
 } from "lucide-react";
 
 // Import our data service
@@ -86,30 +87,40 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 
 const AIInsights = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [insightData, setInsightData] = useState<AIInsightData | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const fetchData = async (userId: string) => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        console.log("Fetching AI insights data for user:", userId);
+        const data = await fetchInsightData(userId);
+        console.log("AI insights data fetched:", data);
+        setInsightData(data);
+      } catch (error) {
+        console.error("Error fetching insight data:", error);
+        setError("Failed to load insights data. Please try again later.");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load insights data"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
         navigate("/login");
       } else {
-        try {
-          setIsLoading(true);
-          const data = await fetchInsightData(user.uid);
-          setInsightData(data);
-        } catch (error) {
-          console.error("Error fetching insight data:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to load insights data"
-          });
-        } finally {
-          setIsLoading(false);
-        }
+        fetchData(user.uid);
       }
     });
 
@@ -119,8 +130,26 @@ const AIInsights = () => {
   if (isLoading) {
     return (
       <AppLayout title="AI Growth Insights">
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <div className="animate-spin w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin w-12 h-12 border-t-2 border-b-2 border-blue-500 rounded-full mb-4"></div>
+            <p className="text-lg text-gray-600 dark:text-gray-400">Loading insights...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout title="AI Growth Insights">
+        <div className="p-8 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800 max-w-3xl mx-auto my-8">
+          <div className="flex flex-col items-center text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h2 className="text-xl font-bold text-red-800 dark:text-red-300 mb-2">Error Loading Insights</h2>
+            <p className="text-md text-red-600 dark:text-red-400 max-w-md mb-6">{error}</p>
+            <Button onClick={() => navigate('/dashboard')} variant="outline">Return to Dashboard</Button>
+          </div>
         </div>
       </AppLayout>
     );
@@ -129,12 +158,21 @@ const AIInsights = () => {
   if (!insightData) {
     return (
       <AppLayout title="AI Growth Insights">
-        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-          <h2 className="text-xl font-bold mb-4">No insight data available</h2>
-          <p className="mb-6 text-muted-foreground">
-            We need more data to generate insights. Please add more records to your TreasureBook.
-          </p>
-          <Button onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center max-w-3xl mx-auto">
+          <div className="p-8 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 w-full">
+            <Lightbulb className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-4 text-blue-800 dark:text-blue-300">No insight data available</h2>
+            <p className="mb-6 text-lg text-blue-700/80 dark:text-blue-400/80">
+              We need more data to generate insights. Please add more records to your TreasureBook.
+            </p>
+            <Button 
+              onClick={() => navigate('/dashboard')} 
+              size="lg"
+              className="px-8 py-6 text-lg"
+            >
+              Go to Dashboard
+            </Button>
+          </div>
         </div>
       </AppLayout>
     );
@@ -187,44 +225,44 @@ const AIInsights = () => {
 
   return (
     <AppLayout title="AI Growth Insights">
-      <div className="space-y-6">
+      <div className="space-y-8 max-w-7xl mx-auto pb-12 px-4 md:px-6">
         {/* Child Snapshot Panel */}
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl p-6 shadow-xl">
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl p-8 shadow-xl">
           <div className="flex flex-col md:flex-row justify-between items-center md:items-start">
-            <div className="mb-4 md:mb-0">
-              <h2 className="text-2xl font-bold">{insightData.childSnapshot.name}</h2>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <Badge className="bg-blue-400/30 hover:bg-blue-400/40 text-white">
+            <div className="mb-6 md:mb-0">
+              <h2 className="text-3xl font-bold">{insightData.childSnapshot.name}</h2>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <Badge className="bg-blue-400/30 hover:bg-blue-400/40 text-white py-1.5 px-3 text-sm">
                   Age: {insightData.childSnapshot.age}
                 </Badge>
-                <Badge className="bg-blue-400/30 hover:bg-blue-400/40 text-white">
+                <Badge className="bg-blue-400/30 hover:bg-blue-400/40 text-white py-1.5 px-3 text-sm">
                   {insightData.childSnapshot.class}
                 </Badge>
               </div>
             </div>
             
             <div className="flex flex-col items-center">
-              <div className="text-sm opacity-80 mb-1">Overall Growth</div>
-              <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center">
-                <div className="text-2xl font-bold">{insightData.childSnapshot.growthScore}%</div>
+              <div className="text-sm opacity-80 mb-2">Overall Growth</div>
+              <div className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center shadow-inner">
+                <div className="text-3xl font-bold">{insightData.childSnapshot.growthScore}%</div>
               </div>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-            <div className="bg-white/10 p-4 rounded-lg">
-              <h3 className="text-sm opacity-80 mb-2">Top Skill Area</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div className="bg-white/10 p-5 rounded-lg shadow-inner">
+              <h3 className="text-sm opacity-80 mb-3">Top Skill Area</h3>
               <div className="flex items-center">
-                <Star className="h-5 w-5 mr-2 text-yellow-300" />
-                <span className="font-semibold">{insightData.childSnapshot.topSkill}</span>
+                <Star className="h-6 w-6 mr-3 text-yellow-300" />
+                <span className="font-semibold text-lg">{insightData.childSnapshot.topSkill}</span>
               </div>
             </div>
             
-            <div className="bg-white/10 p-4 rounded-lg">
-              <h3 className="text-sm opacity-80 mb-2">Area Needing Attention</h3>
+            <div className="bg-white/10 p-5 rounded-lg shadow-inner">
+              <h3 className="text-sm opacity-80 mb-3">Area Needing Attention</h3>
               <div className="flex items-center">
-                <TrendingDown className="h-5 w-5 mr-2 text-red-300" />
-                <span className="font-semibold">{insightData.childSnapshot.weakArea}</span>
+                <TrendingDown className="h-6 w-6 mr-3 text-red-300" />
+                <span className="font-semibold text-lg">{insightData.childSnapshot.weakArea}</span>
               </div>
             </div>
           </div>
@@ -232,18 +270,18 @@ const AIInsights = () => {
         
         {/* Tabs for dashboard sections */}
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="charts">Charts & Analytics</TabsTrigger>
-            <TabsTrigger value="recommendations">AI Recommendations</TabsTrigger>
+          <TabsList className="grid grid-cols-3 mb-8">
+            <TabsTrigger value="overview" className="py-3">Overview</TabsTrigger>
+            <TabsTrigger value="charts" className="py-3">Charts & Analytics</TabsTrigger>
+            <TabsTrigger value="recommendations" className="py-3">AI Recommendations</TabsTrigger>
           </TabsList>
           
           {/* Overview Tab - AI Insight Cards */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <TabsContent value="overview" className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {/* Academic Watch Card */}
-              <Card className={`bg-gradient-to-br ${cardColors.academic} border-none shadow-md overflow-hidden`}>
-                <CardHeader className="pb-2">
+              <Card className={`bg-gradient-to-br ${cardColors.academic} border-none shadow-lg overflow-hidden h-full`}>
+                <CardHeader className="pb-3">
                   <div className="flex justify-between items-center">
                     <CardTitle className={`flex items-center gap-2 ${cardIconColors.academic}`}>
                       <Book className="h-5 w-5" />
@@ -258,7 +296,7 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {insightData.academic.strongSubject !== "N/A" && (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
@@ -295,8 +333,8 @@ const AIInsights = () => {
               </Card>
 
               {/* Talent Spark Card */}
-              <Card className={`bg-gradient-to-br ${cardColors.talent} border-none shadow-md overflow-hidden`}>
-                <CardHeader className="pb-2">
+              <Card className={`bg-gradient-to-br ${cardColors.talent} border-none shadow-lg overflow-hidden h-full`}>
+                <CardHeader className="pb-3">
                   <CardTitle className={`flex items-center gap-2 ${cardIconColors.talent}`}>
                     <Star className="h-5 w-5" />
                     Talent Spark
@@ -306,7 +344,7 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {insightData.talent.topActivity !== "N/A" ? (
                       <>
                         <div className="flex items-center">
@@ -334,8 +372,8 @@ const AIInsights = () => {
               </Card>
 
               {/* Physical Progress Card */}
-              <Card className={`bg-gradient-to-br ${cardColors.physical} border-none shadow-md overflow-hidden`}>
-                <CardHeader className="pb-2">
+              <Card className={`bg-gradient-to-br ${cardColors.physical} border-none shadow-lg overflow-hidden h-full`}>
+                <CardHeader className="pb-3">
                   <CardTitle className={`flex items-center gap-2 ${cardIconColors.physical}`}>
                     <Trophy className="h-5 w-5" />
                     Physical Progress
@@ -345,7 +383,7 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {insightData.physical.topSport !== "N/A" ? (
                       <>
                         <div className="flex items-center">
@@ -373,8 +411,8 @@ const AIInsights = () => {
               </Card>
 
               {/* Emotional Trends Card */}
-              <Card className={`bg-gradient-to-br ${cardColors.emotional} border-none shadow-md overflow-hidden`}>
-                <CardHeader className="pb-2">
+              <Card className={`bg-gradient-to-br ${cardColors.emotional} border-none shadow-lg overflow-hidden h-full`}>
+                <CardHeader className="pb-3">
                   <CardTitle className={`flex items-center gap-2 ${cardIconColors.emotional}`}>
                     <Heart className="h-5 w-5" />
                     Emotional Trends
@@ -384,7 +422,7 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {insightData.emotional.moodHistory.length > 0 ? (
                       <>
                         <div className="flex items-center justify-between">
@@ -400,7 +438,7 @@ const AIInsights = () => {
                         <p className="text-xs italic text-yellow-700 dark:text-yellow-300 mt-2">
                           {insightData.emotional.recommendation}
                         </p>
-                        <div className="flex flex-wrap gap-1 mt-2">
+                        <div className="flex flex-wrap gap-2 mt-3">
                           {insightData.emotional.moodHistory.slice(0, 3).map((item, index) => (
                             <Badge key={index} variant="outline" className="bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-200">
                               {item.mood}: {item.count}x
@@ -418,8 +456,8 @@ const AIInsights = () => {
               </Card>
 
               {/* Achievement Highlights Card */}
-              <Card className={`bg-gradient-to-br ${cardColors.achievement} border-none shadow-md overflow-hidden`}>
-                <CardHeader className="pb-2">
+              <Card className={`bg-gradient-to-br ${cardColors.achievement} border-none shadow-lg overflow-hidden h-full`}>
+                <CardHeader className="pb-3">
                   <CardTitle className={`flex items-center gap-2 ${cardIconColors.achievement}`}>
                     <Award className="h-5 w-5" />
                     Achievement Highlights
@@ -429,11 +467,11 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {insightData.achievements.recent.length > 0 ? (
                       insightData.achievements.recent.map((achievement, index) => (
-                        <div key={index} className="flex items-start gap-2">
-                          <div className="min-w-5 mt-0.5">
+                        <div key={index} className="flex items-start gap-3">
+                          <div className="min-w-5 mt-1">
                             <div className="h-2 w-2 rounded-full bg-red-500"></div>
                           </div>
                           <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -451,8 +489,8 @@ const AIInsights = () => {
               </Card>
 
               {/* Pending Goals Card */}
-              <Card className={`bg-gradient-to-br ${cardColors.goal} border-none shadow-md overflow-hidden`}>
-                <CardHeader className="pb-2">
+              <Card className={`bg-gradient-to-br ${cardColors.goal} border-none shadow-lg overflow-hidden h-full`}>
+                <CardHeader className="pb-3">
                   <CardTitle className={`flex items-center gap-2 ${cardIconColors.goal}`}>
                     <Target className="h-5 w-5" />
                     Pending Goals
@@ -462,7 +500,7 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       Completed goals
                     </span>
@@ -470,11 +508,11 @@ const AIInsights = () => {
                       {insightData.goals.completed}
                     </Badge>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {insightData.goals.pending.length > 0 ? (
                       insightData.goals.pending.map((goal, index) => (
-                        <div key={index} className="flex items-start gap-2">
-                          <div className="min-w-5 mt-0.5">
+                        <div key={index} className="flex items-start gap-3">
+                          <div className="min-w-5 mt-1">
                             <div className="h-2 w-2 rounded-full bg-orange-500"></div>
                           </div>
                           <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -489,74 +527,74 @@ const AIInsights = () => {
                     )}
                   </div>
                   {insightData.goals.recommendation && (
-                    <p className="text-xs italic text-orange-700 dark:text-orange-300 mt-3">
+                    <p className="text-xs italic text-orange-700 dark:text-orange-300 mt-4">
                       {insightData.goals.recommendation}
                     </p>
                   )}
                 </CardContent>
               </Card>
-
-              {/* Teacher Feedback Card */}
-              <Card className={`bg-gradient-to-br ${cardColors.feedback} border-none shadow-md overflow-hidden`}>
-                <CardHeader className="pb-2">
-                  <CardTitle className={`flex items-center gap-2 ${cardIconColors.feedback}`}>
-                    <ClipboardCheck className="h-5 w-5" />
-                    Teacher Feedback
-                  </CardTitle>
-                  <CardDescription className="text-teal-700/80 dark:text-teal-400/80">
-                    Insights from educators
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {insightData.feedback.positive.length > 0 || insightData.feedback.areasOfImprovement.length > 0 ? (
-                      <>
-                        {insightData.feedback.positive.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-medium uppercase text-teal-700 dark:text-teal-400 mb-1.5">
-                              Positives
-                            </h4>
-                            <ul className="list-disc pl-4 space-y-0.5">
-                              {insightData.feedback.positive.map((item, index) => (
-                                <li key={index} className="text-sm text-gray-700 dark:text-gray-300">
-                                  {item}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        
-                        {insightData.feedback.areasOfImprovement.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-medium uppercase text-teal-700 dark:text-teal-400 mb-1.5">
-                              Areas for Focus
-                            </h4>
-                            <ul className="list-disc pl-4 space-y-0.5">
-                              {insightData.feedback.areasOfImprovement.map((item, index) => (
-                                <li key={index} className="text-sm text-gray-700 dark:text-gray-300">
-                                  {item}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        No feedback recorded yet.
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
             </div>
+
+            {/* Teacher Feedback Card - Full Width */}
+            <Card className={`bg-gradient-to-br ${cardColors.feedback} border-none shadow-lg overflow-hidden`}>
+              <CardHeader className="pb-3">
+                <CardTitle className={`flex items-center gap-2 ${cardIconColors.feedback}`}>
+                  <ClipboardCheck className="h-5 w-5" />
+                  Teacher Feedback
+                </CardTitle>
+                <CardDescription className="text-teal-700/80 dark:text-teal-400/80">
+                  Insights from educators
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {insightData.feedback.positive.length > 0 || insightData.feedback.areasOfImprovement.length > 0 ? (
+                    <>
+                      {insightData.feedback.positive.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-medium uppercase text-teal-700 dark:text-teal-400 mb-3">
+                            Positives
+                          </h4>
+                          <ul className="list-disc pl-5 space-y-2">
+                            {insightData.feedback.positive.map((item, index) => (
+                              <li key={index} className="text-sm text-gray-700 dark:text-gray-300">
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {insightData.feedback.areasOfImprovement.length > 0 && (
+                        <div>
+                          <h4 className="text-xs font-medium uppercase text-teal-700 dark:text-teal-400 mb-3">
+                            Areas for Focus
+                          </h4>
+                          <ul className="list-disc pl-5 space-y-2">
+                            {insightData.feedback.areasOfImprovement.map((item, index) => (
+                              <li key={index} className="text-sm text-gray-700 dark:text-gray-300">
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 col-span-2 text-center py-6">
+                      No feedback recorded yet.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
           
           {/* Charts & Analytics Tab */}
-          <TabsContent value="charts" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TabsContent value="charts" className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Subject Mastery Graph */}
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
                     <BarChartIcon className="h-5 w-5 mr-2 text-blue-500" />
@@ -567,7 +605,7 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pl-2">
-                  <div className="h-[300px] w-full">
+                  <div className="h-[350px] w-full">
                     {subjectData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={subjectData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
@@ -592,7 +630,7 @@ const AIInsights = () => {
               </Card>
 
               {/* Activity Radar Chart */}
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
                     <Activity className="h-5 w-5 mr-2 text-green-500" />
@@ -603,7 +641,7 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pl-0">
-                  <div className="h-[300px] w-full">
+                  <div className="h-[350px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
                         <PolarGrid stroke="#d4d4d4" />
@@ -624,7 +662,7 @@ const AIInsights = () => {
               </Card>
               
               {/* Mood Bubble Chart */}
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
                     <Heart className="h-5 w-5 mr-2 text-red-500" />
@@ -635,7 +673,7 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pl-0">
-                  <div className="h-[300px] w-full">
+                  <div className="h-[350px] w-full">
                     {insightData.emotional.moodHistory.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
@@ -667,7 +705,7 @@ const AIInsights = () => {
               </Card>
               
               {/* Achievement Distribution */}
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
                     <Award className="h-5 w-5 mr-2 text-yellow-500" />
@@ -678,7 +716,7 @@ const AIInsights = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pl-0">
-                  <div className="h-[300px] w-full">
+                  <div className="h-[350px] w-full">
                     {achievementData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
@@ -712,7 +750,7 @@ const AIInsights = () => {
           </TabsContent>
           
           {/* AI Recommendations Tab */}
-          <TabsContent value="recommendations" className="space-y-6">
+          <TabsContent value="recommendations" className="space-y-8">
             {/* AI Suggestion Panel */}
             <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-850 border-none shadow-lg overflow-hidden">
               <CardHeader>
@@ -725,25 +763,25 @@ const AIInsights = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="bg-white/70 dark:bg-gray-900/50 p-4 rounded-lg space-y-4">
-                  <p className="text-gray-800 dark:text-gray-200">
+                <div className="bg-white/70 dark:bg-gray-900/50 p-6 rounded-lg shadow-inner space-y-5">
+                  <p className="text-gray-800 dark:text-gray-200 text-lg">
                     {insightData.childSnapshot.name} is {insightData.forecast ? 
                       `progressing well in ${insightData.childSnapshot.topSkill}.` : 
                       "showing progress in various areas."}
                   </p>
                   
-                  <div className="space-y-2 mt-4">
+                  <div className="space-y-3 mt-6">
                     {insightData.suggestions.length > 0 ? (
                       insightData.suggestions.map((suggestion, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
-                            <CheckIcon className="h-3 w-3" />
+                        <div key={index} className="flex items-center gap-3">
+                          <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0">
+                            <CheckIcon className="h-3.5 w-3.5" />
                           </div>
-                          <span className="text-sm text-gray-800 dark:text-gray-200">{suggestion}</span>
+                          <span className="text-base text-gray-800 dark:text-gray-200">{suggestion}</span>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-base text-gray-600 dark:text-gray-400">
                         Add more data to receive personalized suggestions.
                       </p>
                     )}
@@ -764,8 +802,8 @@ const AIInsights = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="bg-white/70 dark:bg-gray-900/50 p-4 rounded-lg">
-                  <p className="text-gray-800 dark:text-gray-200">
+                <div className="bg-white/70 dark:bg-gray-900/50 p-6 rounded-lg shadow-inner">
+                  <p className="text-gray-800 dark:text-gray-200 text-lg">
                     {insightData.forecast || "Add more data to generate a personalized forecast."}
                   </p>
                 </div>
@@ -778,7 +816,7 @@ const AIInsights = () => {
             </Card>
             
             {/* Action Plan */}
-            <Card>
+            <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Calendar className="h-5 w-5 mr-2 text-blue-500" />
@@ -789,17 +827,17 @@ const AIInsights = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <div>
-                    <h3 className="text-sm font-medium mb-2 flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
+                    <h3 className="text-base font-medium mb-3 flex items-center">
+                      <div className="h-2.5 w-2.5 rounded-full bg-blue-500 mr-2"></div>
                       Short-term (Next month)
                     </h3>
                     {insightData.actionPlan.shortTerm.length > 0 ? (
-                      <ul className="space-y-1 pl-4">
+                      <ul className="space-y-2 pl-6">
                         {insightData.actionPlan.shortTerm.map((item, index) => (
                           <li key={index} className="text-sm flex items-center">
-                            <ChevronRight className="h-4 w-4 text-blue-500 mr-1 flex-shrink-0" />
+                            <ChevronRight className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
                             {item}
                           </li>
                         ))}
@@ -812,15 +850,15 @@ const AIInsights = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-sm font-medium mb-2 flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-purple-500 mr-2"></div>
+                    <h3 className="text-base font-medium mb-3 flex items-center">
+                      <div className="h-2.5 w-2.5 rounded-full bg-purple-500 mr-2"></div>
                       Medium-term (Next 3 months)
                     </h3>
                     {insightData.actionPlan.mediumTerm.length > 0 ? (
-                      <ul className="space-y-1 pl-4">
+                      <ul className="space-y-2 pl-6">
                         {insightData.actionPlan.mediumTerm.map((item, index) => (
                           <li key={index} className="text-sm flex items-center">
-                            <ChevronRight className="h-4 w-4 text-purple-500 mr-1 flex-shrink-0" />
+                            <ChevronRight className="h-4 w-4 text-purple-500 mr-2 flex-shrink-0" />
                             {item}
                           </li>
                         ))}
@@ -833,15 +871,15 @@ const AIInsights = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-sm font-medium mb-2 flex items-center">
-                      <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+                    <h3 className="text-base font-medium mb-3 flex items-center">
+                      <div className="h-2.5 w-2.5 rounded-full bg-green-500 mr-2"></div>
                       Long-term (Next year)
                     </h3>
                     {insightData.actionPlan.longTerm.length > 0 ? (
-                      <ul className="space-y-1 pl-4">
+                      <ul className="space-y-2 pl-6">
                         {insightData.actionPlan.longTerm.map((item, index) => (
                           <li key={index} className="text-sm flex items-center">
-                            <ChevronRight className="h-4 w-4 text-green-500 mr-1 flex-shrink-0" />
+                            <ChevronRight className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
                             {item}
                           </li>
                         ))}
