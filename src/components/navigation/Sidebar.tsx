@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -11,7 +11,6 @@ import {
   Calendar, 
   Image, 
   Settings, 
-  List, 
   User, 
   Sun, 
   Moon, 
@@ -24,8 +23,6 @@ import {
   MessageSquare,
   Download,
   Target,
-  ChevronLeft,
-  ChevronRight,
   Home,
   LogOut
 } from "lucide-react";
@@ -41,11 +38,9 @@ import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isMobile: boolean;
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
 }
 
-const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
+const Sidebar = ({ isMobile }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -67,12 +62,6 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
         description: "Failed to log out",
         variant: "destructive",
       });
-    }
-  };
-  
-  const closeMenu = () => {
-    if (isMobile) {
-      setIsOpen(false);
     }
   };
 
@@ -106,165 +95,98 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
   };
 
   return (
-    <>
-      <div 
-        className={`${
-          isMobile
-            ? `fixed inset-y-0 left-0 z-50 w-64 transform bg-gradient-to-b from-sidebar-primary/10 to-sidebar-primary/5 backdrop-blur-sm shadow-lg transition-transform duration-200 ease-in-out ${
-                isOpen ? "translate-x-0" : "-translate-x-full"
-              }`
-            : `fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-sidebar-primary/10 to-sidebar-primary/5 backdrop-blur-sm transition-all duration-300 ease-in-out ${
-                isOpen ? "w-64" : "w-16"
-              } shadow-md`
-        }`}
-      >
-        <div className={`flex items-center justify-between p-4 border-b border-sidebar-border ${!isOpen && !isMobile ? "justify-center" : ""}`}>
-          {(isOpen || isMobile) ? (
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-treasure-blue to-blue-500 dark:from-blue-300 dark:to-blue-500">TreasureBook</h1>
-          ) : (
-            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-treasure-blue to-blue-500 dark:from-blue-300 dark:to-blue-500">TB</h1>
-          )}
-          
-          {!isMobile && (
-            <Button
-              variant="ghost" 
-              size="icon"
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent"
-            >
-              {isOpen ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-            </Button>
-          )}
-        </div>
-
-        <ScrollArea className="flex-1 h-[calc(100vh-8rem)]">
-          <nav className="p-4">
-            <TooltipProvider delayDuration={300}>
-              <ul className="space-y-2">
-                {navItems.map((item) => (
-                  <li key={item.name}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <NavLink
-                          to={item.path}
-                          onClick={closeMenu}
-                          className={({ isActive }) =>
-                            cn(
-                              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative",
-                              isActive
-                                ? "bg-gradient-to-r from-sidebar-primary/20 to-sidebar-primary/10 text-sidebar-primary-foreground font-semibold shadow-sm"
-                                : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                              !isOpen && !isMobile ? "justify-center" : ""
-                            )
-                          }
-                        >
-                          <span className={cn(
-                            "flex items-center justify-center",
-                            isActiveRoute(item.path) && "text-sidebar-primary"
-                          )}>
-                            {item.icon}
-                          </span>
-                          {(isOpen || isMobile) && (
-                            <span className={cn(
-                              isActiveRoute(item.path) && "text-sidebar-primary"
-                            )}>
-                              {item.name}
-                            </span>
-                          )}
-                          {isActiveRoute(item.path) && (
-                            <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-sidebar-primary rounded-r-md" />
-                          )}
-                        </NavLink>
-                      </TooltipTrigger>
-                      {!isOpen && !isMobile && (
-                        <TooltipContent side="right">
-                          {item.name}
-                        </TooltipContent>
-                      )}
-                    </Tooltip>
-                  </li>
-                ))}
-              </ul>
-            </TooltipProvider>
-          </nav>
-        </ScrollArea>
-
-        <div className="border-t border-sidebar-border p-4 space-y-2">
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "w-full text-left font-normal",
-                    !isOpen && !isMobile ? "justify-center" : "justify-start"
-                  )}
-                  onClick={toggleTheme}
-                >
-                  {theme === "light" ? (
-                    <>
-                      <Moon className="h-4 w-4 mr-2" />
-                      {(isOpen || isMobile) && "Dark Mode"}
-                    </>
-                  ) : (
-                    <>
-                      <Sun className="h-4 w-4 mr-2" />
-                      {(isOpen || isMobile) && "Light Mode"}
-                    </>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              {!isOpen && !isMobile && (
-                <TooltipContent side="right">
-                  {theme === "light" ? "Dark Mode" : "Light Mode"}
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-          
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className={cn(
-                    "w-full font-normal",
-                    !isOpen && !isMobile ? "justify-center" : "justify-start"
-                  )}
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  {(isOpen || isMobile) && "Log out"}
-                </Button>
-              </TooltipTrigger>
-              {!isOpen && !isMobile && (
-                <TooltipContent side="right">
-                  Log out
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+    <div 
+      className={`fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-sidebar-primary/10 to-sidebar-primary/5 backdrop-blur-sm shadow-md transition-all duration-300 ease-in-out`}
+    >
+      <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-treasure-blue to-blue-500 dark:from-blue-300 dark:to-blue-500">TreasureBook</h1>
       </div>
-      
-      {/* Overlay for mobile view */}
-      {isMobile && isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-      
-      {/* Main content spacing adjustment */}
-      {!isMobile && (
-        <div 
-          className={`transition-all duration-300 ease-in-out ${isOpen ? "ml-64" : "ml-16"}`} 
-          aria-hidden="true"
-        />
-      )}
-    </>
+
+      <ScrollArea className="flex-1 h-[calc(100vh-8rem)]">
+        <nav className="p-4">
+          <TooltipProvider delayDuration={300}>
+            <ul className="space-y-2">
+              {navItems.map((item) => (
+                <li key={item.name}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <NavLink
+                        to={item.path}
+                        className={({ isActive }) =>
+                          cn(
+                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative",
+                            isActive
+                              ? "bg-gradient-to-r from-sidebar-primary/20 to-sidebar-primary/10 text-sidebar-primary-foreground font-semibold shadow-sm"
+                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          )
+                        }
+                      >
+                        <span className={cn(
+                          "flex items-center justify-center",
+                          isActiveRoute(item.path) && "text-sidebar-primary"
+                        )}>
+                          {item.icon}
+                        </span>
+                        <span className={cn(
+                          isActiveRoute(item.path) && "text-sidebar-primary"
+                        )}>
+                          {item.name}
+                        </span>
+                        {isActiveRoute(item.path) && (
+                          <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-sidebar-primary rounded-r-md" />
+                        )}
+                      </NavLink>
+                    </TooltipTrigger>
+                  </Tooltip>
+                </li>
+              ))}
+            </ul>
+          </TooltipProvider>
+        </nav>
+      </ScrollArea>
+
+      <div className="border-t border-sidebar-border p-4 space-y-2">
+        <TooltipProvider delayDuration={300}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-left font-normal"
+                onClick={toggleTheme}
+              >
+                {theme === "light" ? (
+                  <>
+                    <Moon className="h-4 w-4 mr-2" />
+                    Dark Mode
+                  </>
+                ) : (
+                  <>
+                    <Sun className="h-4 w-4 mr-2" />
+                    Light Mode
+                  </>
+                )}
+              </Button>
+            </TooltipTrigger>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="w-full font-normal"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Log out
+              </Button>
+            </TooltipTrigger>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </div>
   );
 };
 
 export default Sidebar;
+
