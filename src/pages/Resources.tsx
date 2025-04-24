@@ -24,7 +24,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Resources = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -129,7 +128,7 @@ const Resources = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar isMobile={isMobile} isOpen={isOpen} setIsOpen={setIsOpen} />
+      <Sidebar isMobile={isMobile} />
 
       <div className="flex-1 overflow-auto">
         {isMobile && (
@@ -138,7 +137,6 @@ const Resources = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsOpen(true)}
               >
                 <List className="h-6 w-6" />
               </Button>

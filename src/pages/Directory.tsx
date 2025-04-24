@@ -35,7 +35,6 @@ interface Contact {
 }
 
 const Directory = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -100,7 +99,7 @@ const Directory = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar isMobile={isMobile} isOpen={isOpen} setIsOpen={setIsOpen} />
+      <Sidebar isMobile={isMobile} />
 
       <div className="flex-1 overflow-auto">
         {isMobile && (
@@ -109,7 +108,6 @@ const Directory = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsOpen(true)}
               >
                 <List className="h-6 w-6" />
               </Button>

@@ -27,7 +27,6 @@ import { AcademicRecordForm } from "@/components/academic/AcademicRecordForm";
 import { AcademicTable } from "@/components/academic/AcademicTable";
 
 const AcademicRecords = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [records, setRecords] = useState<AcademicRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<AcademicRecord[]>([]);
   const [activeFilters, setActiveFilters] = useState<FilterOptions>({});
@@ -128,7 +127,7 @@ const AcademicRecords = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar isMobile={isMobile} isOpen={isOpen} setIsOpen={setIsOpen} />
+      <Sidebar isMobile={isMobile} />
 
       <div className="flex-1 overflow-auto">
         {isMobile && (
@@ -137,7 +136,6 @@ const AcademicRecords = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsOpen(true)}
               >
                 <List className="h-6 w-6" />
               </Button>
