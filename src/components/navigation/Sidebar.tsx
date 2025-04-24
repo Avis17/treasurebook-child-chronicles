@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, NavLink } from "react-router-dom";
+import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Book, 
   Calendar, 
@@ -25,7 +26,8 @@ import {
   Target,
   ChevronLeft,
   ChevronRight,
-  Home
+  Home,
+  LogOut
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +47,7 @@ interface SidebarProps {
 
 const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
   const { isAdmin, currentUser } = useAuth();
@@ -98,24 +101,28 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
   const showAdmin = currentUser && currentUser.email === "ashrav.siva@gmail.com";
   const navItems = showAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
 
+  const isActiveRoute = (path: string) => {
+    return location.pathname === path;
+  };
+
   return (
     <>
       <div 
         className={`${
           isMobile
-            ? `fixed inset-y-0 left-0 z-50 w-64 transform bg-sidebar shadow-lg transition-transform duration-200 ease-in-out ${
+            ? `fixed inset-y-0 left-0 z-50 w-64 transform bg-gradient-to-b from-sidebar-primary/10 to-sidebar-primary/5 backdrop-blur-sm shadow-lg transition-transform duration-200 ease-in-out ${
                 isOpen ? "translate-x-0" : "-translate-x-full"
               }`
-            : `fixed inset-y-0 left-0 z-40 transition-all duration-300 ease-in-out ${
-                isOpen ? "w-64" : "w-20"
-              } bg-sidebar shadow-md`
+            : `fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-sidebar-primary/10 to-sidebar-primary/5 backdrop-blur-sm transition-all duration-300 ease-in-out ${
+                isOpen ? "w-64" : "w-16"
+              } shadow-md`
         }`}
       >
         <div className={`flex items-center justify-between p-4 border-b border-sidebar-border ${!isOpen && !isMobile ? "justify-center" : ""}`}>
           {(isOpen || isMobile) ? (
-            <h1 className="text-xl font-bold text-treasure-blue dark:text-blue-400">TreasureBook</h1>
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-treasure-blue to-blue-500 dark:from-blue-300 dark:to-blue-500">TreasureBook</h1>
           ) : (
-            <h1 className="text-xl font-bold text-treasure-blue dark:text-blue-400">TB</h1>
+            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-treasure-blue to-blue-500 dark:from-blue-300 dark:to-blue-500">TB</h1>
           )}
           
           {!isMobile && (
@@ -123,48 +130,64 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
               variant="ghost" 
               size="icon"
               onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="text-sidebar-foreground hover:text-sidebar-primary hover:bg-sidebar-accent"
             >
               {isOpen ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
             </Button>
           )}
         </div>
 
-        <nav className="flex-1 overflow-auto p-4">
-          <TooltipProvider delayDuration={300}>
-            <ul className="space-y-2">
-              {navItems.map((item) => (
-                <li key={item.name}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <NavLink
-                        to={item.path}
-                        onClick={closeMenu}
-                        className={({ isActive }) =>
-                          cn(
-                            "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                            !isOpen && !isMobile ? "justify-center" : ""
-                          )
-                        }
-                      >
-                        {item.icon}
-                        {(isOpen || isMobile) && <span>{item.name}</span>}
-                      </NavLink>
-                    </TooltipTrigger>
-                    {!isOpen && !isMobile && (
-                      <TooltipContent side="right">
-                        {item.name}
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </li>
-              ))}
-            </ul>
-          </TooltipProvider>
-        </nav>
+        <ScrollArea className="flex-1 h-[calc(100vh-8rem)]">
+          <nav className="p-4">
+            <TooltipProvider delayDuration={300}>
+              <ul className="space-y-2">
+                {navItems.map((item) => (
+                  <li key={item.name}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <NavLink
+                          to={item.path}
+                          onClick={closeMenu}
+                          className={({ isActive }) =>
+                            cn(
+                              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative",
+                              isActive
+                                ? "bg-gradient-to-r from-sidebar-primary/20 to-sidebar-primary/10 text-sidebar-primary-foreground font-semibold shadow-sm"
+                                : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                              !isOpen && !isMobile ? "justify-center" : ""
+                            )
+                          }
+                        >
+                          <span className={cn(
+                            "flex items-center justify-center",
+                            isActiveRoute(item.path) && "text-sidebar-primary"
+                          )}>
+                            {item.icon}
+                          </span>
+                          {(isOpen || isMobile) && (
+                            <span className={cn(
+                              isActiveRoute(item.path) && "text-sidebar-primary"
+                            )}>
+                              {item.name}
+                            </span>
+                          )}
+                          {isActiveRoute(item.path) && (
+                            <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-sidebar-primary rounded-r-md" />
+                          )}
+                        </NavLink>
+                      </TooltipTrigger>
+                      {!isOpen && !isMobile && (
+                        <TooltipContent side="right">
+                          {item.name}
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </li>
+                ))}
+              </ul>
+            </TooltipProvider>
+          </nav>
+        </ScrollArea>
 
         <div className="border-t border-sidebar-border p-4 space-y-2">
           <TooltipProvider delayDuration={300}>
@@ -211,7 +234,7 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
                   )}
                   onClick={handleLogout}
                 >
-                  <Settings className="h-4 w-4 mr-2" />
+                  <LogOut className="h-4 w-4 mr-2" />
                   {(isOpen || isMobile) && "Log out"}
                 </Button>
               </TooltipTrigger>
@@ -236,7 +259,7 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
       {/* Main content spacing adjustment */}
       {!isMobile && (
         <div 
-          className={`transition-all duration-300 ease-in-out ${isOpen ? "ml-64" : "ml-20"}`} 
+          className={`transition-all duration-300 ease-in-out ${isOpen ? "ml-64" : "ml-16"}`} 
           aria-hidden="true"
         />
       )}
