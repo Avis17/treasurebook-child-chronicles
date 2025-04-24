@@ -1,0 +1,58 @@
+
+[
+  {
+    "id": "creative_excellence",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "academicStrength",
+          "subjects": ["English", "Arts", "Music"],
+          "minCount": 2
+        },
+        {
+          "type": "activityEngagement",
+          "activities": ["Piano", "Drawing", "Writing"],
+          "minCount": 1
+        }
+      ]
+    },
+    "content": "Based on academic trends and creative interest, your child may show excellence in linguistic and arts-based fields. Nurture this with creative writing, music, or visual arts."
+  },
+  {
+    "id": "analytical_thinker",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "academicStrength",
+          "subjects": ["Math", "Science", "Computer"],
+          "minCount": 2
+        }
+      ]
+    },
+    "content": "Your child shows strong analytical thinking patterns. Consider enhancing logical reasoning with coding classes, chess, or advanced math programs."
+  },
+  {
+    "id": "physical_aptitude",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "sportAchievement",
+          "minCount": 2
+        }
+      ]
+    },
+    "content": "Your child demonstrates strong physical aptitude. Consider exploring team sports or competitive activities to further develop coordination and teamwork skills."
+  },
+  {
+    "id": "balanced_development",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "balancedScores",
+          "deviation": 10
+        }
+      ]
+    },
+    "content": "Your child shows balanced development across multiple areas. Continue to provide diverse learning experiences to maintain this well-rounded growth pattern."
+  }
+]

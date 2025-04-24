@@ -2,8 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { auth } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -60,71 +59,8 @@ import {
   BarChart as BarChartIcon
 } from "lucide-react";
 
-interface ChildData {
-  name: string;
-  age: number;
-  class: string;
-  topSkill: string;
-  weakArea: string;
-  growthScore: number;
-}
-
-interface AcademicData {
-  averageScore: number;
-  strongSubject: string;
-  strongGrade: string;
-  weakSubject: string;
-  weakGrade: string;
-  subjectScores: Array<{subject: string, score: number, grade: string}>;
-}
-
-interface TalentData {
-  topActivity: string;
-  achievements: string[];
-  enjoyment: string;
-}
-
-interface PhysicalData {
-  topSport: string;
-  achievements: string[];
-  recommendation: string;
-}
-
-interface EmotionalData {
-  currentMood: string;
-  moodHistory: Array<{mood: string, count: number}>;
-  recommendation: string;
-}
-
-interface AchievementData {
-  recent: string[];
-  byCategory: {[key: string]: number};
-}
-
-interface GoalData {
-  completed: number;
-  pending: string[];
-  recommendation: string;
-}
-
-interface FeedbackData {
-  positive: string[];
-  areasOfImprovement: string[];
-  recommendation: string;
-}
-
-interface AIInsightData {
-  childSnapshot: ChildData;
-  academic: AcademicData;
-  talent: TalentData;
-  physical: PhysicalData;
-  emotional: EmotionalData;
-  achievements: AchievementData;
-  goals: GoalData;
-  feedback: FeedbackData;
-  suggestions: string[];
-  forecast: string;
-}
+// Import our data service
+import { fetchInsightData, AIInsightData } from "@/services/ai-insights-service";
 
 const cardColors = {
   academic: "from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900",
@@ -178,178 +114,7 @@ const AIInsights = () => {
     });
 
     return () => unsubscribe();
-  }, [navigate]);
-
-  const fetchInsightData = async (userId: string): Promise<AIInsightData> => {
-    // In a real application, this would be a combination of database queries
-    // and AI processing to generate insights
-    
-    // Fetch academic records
-    const academicQuery = query(
-      collection(db, "academicRecords"),
-      where("userId", "==", userId)
-    );
-    const academicSnapshot = await getDocs(academicQuery);
-    const academicRecords = academicSnapshot.docs.map(doc => doc.data());
-    
-    // Fetch extracurricular records
-    const extraQuery = query(
-      collection(db, "extraCurricularRecords"),
-      where("userId", "==", userId)
-    );
-    const extraSnapshot = await getDocs(extraQuery);
-    const extraRecords = extraSnapshot.docs.map(doc => doc.data());
-    
-    // Fetch sports records
-    const sportsQuery = query(
-      collection(db, "sportsRecords"),
-      where("userId", "==", userId)
-    );
-    const sportsSnapshot = await getDocs(sportsQuery);
-    const sportsRecords = sportsSnapshot.docs.map(doc => doc.data());
-    
-    // Fetch journals for mood analysis
-    const journalsQuery = query(
-      collection(db, "journals"),
-      where("userId", "==", userId)
-    );
-    const journalsSnapshot = await getDocs(journalsQuery);
-    const journalRecords = journalsSnapshot.docs.map(doc => doc.data());
-    
-    // Fetch goals
-    const goalsQuery = query(
-      collection(db, "goals"),
-      where("userId", "==", userId)
-    );
-    const goalsSnapshot = await getDocs(goalsQuery);
-    const goalRecords = goalsSnapshot.docs.map(doc => doc.data());
-    
-    // Fetch profile info
-    const profileQuery = query(
-      collection(db, "profiles"),
-      where("userId", "==", userId)
-    );
-    const profileSnapshot = await getDocs(profileQuery);
-    const profileData = profileSnapshot.docs.length > 0 ? profileSnapshot.docs[0].data() : null;
-    
-    // For the MVP/demo, if real data is limited, we'll use a mix of real and mock data
-    // In a production app, this would be replaced with actual AI processing
-    
-    // Calculate top skill and weak area based on academic and extracurricular records
-    let topSkill = "Creative + Musical";
-    let weakArea = "Math";
-    
-    if (academicRecords.length > 0) {
-      // Actual calculation would be more sophisticated
-      // This is a simplified example
-      const subjectScores: {[key: string]: number[]} = {};
-      
-      academicRecords.forEach(record => {
-        if (!subjectScores[record.subject]) {
-          subjectScores[record.subject] = [];
-        }
-        
-        const score = record.isPercentage 
-          ? record.score 
-          : (record.score / record.maxScore) * 100;
-          
-        subjectScores[record.subject].push(score);
-      });
-      
-      // Calculate average score per subject
-      const subjectAverages = Object.entries(subjectScores).map(([subject, scores]) => {
-        const avg = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-        return { subject, average: avg };
-      });
-      
-      // Sort by score
-      subjectAverages.sort((a, b) => b.average - a.average);
-      
-      // Top and bottom subject
-      if (subjectAverages.length > 0) {
-        topSkill = subjectAverages[0].subject;
-        weakArea = subjectAverages[subjectAverages.length - 1].subject;
-      }
-    }
-    
-    // Mock data structure for MVP
-    const mockData: AIInsightData = {
-      childSnapshot: {
-        name: profileData?.fullName || "Ashrav",
-        age: 10,
-        class: "Grade 5",
-        topSkill: topSkill,
-        weakArea: weakArea,
-        growthScore: 78
-      },
-      academic: {
-        averageScore: 63,
-        strongSubject: "English",
-        strongGrade: "B+",
-        weakSubject: "Math",
-        weakGrade: "C",
-        subjectScores: [
-          { subject: "Math", score: 63, grade: "C" },
-          { subject: "English", score: 82, grade: "B+" },
-          { subject: "Science", score: 74, grade: "B" },
-          { subject: "Social Studies", score: 70, grade: "B-" },
-          { subject: "Computer", score: 78, grade: "B" }
-        ]
-      },
-      talent: {
-        topActivity: "Piano",
-        achievements: ["1st prize in school piano competition", "Completed beginner piano course"],
-        enjoyment: "Child enjoys musical learning based on consistent practice patterns."
-      },
-      physical: {
-        topSport: "Karate",
-        achievements: ["Gold medal in under-10 category", "Yellow belt certification"],
-        recommendation: "Consider adding swimming classes for overall physical development."
-      },
-      emotional: {
-        currentMood: "Happy",
-        moodHistory: [
-          { mood: "Happy", count: 8 },
-          { mood: "Excited", count: 5 },
-          { mood: "Sad", count: 2 },
-          { mood: "Tired", count: 3 },
-          { mood: "Frustrated", count: 1 }
-        ],
-        recommendation: "Encourage story-based journaling weekly to maintain emotional awareness."
-      },
-      achievements: {
-        recent: ["Piano competition winner", "Science fair project award", "Karate gold medal"],
-        byCategory: {
-          "Academic": 3,
-          "Sports": 2,
-          "Arts": 2,
-          "Social": 1
-        }
-      },
-      goals: {
-        completed: 4,
-        pending: ["Learn to swim", "Read 10 books this year", "Complete math workbook"],
-        recommendation: "Focus on the swimming goal before summer."
-      },
-      feedback: {
-        positive: ["Good discipline", "Creative thinking", "Strong communication skills"],
-        areasOfImprovement: ["Needs more focus during math", "Could participate more in group activities"],
-        recommendation: "Structured learning approach works best."
-      },
-      suggestions: [
-        "Try math games 2x a week",
-        "Encourage weekly piano practice",
-        "Add 1 journal per week",
-        "Start swimming classes before June"
-      ],
-      forecast: "Based on academic trends and creative interest, Ashrav may show excellence in linguistic and arts-based fields. Nurture this with creative writing, music, or visual arts."
-    };
-    
-    // Enhance mock data with any real data we have
-    // In a real implementation, this would be AI-processed data
-    
-    return mockData;
-  };
+  }, [navigate, toast]);
 
   if (isLoading) {
     return (
@@ -375,31 +140,35 @@ const AIInsights = () => {
     );
   }
 
-  // Data for radar chart
+  // Data for radar chart - using actual data
   const radarData = [
     {
       subject: 'Academics',
-      A: 80,
+      A: insightData.academic.averageScore,
       fullMark: 100,
     },
     {
       subject: 'Sports',
-      A: 70,
+      A: insightData.physical.topSport !== "N/A" ? 
+          (insightData.physical.achievements.length > 0 ? 80 : 65) : 40,
       fullMark: 100,
     },
     {
       subject: 'Arts',
-      A: 85,
+      A: insightData.talent.topActivity !== "N/A" ? 
+          (insightData.talent.achievements.length > 0 ? 85 : 70) : 45,
       fullMark: 100,
     },
     {
       subject: 'Social',
-      A: 65,
+      A: insightData.emotional.moodHistory.some(m => 
+         ["Happy", "Excited", "Joyful"].includes(m.mood)) ? 75 : 60,
       fullMark: 100,
     },
     {
       subject: 'Goals',
-      A: 60,
+      A: insightData.goals.completed > 0 ? 
+          (insightData.goals.completed / (insightData.goals.completed + insightData.goals.pending.length)) * 100 : 50,
       fullMark: 100,
     },
   ];
@@ -490,28 +259,37 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {insightData.academic.strongSubject}
-                        </span>
+                    {insightData.academic.strongSubject !== "N/A" && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {insightData.academic.strongSubject}
+                          </span>
+                        </div>
+                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300">
+                          {insightData.academic.strongGrade}
+                        </Badge>
                       </div>
-                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300">
-                        {insightData.academic.strongGrade}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <TrendingDown className="h-4 w-4 mr-2 text-red-500" />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {insightData.academic.weakSubject}
-                        </span>
+                    )}
+                    {insightData.academic.weakSubject !== "N/A" && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <TrendingDown className="h-4 w-4 mr-2 text-red-500" />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {insightData.academic.weakSubject}
+                          </span>
+                        </div>
+                        <Badge className="bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300">
+                          {insightData.academic.weakGrade}
+                        </Badge>
                       </div>
-                      <Badge className="bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300">
-                        {insightData.academic.weakGrade}
-                      </Badge>
-                    </div>
+                    )}
+                    {insightData.academic.strongSubject === "N/A" && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        No academic records available yet.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -529,20 +307,28 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center">
-                      <Award className="h-4 w-4 mr-2 text-yellow-500" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {insightData.talent.topActivity}
-                      </span>
-                    </div>
-                    {insightData.talent.achievements.length > 0 && (
+                    {insightData.talent.topActivity !== "N/A" ? (
+                      <>
+                        <div className="flex items-center">
+                          <Award className="h-4 w-4 mr-2 text-yellow-500" />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {insightData.talent.topActivity}
+                          </span>
+                        </div>
+                        {insightData.talent.achievements.length > 0 && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {insightData.talent.achievements[0]}
+                          </p>
+                        )}
+                        <p className="text-xs italic text-purple-700 dark:text-purple-300 mt-2">
+                          {insightData.talent.enjoyment}
+                        </p>
+                      </>
+                    ) : (
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {insightData.talent.achievements[0]}
+                        No extracurricular activities recorded yet.
                       </p>
                     )}
-                    <p className="text-xs italic text-purple-700 dark:text-purple-300 mt-2">
-                      {insightData.talent.enjoyment}
-                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -560,20 +346,28 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center">
-                      <Award className="h-4 w-4 mr-2 text-yellow-500" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {insightData.physical.topSport}
-                      </span>
-                    </div>
-                    {insightData.physical.achievements.length > 0 && (
+                    {insightData.physical.topSport !== "N/A" ? (
+                      <>
+                        <div className="flex items-center">
+                          <Award className="h-4 w-4 mr-2 text-yellow-500" />
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {insightData.physical.topSport}
+                          </span>
+                        </div>
+                        {insightData.physical.achievements.length > 0 && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {insightData.physical.achievements[0]}
+                          </p>
+                        )}
+                        <p className="text-xs italic text-green-700 dark:text-green-300 mt-2">
+                          {insightData.physical.recommendation}
+                        </p>
+                      </>
+                    ) : (
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {insightData.physical.achievements[0]}
+                        No sports activities recorded yet.
                       </p>
                     )}
-                    <p className="text-xs italic text-green-700 dark:text-green-300 mt-2">
-                      {insightData.physical.recommendation}
-                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -591,26 +385,34 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Current Mood
-                        </span>
-                      </div>
-                      <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300">
-                        {insightData.emotional.currentMood}
-                      </Badge>
-                    </div>
-                    <p className="text-xs italic text-yellow-700 dark:text-yellow-300 mt-2">
-                      {insightData.emotional.recommendation}
-                    </p>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {insightData.emotional.moodHistory.slice(0, 3).map((item, index) => (
-                        <Badge key={index} variant="outline" className="bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-200">
-                          {item.mood}: {item.count}x
-                        </Badge>
-                      ))}
-                    </div>
+                    {insightData.emotional.moodHistory.length > 0 ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Current Mood
+                            </span>
+                          </div>
+                          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/40 dark:text-yellow-300">
+                            {insightData.emotional.currentMood}
+                          </Badge>
+                        </div>
+                        <p className="text-xs italic text-yellow-700 dark:text-yellow-300 mt-2">
+                          {insightData.emotional.recommendation}
+                        </p>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {insightData.emotional.moodHistory.slice(0, 3).map((item, index) => (
+                            <Badge key={index} variant="outline" className="bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-200">
+                              {item.mood}: {item.count}x
+                            </Badge>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        No journal entries recorded yet.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -628,16 +430,22 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {insightData.achievements.recent.map((achievement, index) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <div className="min-w-5 mt-0.5">
-                          <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                    {insightData.achievements.recent.length > 0 ? (
+                      insightData.achievements.recent.map((achievement, index) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <div className="min-w-5 mt-0.5">
+                            <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                          </div>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {achievement}
+                          </span>
                         </div>
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {achievement}
-                        </span>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        No achievements recorded yet.
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -663,20 +471,28 @@ const AIInsights = () => {
                     </Badge>
                   </div>
                   <div className="space-y-2">
-                    {insightData.goals.pending.map((goal, index) => (
-                      <div key={index} className="flex items-start gap-2">
-                        <div className="min-w-5 mt-0.5">
-                          <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+                    {insightData.goals.pending.length > 0 ? (
+                      insightData.goals.pending.map((goal, index) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <div className="min-w-5 mt-0.5">
+                            <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+                          </div>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {goal}
+                          </span>
                         </div>
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {goal}
-                        </span>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        No pending goals at the moment.
+                      </p>
+                    )}
                   </div>
-                  <p className="text-xs italic text-orange-700 dark:text-orange-300 mt-3">
-                    {insightData.goals.recommendation}
-                  </p>
+                  {insightData.goals.recommendation && (
+                    <p className="text-xs italic text-orange-700 dark:text-orange-300 mt-3">
+                      {insightData.goals.recommendation}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -693,31 +509,42 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div>
-                      <h4 className="text-xs font-medium uppercase text-teal-700 dark:text-teal-400 mb-1.5">
-                        Positives
-                      </h4>
-                      <ul className="list-disc pl-4 space-y-0.5">
-                        {insightData.feedback.positive.map((item, index) => (
-                          <li key={index} className="text-sm text-gray-700 dark:text-gray-300">
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    {insightData.feedback.areasOfImprovement.length > 0 && (
-                      <div>
-                        <h4 className="text-xs font-medium uppercase text-teal-700 dark:text-teal-400 mb-1.5">
-                          Areas for Focus
-                        </h4>
-                        <ul className="list-disc pl-4 space-y-0.5">
-                          {insightData.feedback.areasOfImprovement.map((item, index) => (
-                            <li key={index} className="text-sm text-gray-700 dark:text-gray-300">
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                    {insightData.feedback.positive.length > 0 || insightData.feedback.areasOfImprovement.length > 0 ? (
+                      <>
+                        {insightData.feedback.positive.length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-medium uppercase text-teal-700 dark:text-teal-400 mb-1.5">
+                              Positives
+                            </h4>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              {insightData.feedback.positive.map((item, index) => (
+                                <li key={index} className="text-sm text-gray-700 dark:text-gray-300">
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {insightData.feedback.areasOfImprovement.length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-medium uppercase text-teal-700 dark:text-teal-400 mb-1.5">
+                              Areas for Focus
+                            </h4>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              {insightData.feedback.areasOfImprovement.map((item, index) => (
+                                <li key={index} className="text-sm text-gray-700 dark:text-gray-300">
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        No feedback recorded yet.
+                      </p>
                     )}
                   </div>
                 </CardContent>
@@ -741,19 +568,25 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent className="pl-2">
                   <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={subjectData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#d4d4d4" />
-                        <XAxis dataKey="name" />
-                        <YAxis domain={[0, 100]} />
-                        <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
-                        <Bar dataKey="score" fill="#4F46E5">
-                          {subjectData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {subjectData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={subjectData} margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#d4d4d4" />
+                          <XAxis dataKey="name" />
+                          <YAxis domain={[0, 100]} />
+                          <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
+                          <Bar dataKey="score" fill="#4F46E5">
+                            {subjectData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500 dark:text-gray-400">No subject data available</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -803,26 +636,32 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent className="pl-0">
                   <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
-                        <Pie
-                          dataKey="count"
-                          isAnimationActive={true}
-                          data={insightData.emotional.moodHistory}
-                          nameKey="mood"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        >
-                          {insightData.emotional.moodHistory.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    {insightData.emotional.moodHistory.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
+                          <Pie
+                            dataKey="count"
+                            isAnimationActive={true}
+                            data={insightData.emotional.moodHistory}
+                            nameKey="mood"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {insightData.emotional.moodHistory.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500 dark:text-gray-400">No mood data available</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -840,26 +679,32 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent className="pl-0">
                   <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
-                        <Pie
-                          dataKey="value"
-                          isAnimationActive={true}
-                          data={achievementData}
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          label={({ name, value }) => `${name}: ${value}`}
-                        >
-                          {achievementData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    {achievementData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
+                          <Pie
+                            dataKey="value"
+                            isAnimationActive={true}
+                            data={achievementData}
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            label={({ name, value }) => `${name}: ${value}`}
+                          >
+                            {achievementData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500 dark:text-gray-400">No achievement data available</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -882,19 +727,26 @@ const AIInsights = () => {
               <CardContent>
                 <div className="bg-white/70 dark:bg-gray-900/50 p-4 rounded-lg space-y-4">
                   <p className="text-gray-800 dark:text-gray-200">
-                    {insightData.childSnapshot.name} is progressing well in music and language-based activities. 
-                    Encourage spoken storytelling and regular journaling. Focus more on foundational math using visual tools.
+                    {insightData.childSnapshot.name} is {insightData.forecast ? 
+                      `progressing well in ${insightData.childSnapshot.topSkill}.` : 
+                      "showing progress in various areas."}
                   </p>
                   
                   <div className="space-y-2 mt-4">
-                    {insightData.suggestions.map((suggestion, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
-                          <CheckIcon className="h-3 w-3" />
+                    {insightData.suggestions.length > 0 ? (
+                      insightData.suggestions.map((suggestion, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
+                            <CheckIcon className="h-3 w-3" />
+                          </div>
+                          <span className="text-sm text-gray-800 dark:text-gray-200">{suggestion}</span>
                         </div>
-                        <span className="text-sm text-gray-800 dark:text-gray-200">{suggestion}</span>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Add more data to receive personalized suggestions.
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -914,7 +766,7 @@ const AIInsights = () => {
               <CardContent>
                 <div className="bg-white/70 dark:bg-gray-900/50 p-4 rounded-lg">
                   <p className="text-gray-800 dark:text-gray-200">
-                    {insightData.forecast}
+                    {insightData.forecast || "Add more data to generate a personalized forecast."}
                   </p>
                 </div>
               </CardContent>
@@ -943,16 +795,20 @@ const AIInsights = () => {
                       <div className="h-2 w-2 rounded-full bg-blue-500 mr-2"></div>
                       Short-term (Next month)
                     </h3>
-                    <ul className="space-y-1 pl-4">
-                      <li className="text-sm flex items-center">
-                        <ChevronRight className="h-4 w-4 text-blue-500 mr-1 flex-shrink-0" />
-                        Start math game sessions twice weekly
-                      </li>
-                      <li className="text-sm flex items-center">
-                        <ChevronRight className="h-4 w-4 text-blue-500 mr-1 flex-shrink-0" />
-                        Schedule weekly piano practice time
-                      </li>
-                    </ul>
+                    {insightData.actionPlan.shortTerm.length > 0 ? (
+                      <ul className="space-y-1 pl-4">
+                        {insightData.actionPlan.shortTerm.map((item, index) => (
+                          <li key={index} className="text-sm flex items-center">
+                            <ChevronRight className="h-4 w-4 text-blue-500 mr-1 flex-shrink-0" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 pl-4">
+                        No short-term recommendations available.
+                      </p>
+                    )}
                   </div>
                   
                   <div>
@@ -960,16 +816,20 @@ const AIInsights = () => {
                       <div className="h-2 w-2 rounded-full bg-purple-500 mr-2"></div>
                       Medium-term (Next 3 months)
                     </h3>
-                    <ul className="space-y-1 pl-4">
-                      <li className="text-sm flex items-center">
-                        <ChevronRight className="h-4 w-4 text-purple-500 mr-1 flex-shrink-0" />
-                        Enroll in swimming classes before summer
-                      </li>
-                      <li className="text-sm flex items-center">
-                        <ChevronRight className="h-4 w-4 text-purple-500 mr-1 flex-shrink-0" />
-                        Find a math tutor focused on visual learning
-                      </li>
-                    </ul>
+                    {insightData.actionPlan.mediumTerm.length > 0 ? (
+                      <ul className="space-y-1 pl-4">
+                        {insightData.actionPlan.mediumTerm.map((item, index) => (
+                          <li key={index} className="text-sm flex items-center">
+                            <ChevronRight className="h-4 w-4 text-purple-500 mr-1 flex-shrink-0" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 pl-4">
+                        No medium-term recommendations available.
+                      </p>
+                    )}
                   </div>
                   
                   <div>
@@ -977,16 +837,20 @@ const AIInsights = () => {
                       <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
                       Long-term (Next year)
                     </h3>
-                    <ul className="space-y-1 pl-4">
-                      <li className="text-sm flex items-center">
-                        <ChevronRight className="h-4 w-4 text-green-500 mr-1 flex-shrink-0" />
-                        Consider a creative writing or arts summer camp
-                      </li>
-                      <li className="text-sm flex items-center">
-                        <ChevronRight className="h-4 w-4 text-green-500 mr-1 flex-shrink-0" />
-                        Evaluate next level of piano lessons or music theory
-                      </li>
-                    </ul>
+                    {insightData.actionPlan.longTerm.length > 0 ? (
+                      <ul className="space-y-1 pl-4">
+                        {insightData.actionPlan.longTerm.map((item, index) => (
+                          <li key={index} className="text-sm flex items-center">
+                            <ChevronRight className="h-4 w-4 text-green-500 mr-1 flex-shrink-0" />
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 pl-4">
+                        No long-term recommendations available.
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>

@@ -1,0 +1,83 @@
+
+[
+  {
+    "id": "math_improvement_plan",
+    "trigger": {
+      "condition": "academicScore",
+      "subject": "Math",
+      "threshold": 75,
+      "operator": "lt"
+    },
+    "shortTerm": [
+      "Start math game sessions twice weekly",
+      "Practice multiplication tables for 10 minutes daily"
+    ],
+    "mediumTerm": [
+      "Find a math tutor focused on visual learning",
+      "Complete one math workbook before next term"
+    ],
+    "longTerm": [
+      "Attend a math summer camp",
+      "Work toward grade-level proficiency by year end"
+    ]
+  },
+  {
+    "id": "music_development_plan",
+    "trigger": {
+      "condition": "activityEngagement",
+      "activity": "Piano",
+      "threshold": 1
+    },
+    "shortTerm": [
+      "Schedule weekly piano practice time",
+      "Create a reward system for consistent practice"
+    ],
+    "mediumTerm": [
+      "Participate in a school music performance",
+      "Learn three new songs this semester"
+    ],
+    "longTerm": [
+      "Evaluate next level of piano lessons or music theory",
+      "Consider a music-focused summer program"
+    ]
+  },
+  {
+    "id": "physical_development_plan",
+    "trigger": {
+      "condition": "sportEngagement",
+      "threshold": 1
+    },
+    "shortTerm": [
+      "Maintain regular practice schedule",
+      "Focus on proper technique during training"
+    ],
+    "mediumTerm": [
+      "Enroll in swimming classes before summer",
+      "Participate in a local competition"
+    ],
+    "longTerm": [
+      "Consider a sports camp during summer break",
+      "Train for next belt/level achievement"
+    ]
+  },
+  {
+    "id": "emotional_development_plan",
+    "trigger": {
+      "condition": "journalCount",
+      "threshold": 0,
+      "operator": "gt"
+    },
+    "shortTerm": [
+      "Continue weekly journaling habit",
+      "Discuss feelings during family time"
+    ],
+    "mediumTerm": [
+      "Try different journaling styles (drawing, voice)",
+      "Create a mood tracking calendar"
+    ],
+    "longTerm": [
+      "Develop emotional vocabulary through stories",
+      "Build reflective thinking skills through guided exercises"
+    ]
+  }
+]

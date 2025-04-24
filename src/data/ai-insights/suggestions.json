@@ -1,0 +1,51 @@
+
+[
+  {
+    "id": "math_improvement",
+    "trigger": {
+      "condition": "academicScore",
+      "subject": "Math",
+      "threshold": 75,
+      "operator": "lt"
+    },
+    "content": "Try math games 2x a week to improve fundamentals",
+    "priority": 1,
+    "category": "academic"
+  },
+  {
+    "id": "piano_practice",
+    "trigger": {
+      "condition": "activityFrequency",
+      "activity": "Piano",
+      "threshold": 3,
+      "timeframe": "week",
+      "operator": "lt"
+    },
+    "content": "Encourage weekly piano practice",
+    "priority": 2,
+    "category": "talent"
+  },
+  {
+    "id": "journaling",
+    "trigger": {
+      "condition": "journalCount",
+      "threshold": 1,
+      "timeframe": "week",
+      "operator": "lt"
+    },
+    "content": "Add 1 journal per week",
+    "priority": 3,
+    "category": "emotional"
+  },
+  {
+    "id": "swimming",
+    "trigger": {
+      "condition": "goalExists",
+      "activityType": "swimming",
+      "completed": false
+    },
+    "content": "Start swimming classes before summer",
+    "priority": 4,
+    "category": "physical"
+  }
+]
