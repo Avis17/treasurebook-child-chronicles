@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,36 +64,10 @@ const JournalPage = () => {
 
       const entriesRef = collection(db, "journal");
       
-      let q;
-      const now = new Date();
-      let startDate;
-      
-      if (selectedPeriod === "week") {
-        startDate = new Date();
-        startDate.setDate(now.getDate() - 7);
-      } else if (selectedPeriod === "month") {
-        startDate = new Date();
-        startDate.setMonth(now.getMonth() - 1);
-      } else if (selectedPeriod === "year") {
-        startDate = new Date();
-        startDate.setFullYear(now.getFullYear() - 1);
-      } else {
-        // All time
-        q = query(
-          entriesRef,
-          where("userId", "==", user.uid),
-          orderBy("date", "desc")
-        );
-      }
-      
-      if (selectedPeriod !== "all") {
-        q = query(
-          entriesRef,
-          where("userId", "==", user.uid),
-          where("date", ">=", startDate.toISOString().split("T")[0]),
-          orderBy("date", "desc")
-        );
-      }
+      const q = query(
+        entriesRef,
+        where("userId", "==", user.uid)
+      );
 
       const querySnapshot = await getDocs(q);
       const entriesData: JournalEntry[] = [];
@@ -104,8 +77,29 @@ const JournalPage = () => {
           ...doc.data() as JournalEntry
         });
       });
-
-      setEntries(entriesData);
+      
+      let filteredEntries = [...entriesData];
+      
+      if (selectedPeriod !== "all") {
+        const now = new Date();
+        let startDate = new Date();
+        
+        if (selectedPeriod === "week") {
+          startDate.setDate(now.getDate() - 7);
+        } else if (selectedPeriod === "month") {
+          startDate.setMonth(now.getMonth() - 1);
+        } else if (selectedPeriod === "year") {
+          startDate.setFullYear(now.getFullYear() - 1);
+        }
+        
+        filteredEntries = entriesData.filter(entry => 
+          new Date(entry.date) >= startDate
+        );
+      }
+      
+      filteredEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      setEntries(filteredEntries);
     } catch (error) {
       console.error("Error fetching journal entries:", error);
       toast({
@@ -154,7 +148,6 @@ const JournalPage = () => {
       } as JournalEntry;
       
       if (isEditing && currentId) {
-        // Create a copy without id before updating
         const { id, ...updateData } = entryData;
         await updateDoc(doc(db, "journal", currentId), updateData);
         toast({

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,8 +66,7 @@ const GoalsPage = () => {
       const goalsRef = collection(db, "goals");
       const q = query(
         goalsRef,
-        where("userId", "==", user.uid),
-        orderBy("targetDate", "asc")
+        where("userId", "==", user.uid)
       );
 
       const querySnapshot = await getDocs(q);
@@ -78,6 +77,9 @@ const GoalsPage = () => {
           ...doc.data() as Goal
         });
       });
+      
+      // Sort locally instead of in the query
+      goalsData.sort((a, b) => new Date(a.targetDate).getTime() - new Date(b.targetDate).getTime());
 
       setGoals(goalsData);
     } catch (error) {

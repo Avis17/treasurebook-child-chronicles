@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,8 +57,7 @@ const Milestones = () => {
       const milestonesRef = collection(db, "milestones");
       const q = query(
         milestonesRef,
-        where("userId", "==", user.uid),
-        orderBy("date", "desc")
+        where("userId", "==", user.uid)
       );
 
       const querySnapshot = await getDocs(q);
@@ -69,7 +68,10 @@ const Milestones = () => {
           ...doc.data() as MilestoneItem
         });
       });
-
+      
+      // Sort locally instead of in the query
+      milestonesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
       setMilestones(milestonesData);
     } catch (error) {
       console.error("Error fetching milestones:", error);
