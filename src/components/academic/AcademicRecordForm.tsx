@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,15 +18,25 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import { createAcademicRecord } from "@/lib/academic-service";
+import { createAcademicRecord, AcademicRecord } from "@/lib/academic-service";
 import { useToast } from "@/components/ui/use-toast";
 import { auth } from "@/lib/firebase";
 
 interface AcademicRecordFormProps {
-  onRecordAdded: (newRecord: any) => void;
+  onRecordAdded: (newRecord: AcademicRecord) => void;
+  onRecordUpdated?: (updatedRecord: AcademicRecord) => Promise<void>;
+  initialData?: AcademicRecord | null;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export const AcademicRecordForm = ({ onRecordAdded }: AcademicRecordFormProps) => {
+export const AcademicRecordForm = ({ 
+  onRecordAdded, 
+  onRecordUpdated,
+  initialData,
+  isOpen: isOpenProp,
+  onClose
+}: AcademicRecordFormProps) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
   
@@ -41,6 +51,28 @@ export const AcademicRecordForm = ({ onRecordAdded }: AcademicRecordFormProps) =
     remarks: "",
     isPercentage: false,
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        year: initialData.year || new Date().getFullYear().toString(),
+        term: initialData.term || "1st Term",
+        examType: initialData.examType || "Unit Test",
+        class: initialData.class || "Pre-KG",
+        subject: initialData.subject || "",
+        score: initialData.score || 0,
+        maxScore: initialData.maxScore || 100,
+        remarks: initialData.remarks || "",
+        isPercentage: initialData.isPercentage || false,
+      });
+    }
+  }, [initialData]);
+
+  useEffect(() => {
+    if (isOpenProp !== undefined) {
+      setIsAddDialogOpen(isOpenProp);
+    }
+  }, [isOpenProp]);
 
   // Generate years from 2020 to current year + 5
   const currentYear = new Date().getFullYear();
@@ -82,58 +114,80 @@ export const AcademicRecordForm = ({ onRecordAdded }: AcademicRecordFormProps) =
     }
     
     try {
-      const recordData = {
-        ...formData,
-        userId: auth.currentUser.uid,
-      };
-      
-      const newRecord = await createAcademicRecord(recordData);
-      
-      if (newRecord) {
-        onRecordAdded(newRecord);
-        
-        toast({
-          title: "Success",
-          description: "Academic record added",
+      if (initialData && onRecordUpdated) {
+        // Handle update case
+        await onRecordUpdated({
+          ...initialData,
+          ...formData,
         });
-        
-        // Reset form to defaults
-        setFormData({
-          year: new Date().getFullYear().toString(),
-          term: "1st Term",
-          examType: "Unit Test",
-          class: "Pre-KG",
-          subject: "",
-          score: 0,
-          maxScore: 100,
-          remarks: "",
-          isPercentage: false,
-        });
-        
-        setIsAddDialogOpen(false);
       } else {
-        throw new Error("Failed to create record");
+        // Handle create case
+        const recordData = {
+          ...formData,
+          userId: auth.currentUser.uid,
+        };
+        
+        const newRecord = await createAcademicRecord(recordData);
+        
+        if (newRecord) {
+          onRecordAdded(newRecord);
+          
+          toast({
+            title: "Success",
+            description: "Academic record added",
+          });
+          
+          // Reset form to defaults
+          setFormData({
+            year: new Date().getFullYear().toString(),
+            term: "1st Term",
+            examType: "Unit Test",
+            class: "Pre-KG",
+            subject: "",
+            score: 0,
+            maxScore: 100,
+            remarks: "",
+            isPercentage: false,
+          });
+        } else {
+          throw new Error("Failed to create record");
+        }
       }
+      
+      handleCloseDialog();
     } catch (error) {
-      console.error("Error adding record:", error);
+      console.error("Error adding/updating record:", error);
       toast({
         title: "Error",
-        description: "Failed to add academic record",
+        description: "Failed to save academic record",
         variant: "destructive",
       });
     }
   };
 
+  const handleCloseDialog = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      setIsAddDialogOpen(false);
+    }
+  };
+
+  const dialogTitle = initialData ? "Edit Academic Record" : "Add Academic Record";
+  const submitButtonText = initialData ? "Update Record" : "Add Record";
+
   return (
     <>
-      <Button onClick={() => setIsAddDialogOpen(true)}>
-        <Plus className="mr-2 h-4 w-4" /> Add Record
-      </Button>
+      {!isOpenProp && (
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Record
+        </Button>
+      )}
       
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog open={isAddDialogOpen} onOpenChange={handleCloseDialog}>
         <DialogContent className="dark:bg-gray-800">
           <DialogHeader>
-            <DialogTitle className="dark:text-white">Add Academic Record</DialogTitle>
+            <DialogTitle className="dark:text-white">{dialogTitle}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
@@ -288,7 +342,7 @@ export const AcademicRecordForm = ({ onRecordAdded }: AcademicRecordFormProps) =
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => setIsAddDialogOpen(false)}
+              onClick={handleCloseDialog}
               className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
             >
               Cancel
@@ -297,7 +351,7 @@ export const AcademicRecordForm = ({ onRecordAdded }: AcademicRecordFormProps) =
               onClick={handleAddRecord} 
               disabled={!formData.subject}
             >
-              Add Record
+              {submitButtonText}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -305,3 +359,5 @@ export const AcademicRecordForm = ({ onRecordAdded }: AcademicRecordFormProps) =
     </>
   );
 };
+
+export default AcademicRecordForm;
