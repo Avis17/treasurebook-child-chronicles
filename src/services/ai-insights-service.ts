@@ -86,8 +86,8 @@ export interface AIInsightData {
 
 interface ForecastCondition {
   type: string;
-  subjects?: string[];
-  activities?: string[];
+  subjects?: string[] | null;
+  activities?: string[] | null;
   keyword?: string | null;
   minCount?: number;
   deviation?: number;
@@ -121,9 +121,9 @@ interface ActionPlan {
 
 interface SuggestionTrigger {
   condition: string;
-  subject?: string;
-  activity?: string;
-  activityType?: string;
+  subject?: string | null;
+  activity?: string | null;
+  activityType?: string | null;
   threshold?: number;
   timeframe?: string;
   operator?: string;
@@ -554,29 +554,104 @@ const getSuggestionsForStudent = (
           isMatch = true;
         } else if (suggestion.trigger.operator === "gt" && subjectScore > suggestion.trigger.threshold) {
           isMatch = true;
+        } else if (suggestion.trigger.operator === "gte" && subjectScore >= suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "eq" && subjectScore === suggestion.trigger.threshold) {
+          isMatch = true;
         } else if (!suggestion.trigger.operator && subjectScore === suggestion.trigger.threshold) {
           isMatch = true;
         }
       }
-    } else if (suggestion.trigger.condition === "activityFrequency" && suggestion.trigger.activity) {
-      if (talent.topActivity === suggestion.trigger.activity) {
+    } else if (suggestion.trigger.condition === "academicScore" && suggestion.trigger.activity) {
+      if (talent.topActivity === suggestion.trigger.activity && suggestion.trigger.threshold !== undefined) {
+        if (academic.averageScore !== undefined) {
+          if (suggestion.trigger.operator === "lt" && academic.averageScore < suggestion.trigger.threshold) {
+            isMatch = true;
+          } else if (suggestion.trigger.operator === "gt" && academic.averageScore > suggestion.trigger.threshold) {
+            isMatch = true;
+          } else if (suggestion.trigger.operator === "gte" && academic.averageScore >= suggestion.trigger.threshold) {
+            isMatch = true;
+          } else if (suggestion.trigger.operator === "eq" && academic.averageScore === suggestion.trigger.threshold) {
+            isMatch = true;
+          }
+        }
+      }
+    } else if (suggestion.trigger.condition === "activityEngagement" && suggestion.trigger.activity) {
+      if (talent.topActivity === suggestion.trigger.activity || physical.topSport === suggestion.trigger.activity) {
         isMatch = true;
       }
     } else if (suggestion.trigger.condition === "journalCount") {
       const journalCount = emotional.moodHistory.reduce((sum, item) => sum + item.count, 0);
       
-      if (suggestion.trigger.operator === "lt" && journalCount < (suggestion.trigger.threshold || 0)) {
-        isMatch = true;
-      } else if (suggestion.trigger.operator === "gt" && journalCount > (suggestion.trigger.threshold || 0)) {
-        isMatch = true;
+      if (suggestion.trigger.threshold !== undefined) {
+        if (suggestion.trigger.operator === "lt" && journalCount < suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "gt" && journalCount > suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "gte" && journalCount >= suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "eq" && journalCount === suggestion.trigger.threshold) {
+          isMatch = true;
+        }
       }
-    } else if (suggestion.trigger.condition === "goalExists" && suggestion.trigger.activityType) {
-      const matchingGoal = goals.pending.some(goal => 
-        goal.toLowerCase().includes(suggestion.trigger.activityType?.toLowerCase() || "")
-      );
+    } else if (suggestion.trigger.condition === "moodPattern" && suggestion.trigger.subject) {
+      const subjectScore = academic.subjectScores.find(
+        s => s.subject.toLowerCase() === suggestion.trigger.subject.toLowerCase()
+      )?.score;
       
-      if (matchingGoal) {
-        isMatch = true;
+      if (subjectScore !== undefined && suggestion.trigger.threshold !== undefined) {
+        if (suggestion.trigger.operator === "lt" && subjectScore < suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "gt" && subjectScore > suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "gte" && subjectScore >= suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "eq" && subjectScore === suggestion.trigger.threshold) {
+          isMatch = true;
+        }
+      }
+    } else if (suggestion.trigger.condition === "moodPattern" && suggestion.trigger.activity) {
+      if ((talent.topActivity === suggestion.trigger.activity || physical.topSport === suggestion.trigger.activity) 
+          && suggestion.trigger.threshold !== undefined) {
+        const journalCount = emotional.moodHistory.reduce((sum, item) => sum + item.count, 0);
+        
+        if (suggestion.trigger.operator === "lt" && journalCount < suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "gt" && journalCount > suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "gte" && journalCount >= suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "eq" && journalCount === suggestion.trigger.threshold) {
+          isMatch = true;
+        }
+      }
+    } else if (suggestion.trigger.condition === "goalExists") {
+      if (suggestion.trigger.activity) {
+        const matchingGoal = goals.pending.some(goal => 
+          goal.toLowerCase().includes(suggestion.trigger.activity?.toLowerCase() || "")
+        );
+        
+        if (matchingGoal) {
+          isMatch = true;
+        }
+      } else if (suggestion.trigger.subject) {
+        const matchingGoal = goals.pending.some(goal => 
+          goal.toLowerCase().includes(suggestion.trigger.subject?.toLowerCase() || "")
+        );
+        
+        if (matchingGoal) {
+          isMatch = true;
+        }
+      } else if (suggestion.trigger.threshold !== undefined) {
+        if (suggestion.trigger.operator === "lt" && goals.completed < suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "gt" && goals.completed > suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "gte" && goals.completed >= suggestion.trigger.threshold) {
+          isMatch = true;
+        } else if (suggestion.trigger.operator === "eq" && goals.completed === suggestion.trigger.threshold) {
+          isMatch = true;
+        }
       }
     }
     
@@ -599,7 +674,9 @@ const getSuggestionsForStudent = (
 const getForecastForStudent = (
   academic: AcademicData,
   talent: TalentData,
-  physical: PhysicalData
+  physical: PhysicalData,
+  emotional: EmotionalData,
+  feedback: FeedbackData
 ): string => {
   for (const forecast of typedForecasts) {
     let allConditionsMet = true;
@@ -612,7 +689,7 @@ const getForecastForStudent = (
           if (condition.subjects && condition.minCount) {
             const strongSubjectsCount = condition.subjects.filter(subject => {
               const matchingSubject = academic.subjectScores.find(
-                s => s.subject.toLowerCase() === subject.toLowerCase()
+                s => s.subject && subject && s.subject.toLowerCase() === subject.toLowerCase()
               );
               return matchingSubject && matchingSubject.score > 75;
             }).length;
@@ -620,7 +697,7 @@ const getForecastForStudent = (
             conditionMet = strongSubjectsCount >= condition.minCount;
           } else if (condition.activities && condition.minCount) {
             conditionMet = condition.activities.some(activity =>
-              physical.topSport.toLowerCase().includes(activity.toLowerCase())
+              activity && physical.topSport && physical.topSport.toLowerCase().includes(activity.toLowerCase())
             );
           } else {
             conditionMet = true;
@@ -630,7 +707,7 @@ const getForecastForStudent = (
         case "activityEngagement":
           if (condition.activities && condition.minCount) {
             const activityMatched = condition.activities.some(activity => 
-              talent.topActivity.toLowerCase().includes(activity.toLowerCase())
+              activity && talent.topActivity && talent.topActivity.toLowerCase().includes(activity.toLowerCase())
             );
             
             conditionMet = activityMatched;
@@ -655,6 +732,128 @@ const getForecastForStudent = (
             conditionMet = (max - min) <= condition.deviation;
           } else {
             conditionMet = false;
+          }
+          break;
+          
+        case "projectParticipation":
+          if (condition.subjects && condition.minCount) {
+            const relevantSubjectsCount = condition.subjects.filter(subject => {
+              return academic.subjectScores.some(s => 
+                subject && s.subject && s.subject.toLowerCase() === subject.toLowerCase() && s.score > 70
+              );
+            }).length;
+            
+            conditionMet = relevantSubjectsCount >= condition.minCount;
+          } else if (condition.activities && condition.minCount) {
+            conditionMet = condition.activities.some(activity => {
+              return activity && (
+                (talent.topActivity && talent.topActivity.toLowerCase() === activity.toLowerCase()) ||
+                (physical.topSport && physical.topSport.toLowerCase() === activity.toLowerCase())
+              );
+            });
+          } else if (condition.keyword && condition.minCount) {
+            const keywordCount = [...feedback.positive, ...feedback.areasOfImprovement].filter(
+              item => item.toLowerCase().includes(condition.keyword?.toLowerCase() || "")
+            ).length;
+            
+            conditionMet = keywordCount >= condition.minCount;
+          } else {
+            conditionMet = true;
+          }
+          break;
+          
+        case "journalMood":
+          if (condition.subjects && condition.minCount) {
+            const moodEntryCount = emotional.moodHistory.reduce((sum, item) => sum + item.count, 0);
+            conditionMet = moodEntryCount >= condition.minCount;
+          } else if (condition.activities && condition.minCount) {
+            const moodEntryCount = emotional.moodHistory.reduce((sum, item) => sum + item.count, 0);
+            conditionMet = moodEntryCount >= condition.minCount;
+          } else if (condition.keyword && condition.minCount) {
+            const moodWithKeywordCount = emotional.moodHistory
+              .filter(m => m.mood.toLowerCase().includes(condition.keyword?.toLowerCase() || ""))
+              .reduce((sum, item) => sum + item.count, 0);
+            
+            conditionMet = moodWithKeywordCount >= condition.minCount;
+          } else if (condition.minCount) {
+            const moodEntryCount = emotional.moodHistory.reduce((sum, item) => sum + item.count, 0);
+            conditionMet = moodEntryCount >= condition.minCount;
+          } else {
+            conditionMet = true;
+          }
+          break;
+          
+        case "feedback":
+          if (condition.subjects && condition.minCount) {
+            const feedbackCount = [...feedback.positive, ...feedback.areasOfImprovement].filter(item => 
+              condition.subjects?.some(subject => 
+                subject && item.toLowerCase().includes(subject.toLowerCase())
+              )
+            ).length;
+            
+            conditionMet = feedbackCount >= condition.minCount;
+          } else if (condition.activities && condition.minCount) {
+            const feedbackCount = [...feedback.positive, ...feedback.areasOfImprovement].filter(item => 
+              condition.activities?.some(activity => 
+                activity && item.toLowerCase().includes(activity.toLowerCase())
+              )
+            ).length;
+            
+            conditionMet = feedbackCount >= condition.minCount;
+          } else if (condition.keyword && condition.minCount) {
+            const feedbackCount = [...feedback.positive, ...feedback.areasOfImprovement].filter(
+              item => item.toLowerCase().includes(condition.keyword?.toLowerCase() || "")
+            ).length;
+            
+            conditionMet = feedbackCount >= condition.minCount;
+          } else if (condition.minCount) {
+            conditionMet = feedback.positive.length + feedback.areasOfImprovement.length >= condition.minCount;
+          } else {
+            conditionMet = true;
+          }
+          break;
+
+        case "gradeLevel":
+          if (condition.subject) {
+            const subjectScore = academic.subjectScores.find(
+              s => s.subject.toLowerCase() === condition.subject?.toLowerCase()
+            )?.score;
+            
+            if (subjectScore !== undefined && condition.threshold !== undefined) {
+              if (condition.operator === "lt" && subjectScore < condition.threshold) {
+                conditionMet = true;
+              } else if (condition.operator === "gt" && subjectScore > condition.threshold) {
+                conditionMet = true;
+              } else if (condition.operator === "gte" && subjectScore >= condition.threshold) {
+                conditionMet = true;
+              } else if (condition.operator === "eq" && subjectScore === condition.threshold) {
+                conditionMet = true;
+              }
+            }
+          } else if (condition.activity && condition.threshold !== undefined) {
+            if (talent.topActivity === condition.activity || physical.topSport === condition.activity) {
+              if (academic.averageScore !== undefined) {
+                if (condition.operator === "lt" && academic.averageScore < condition.threshold) {
+                  conditionMet = true;
+                } else if (condition.operator === "gt" && academic.averageScore > condition.threshold) {
+                  conditionMet = true;
+                } else if (condition.operator === "gte" && academic.averageScore >= condition.threshold) {
+                  conditionMet = true;
+                } else if (condition.operator === "eq" && academic.averageScore === condition.threshold) {
+                  conditionMet = true;
+                }
+              }
+            }
+          } else if (condition.threshold !== undefined) {
+            if (condition.operator === "eq" && academic.averageScore === condition.threshold) {
+              conditionMet = true;
+            } else if (condition.operator === "lt" && academic.averageScore < condition.threshold) {
+              conditionMet = true;
+            } else if (condition.operator === "gt" && academic.averageScore > condition.threshold) {
+              conditionMet = true;
+            } else if (condition.operator === "gte" && academic.averageScore >= condition.threshold) {
+              conditionMet = true;
+            }
           }
           break;
 
@@ -708,28 +907,102 @@ const getActionPlanForStudent = (
           isMatch = true;
         }
       }
-    } else if (plan.trigger.condition === "activityEngagement" && plan.trigger.activity) {
-      if (talent.topActivity === plan.trigger.activity) {
+    } else if (plan.trigger.condition === "academicScore" && plan.trigger.activity) {
+      if ((talent.topActivity === plan.trigger.activity || physical.topSport === plan.trigger.activity) 
+          && plan.trigger.threshold !== undefined) {
+        if (academic.averageScore !== undefined) {
+          if (plan.trigger.operator === "lt" && academic.averageScore < plan.trigger.threshold) {
+            isMatch = true;
+          } else if (plan.trigger.operator === "gt" && academic.averageScore > plan.trigger.threshold) {
+            isMatch = true;
+          } else if (plan.trigger.operator === "gte" && academic.averageScore >= plan.trigger.threshold) {
+            isMatch = true;
+          } else if (plan.trigger.operator === "eq" && academic.averageScore === plan.trigger.threshold) {
+            isMatch = true;
+          }
+        }
+      }
+    } else if (plan.trigger.condition === "activityEngagement") {
+      if (plan.trigger.activity && (talent.topActivity === plan.trigger.activity || physical.topSport === plan.trigger.activity)) {
         isMatch = true;
+      } else if (plan.trigger.subject) {
+        const isRelevantSubject = academic.subjectScores.some(
+          s => s.subject.toLowerCase() === plan.trigger.subject?.toLowerCase()
+        );
+        if (isRelevantSubject) {
+          isMatch = true;
+        }
+      } else if (plan.trigger.threshold !== undefined) {
+        if (plan.trigger.operator === "eq" && academic.averageScore === plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "lt" && academic.averageScore < plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "gt" && academic.averageScore > plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "gte" && academic.averageScore >= plan.trigger.threshold) {
+          isMatch = true;
+        }
       }
     } else if (plan.trigger.condition === "sportEngagement") {
-      if (physical.topSport !== "N/A") {
+      if (plan.trigger.activity && physical.topSport === plan.trigger.activity) {
         isMatch = true;
-      }
-      
-      if (plan.trigger.activity && physical.topSport !== plan.trigger.activity) {
-        isMatch = false;
+      } else if (physical.topSport !== "N/A") {
+        isMatch = true;
       }
     } else if (plan.trigger.condition === "journalCount" || plan.trigger.condition === "moodPattern") {
       const journalCount = emotional.moodHistory.reduce((sum, item) => sum + item.count, 0);
-      if (plan.trigger.operator === "gt" && journalCount > (plan.trigger.threshold || 0)) {
-        isMatch = true;
-      } else if (plan.trigger.operator === "lt" && journalCount < (plan.trigger.threshold || 0)) {
-        isMatch = true;
-      } else if (plan.trigger.operator === "eq" && journalCount === (plan.trigger.threshold || 0)) {
-        isMatch = true;
-      } else if (plan.trigger.operator === "gte" && journalCount >= (plan.trigger.threshold || 0)) {
-        isMatch = true;
+      if (plan.trigger.threshold !== undefined) {
+        if (plan.trigger.operator === "gt" && journalCount > plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "lt" && journalCount < plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "eq" && journalCount === plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "gte" && journalCount >= plan.trigger.threshold) {
+          isMatch = true;
+        }
+      }
+    } else if (plan.trigger.condition === "gradeLevel") {
+      if (plan.trigger.subject) {
+        const subjectScore = academic.subjectScores.find(
+          s => s.subject.toLowerCase() === plan.trigger.subject?.toLowerCase()
+        )?.score;
+        
+        if (subjectScore !== undefined && plan.trigger.threshold !== undefined) {
+          if (plan.trigger.operator === "lt" && subjectScore < plan.trigger.threshold) {
+            isMatch = true;
+          } else if (plan.trigger.operator === "gt" && subjectScore > plan.trigger.threshold) {
+            isMatch = true;
+          } else if (plan.trigger.operator === "gte" && subjectScore >= plan.trigger.threshold) {
+            isMatch = true;
+          } else if (plan.trigger.operator === "eq" && subjectScore === plan.trigger.threshold) {
+            isMatch = true;
+          }
+        }
+      } else if (plan.trigger.activity && plan.trigger.threshold !== undefined) {
+        if (talent.topActivity === plan.trigger.activity || physical.topSport === plan.trigger.activity) {
+          if (academic.averageScore !== undefined) {
+            if (plan.trigger.operator === "lt" && academic.averageScore < plan.trigger.threshold) {
+              isMatch = true;
+            } else if (plan.trigger.operator === "gt" && academic.averageScore > plan.trigger.threshold) {
+              isMatch = true;
+            } else if (plan.trigger.operator === "gte" && academic.averageScore >= plan.trigger.threshold) {
+              isMatch = true;
+            } else if (plan.trigger.operator === "eq" && academic.averageScore === plan.trigger.threshold) {
+              isMatch = true;
+            }
+          }
+        }
+      } else if (plan.trigger.threshold !== undefined) {
+        if (plan.trigger.operator === "eq" && academic.averageScore === plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "lt" && academic.averageScore < plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "gt" && academic.averageScore > plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "gte" && academic.averageScore >= plan.trigger.threshold) {
+          isMatch = true;
+        }
       }
     }
     
@@ -839,7 +1112,7 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
     );
     
     const suggestions = getSuggestionsForStudent(academic, talent, physical, emotional, goals);
-    const forecast = getForecastForStudent(academic, talent, physical);
+    const forecast = getForecastForStudent(academic, talent, physical, emotional, feedback);
     const actionPlan = getActionPlanForStudent(academic, talent, physical, emotional);
     
     const childSnapshot: ChildData = {

@@ -1,91 +1,223 @@
 
 [
   {
-    "id": "math_improvement_plan",
+    "id": "action_plan_1",
     "trigger": {
-      "condition": "academicScore",
+      "condition": "activityEngagement",
       "subject": "Math",
-      "activity": null,
-      "threshold": 75,
+      "activity": "Yoga",
+      "threshold": 71,
       "operator": "lt"
     },
     "shortTerm": [
-      "Start math game sessions twice weekly",
-      "Practice multiplication tables for 10 minutes daily"
+      "Short goal 1-A",
+      "Short goal 1-B"
     ],
     "mediumTerm": [
-      "Find a math tutor focused on visual learning",
-      "Complete one math workbook before next term"
+      "Mid goal 1-A",
+      "Mid goal 1-B"
     ],
     "longTerm": [
-      "Attend a math summer camp",
-      "Work toward grade-level proficiency by year end"
+      "Long goal 1-A",
+      "Long goal 1-B"
     ]
   },
   {
-    "id": "music_development_plan",
+    "id": "action_plan_2",
+    "trigger": {
+      "condition": "academicScore",
+      "subject": "Language",
+      "activity": "Drawing",
+      "threshold": 64,
+      "operator": "lt"
+    },
+    "shortTerm": [
+      "Short goal 2-A",
+      "Short goal 2-B"
+    ],
+    "mediumTerm": [
+      "Mid goal 2-A",
+      "Mid goal 2-B"
+    ],
+    "longTerm": [
+      "Long goal 2-A",
+      "Long goal 2-B"
+    ]
+  },
+  {
+    "id": "action_plan_3",
     "trigger": {
       "condition": "activityEngagement",
       "subject": null,
       "activity": "Piano",
-      "threshold": 1,
+      "threshold": 74,
       "operator": "eq"
     },
     "shortTerm": [
-      "Schedule weekly piano practice time",
-      "Create a reward system for consistent practice"
+      "Short goal 3-A",
+      "Short goal 3-B"
     ],
     "mediumTerm": [
-      "Participate in a school music performance",
-      "Learn three new songs this semester"
+      "Mid goal 3-A",
+      "Mid goal 3-B"
     ],
     "longTerm": [
-      "Evaluate next level of piano lessons or music theory",
-      "Consider a music-focused summer program"
+      "Long goal 3-A",
+      "Long goal 3-B"
     ]
   },
   {
-    "id": "physical_development_plan",
+    "id": "action_plan_4",
     "trigger": {
-      "condition": "sportEngagement",
+      "condition": "academicScore",
+      "subject": "Science",
+      "activity": "Cricket",
+      "threshold": 58,
+      "operator": "gte"
+    },
+    "shortTerm": [
+      "Short goal 4-A",
+      "Short goal 4-B"
+    ],
+    "mediumTerm": [
+      "Mid goal 4-A",
+      "Mid goal 4-B"
+    ],
+    "longTerm": [
+      "Long goal 4-A",
+      "Long goal 4-B"
+    ]
+  },
+  {
+    "id": "action_plan_5",
+    "trigger": {
+      "condition": "academicScore",
+      "subject": "History",
+      "activity": null,
+      "threshold": 52,
+      "operator": "gte"
+    },
+    "shortTerm": [
+      "Short goal 5-A",
+      "Short goal 5-B"
+    ],
+    "mediumTerm": [
+      "Mid goal 5-A",
+      "Mid goal 5-B"
+    ],
+    "longTerm": [
+      "Long goal 5-A",
+      "Long goal 5-B"
+    ]
+  },
+  {
+    "id": "action_plan_6",
+    "trigger": {
+      "condition": "academicScore",
+      "subject": null,
+      "activity": "Drawing",
+      "threshold": 63,
+      "operator": "gte"
+    },
+    "shortTerm": [
+      "Short goal 6-A",
+      "Short goal 6-B"
+    ],
+    "mediumTerm": [
+      "Mid goal 6-A",
+      "Mid goal 6-B"
+    ],
+    "longTerm": [
+      "Long goal 6-A",
+      "Long goal 6-B"
+    ]
+  },
+  {
+    "id": "action_plan_7",
+    "trigger": {
+      "condition": "academicScore",
+      "subject": "Geography",
+      "activity": "Craft",
+      "threshold": 72,
+      "operator": "lt"
+    },
+    "shortTerm": [
+      "Short goal 7-A",
+      "Short goal 7-B"
+    ],
+    "mediumTerm": [
+      "Mid goal 7-A",
+      "Mid goal 7-B"
+    ],
+    "longTerm": [
+      "Long goal 7-A",
+      "Long goal 7-B"
+    ]
+  },
+  {
+    "id": "action_plan_8",
+    "trigger": {
+      "condition": "academicScore",
+      "subject": null,
+      "activity": "Volleyball",
+      "threshold": 58,
+      "operator": "gte"
+    },
+    "shortTerm": [
+      "Short goal 8-A",
+      "Short goal 8-B"
+    ],
+    "mediumTerm": [
+      "Mid goal 8-A",
+      "Mid goal 8-B"
+    ],
+    "longTerm": [
+      "Long goal 8-A",
+      "Long goal 8-B"
+    ]
+  },
+  {
+    "id": "action_plan_9",
+    "trigger": {
+      "condition": "activityEngagement",
       "subject": null,
       "activity": null,
-      "threshold": 1,
+      "threshold": 78,
       "operator": "eq"
     },
     "shortTerm": [
-      "Maintain regular practice schedule",
-      "Focus on proper technique during training"
+      "Short goal 9-A",
+      "Short goal 9-B"
     ],
     "mediumTerm": [
-      "Enroll in swimming classes before summer",
-      "Participate in a local competition"
+      "Mid goal 9-A",
+      "Mid goal 9-B"
     ],
     "longTerm": [
-      "Consider a sports camp during summer break",
-      "Train for next belt/level achievement"
+      "Long goal 9-A",
+      "Long goal 9-B"
     ]
   },
   {
-    "id": "emotional_development_plan",
+    "id": "action_plan_10",
     "trigger": {
-      "condition": "journalCount",
-      "subject": null,
+      "condition": "activityEngagement",
+      "subject": "Language",
       "activity": null,
-      "threshold": 0,
-      "operator": "gt"
+      "threshold": 67,
+      "operator": "lt"
     },
     "shortTerm": [
-      "Continue weekly journaling habit",
-      "Discuss feelings during family time"
+      "Short goal 10-A",
+      "Short goal 10-B"
     ],
     "mediumTerm": [
-      "Try different journaling styles (drawing, voice)",
-      "Create a mood tracking calendar"
+      "Mid goal 10-A",
+      "Mid goal 10-B"
     ],
     "longTerm": [
-      "Develop emotional vocabulary through stories",
-      "Build reflective thinking skills through guided exercises"
+      "Long goal 10-A",
+      "Long goal 10-B"
     ]
   }
 ]

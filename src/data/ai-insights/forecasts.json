@@ -1,58 +1,184 @@
 
 [
   {
-    "id": "creative_excellence",
+    "id": "forecast_1",
     "trigger": {
       "conditions": [
         {
           "type": "academicStrength",
-          "subjects": ["English", "Arts", "Music"],
-          "minCount": 2
-        },
-        {
-          "type": "activityEngagement",
-          "activities": ["Piano", "Drawing", "Writing"],
+          "subjects": [
+            "Reading",
+            "Language"
+          ],
+          "activities": [
+            "Piano"
+          ],
+          "keyword": null,
           "minCount": 1
         }
       ]
     },
-    "content": "Based on academic trends and creative interest, your child may show excellence in linguistic and arts-based fields. Nurture this with creative writing, music, or visual arts."
+    "content": "Forecast #1: Detected strong potential. Guide towards structured development."
   },
   {
-    "id": "analytical_thinker",
+    "id": "forecast_2",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "projectParticipation",
+          "subjects": null,
+          "activities": [
+            "Piano"
+          ],
+          "keyword": "kind",
+          "minCount": 2
+        }
+      ]
+    },
+    "content": "Forecast #2: Detected strong potential. Guide towards structured development."
+  },
+  {
+    "id": "forecast_3",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "journalMood",
+          "subjects": null,
+          "activities": [
+            "Football"
+          ],
+          "keyword": null,
+          "minCount": 3
+        }
+      ]
+    },
+    "content": "Forecast #3: Detected strong potential. Guide towards structured development."
+  },
+  {
+    "id": "forecast_4",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "journalMood",
+          "subjects": [
+            "Language",
+            "Geography"
+          ],
+          "activities": null,
+          "keyword": null,
+          "minCount": 2
+        }
+      ]
+    },
+    "content": "Forecast #4: Detected strong potential. Guide towards structured development."
+  },
+  {
+    "id": "forecast_5",
     "trigger": {
       "conditions": [
         {
           "type": "academicStrength",
-          "subjects": ["Math", "Science", "Computer"],
+          "subjects": null,
+          "activities": [
+            "Coding"
+          ],
+          "keyword": null,
           "minCount": 2
         }
       ]
     },
-    "content": "Your child shows strong analytical thinking patterns. Consider enhancing logical reasoning with coding classes, chess, or advanced math programs."
+    "content": "Forecast #5: Detected strong potential. Guide towards structured development."
   },
   {
-    "id": "physical_aptitude",
+    "id": "forecast_6",
     "trigger": {
       "conditions": [
         {
-          "type": "sportAchievement",
+          "type": "feedback",
+          "subjects": [
+            "Language",
+            "Science"
+          ],
+          "activities": [
+            "Dance"
+          ],
+          "keyword": null,
           "minCount": 2
         }
       ]
     },
-    "content": "Your child demonstrates strong physical aptitude. Consider exploring team sports or competitive activities to further develop coordination and teamwork skills."
+    "content": "Forecast #6: Detected strong potential. Guide towards structured development."
   },
   {
-    "id": "balanced_development",
+    "id": "forecast_7",
     "trigger": {
       "conditions": [
         {
-          "type": "balancedScores",
-          "deviation": 10
+          "type": "activityEngagement",
+          "subjects": [
+            "Language",
+            "Science"
+          ],
+          "activities": [
+            "Judo"
+          ],
+          "keyword": null,
+          "minCount": 1
         }
       ]
     },
-    "content": "Your child shows balanced development across multiple areas. Continue to provide diverse learning experiences to maintain this well-rounded growth pattern."
+    "content": "Forecast #7: Detected strong potential. Guide towards structured development."
+  },
+  {
+    "id": "forecast_8",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "academicStrength",
+          "subjects": null,
+          "activities": [
+            "Debate"
+          ],
+          "keyword": "kind",
+          "minCount": 1
+        }
+      ]
+    },
+    "content": "Forecast #8: Detected strong potential. Guide towards structured development."
+  },
+  {
+    "id": "forecast_9",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "feedback",
+          "subjects": [
+            "Reading",
+            "History"
+          ],
+          "activities": null,
+          "keyword": null,
+          "minCount": 3
+        }
+      ]
+    },
+    "content": "Forecast #9: Detected strong potential. Guide towards structured development."
+  },
+  {
+    "id": "forecast_10",
+    "trigger": {
+      "conditions": [
+        {
+          "type": "feedback",
+          "subjects": null,
+          "activities": [
+            "Cricket"
+          ],
+          "keyword": "kind",
+          "minCount": 1
+        }
+      ]
+    },
+    "content": "Forecast #10: Detected strong potential. Guide towards structured development."
   }
 ]

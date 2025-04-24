@@ -1,51 +1,133 @@
 
 [
   {
-    "id": "math_improvement",
+    "id": "suggestion_1",
     "trigger": {
       "condition": "academicScore",
-      "subject": "Math",
-      "threshold": 75,
+      "subject": "Science",
+      "activity": null,
+      "threshold": 77,
       "operator": "lt"
     },
-    "content": "Try math games 2x a week to improve fundamentals",
+    "content": "AI Insight #1: Focus on improving academic area. Try more with Science.",
+    "priority": 3,
+    "category": "academic"
+  },
+  {
+    "id": "suggestion_2",
+    "trigger": {
+      "condition": "goalExists",
+      "subject": null,
+      "activity": null,
+      "threshold": 52,
+      "operator": "lt"
+    },
+    "content": "AI Insight #2: Focus on improving career area. Try more with None.",
+    "priority": 2,
+    "category": "career"
+  },
+  {
+    "id": "suggestion_3",
+    "trigger": {
+      "condition": "journalCount",
+      "subject": null,
+      "activity": null,
+      "threshold": 50,
+      "operator": "lt"
+    },
+    "content": "AI Insight #3: Focus on improving career area. Try more with None.",
+    "priority": 1,
+    "category": "career"
+  },
+  {
+    "id": "suggestion_4",
+    "trigger": {
+      "condition": "activityEngagement",
+      "subject": null,
+      "activity": "Athletics",
+      "threshold": 71,
+      "operator": "lt"
+    },
+    "content": "AI Insight #4: Focus on improving physical area. Try more with Athletics.",
+    "priority": 5,
+    "category": "physical"
+  },
+  {
+    "id": "suggestion_5",
+    "trigger": {
+      "condition": "journalCount",
+      "subject": null,
+      "activity": null,
+      "threshold": 69,
+      "operator": "lt"
+    },
+    "content": "AI Insight #5: Focus on improving emotional area. Try more with None.",
+    "priority": 2,
+    "category": "emotional"
+  },
+  {
+    "id": "suggestion_6",
+    "trigger": {
+      "condition": "academicScore",
+      "subject": null,
+      "activity": null,
+      "threshold": 52,
+      "operator": "lt"
+    },
+    "content": "AI Insight #6: Focus on improving emotional area. Try more with None.",
+    "priority": 4,
+    "category": "emotional"
+  },
+  {
+    "id": "suggestion_7",
+    "trigger": {
+      "condition": "goalExists",
+      "subject": null,
+      "activity": "Drawing",
+      "threshold": 68,
+      "operator": "lt"
+    },
+    "content": "AI Insight #7: Focus on improving physical area. Try more with Drawing.",
+    "priority": 5,
+    "category": "physical"
+  },
+  {
+    "id": "suggestion_8",
+    "trigger": {
+      "condition": "activityEngagement",
+      "subject": null,
+      "activity": null,
+      "threshold": 67,
+      "operator": "lt"
+    },
+    "content": "AI Insight #8: Focus on improving career area. Try more with None.",
+    "priority": 3,
+    "category": "career"
+  },
+  {
+    "id": "suggestion_9",
+    "trigger": {
+      "condition": "moodPattern",
+      "subject": "English",
+      "activity": null,
+      "threshold": 76,
+      "operator": "lt"
+    },
+    "content": "AI Insight #9: Focus on improving academic area. Try more with English.",
     "priority": 1,
     "category": "academic"
   },
   {
-    "id": "piano_practice",
-    "trigger": {
-      "condition": "activityFrequency",
-      "activity": "Piano",
-      "threshold": 3,
-      "timeframe": "week",
-      "operator": "lt"
-    },
-    "content": "Encourage weekly piano practice",
-    "priority": 2,
-    "category": "talent"
-  },
-  {
-    "id": "journaling",
-    "trigger": {
-      "condition": "journalCount",
-      "threshold": 1,
-      "timeframe": "week",
-      "operator": "lt"
-    },
-    "content": "Add 1 journal per week",
-    "priority": 3,
-    "category": "emotional"
-  },
-  {
-    "id": "swimming",
+    "id": "suggestion_10",
     "trigger": {
       "condition": "goalExists",
-      "activityType": "swimming",
-      "completed": false
+      "subject": null,
+      "activity": "Yoga",
+      "threshold": 57,
+      "operator": "lt"
     },
-    "content": "Start swimming classes before summer",
+    "content": "AI Insight #10: Focus on improving talent area. Try more with Yoga.",
     "priority": 4,
-    "category": "physical"
+    "category": "talent"
   }
 ]
