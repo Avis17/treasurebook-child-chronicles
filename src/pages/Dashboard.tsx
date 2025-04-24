@@ -1,7 +1,8 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { ProfileHeader } from "@/components/dashboard/ProfileHeader";
+import ProfileHeader from "@/components/dashboard/ProfileHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AcademicChart from "@/components/dashboard/AcademicChart";
