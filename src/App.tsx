@@ -2,7 +2,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "@/lib/auth";
+import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -10,7 +10,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import VerificationPending from "@/pages/VerificationPending";
 import Dashboard from "@/pages/Dashboard";
 import NotFound from "@/pages/NotFound";
-import PrivateRoute from "@/components/PrivateRoute";
+import PrivateRoute from "@/components/auth/PrivateRoute";
 import UsersManagement from "@/pages/UsersManagement";
 import AcademicRecords from "@/pages/AcademicRecords";
 import Extracurricular from "@/pages/Extracurricular";
