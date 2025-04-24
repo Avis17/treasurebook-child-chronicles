@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -32,6 +33,14 @@ interface SidebarProps {
   isMobile: boolean;
 }
 
+// Define an interface for the navigation items
+interface NavItem {
+  name: string;
+  icon: React.ReactNode;
+  path: string;
+  requiresPermission?: 'storage' | 'aiInsights'; // Make this optional with specific allowed values
+}
+
 const Sidebar = ({ isMobile }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,7 +67,8 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   };
 
   const getNavItems = () => {
-    const baseItems = [
+    // Now all of these items are typed as NavItem
+    const baseItems: NavItem[] = [
       { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
       { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights", requiresPermission: 'aiInsights' },
       { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
@@ -66,12 +76,12 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
     ];
 
-    const storageItems = [
+    const storageItems: NavItem[] = [
       { name: "Gallery", icon: <ImageIcon className="w-5 h-5" />, path: "/gallery", requiresPermission: 'storage' },
       { name: "Documents", icon: <FileArchive className="w-5 h-5" />, path: "/documents", requiresPermission: 'storage' },
     ];
 
-    const remainingItems = [
+    const remainingItems: NavItem[] = [
       { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
       { name: "Directory", icon: <Users className="w-5 h-5" />, path: "/directory" },
       { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
