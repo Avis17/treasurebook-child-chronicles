@@ -30,6 +30,7 @@ import Journal from "./pages/Journal";
 import Documents from "./pages/Documents";
 import Feedback from "./pages/Feedback";
 import BackupExport from "./pages/BackupExport";
+import AIInsights from "./pages/AIInsights";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/feedback" element={<Feedback />} />
                 <Route path="/backup" element={<BackupExport />} />
+                <Route path="/ai-insights" element={<AIInsights />} />
               </Route>
               
               <Route element={<AdminRoute />}>

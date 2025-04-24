@@ -23,7 +23,8 @@ import {
   Target,
   BookOpen,
   Calendar,
-  FileArchive
+  FileArchive,
+  Lightbulb
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +60,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
 
   const navItems = [
     { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
+    { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights" },
     { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
     { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
     { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
