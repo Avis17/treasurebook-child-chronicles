@@ -18,7 +18,12 @@ import {
   Settings,
   Moon,
   Sun,
-  LogOut
+  LogOut,
+  Archive,
+  Target,
+  BookOpen,
+  Calendar,
+  FileArchive
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,6 +65,11 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
     { name: "Gallery", icon: <ImageIcon className="w-5 h-5" />, path: "/gallery" },
     { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
     { name: "Directory", icon: <Users className="w-5 h-5" />, path: "/directory" },
+    { name: "Documents", icon: <FileArchive className="w-5 h-5" />, path: "/documents" },
+    { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
+    { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
+    { name: "Milestones", icon: <Archive className="w-5 h-5" />, path: "/milestones" },
+    { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
     { name: "Profile", icon: <User className="w-5 h-5" />, path: "/profile" },
     { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
   ];
@@ -78,8 +88,8 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       </div>
 
       {/* Navigation Items */}
-      <ScrollArea className="flex-1">
-        <nav className="p-4 space-y-1">
+      <ScrollArea className="flex-1 py-2">
+        <nav className="px-3 space-y-1">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
@@ -120,7 +130,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors duration-150 ease-in-out"
+          className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-md transition-colors duration-150 ease-in-out"
         >
           <LogOut className="w-5 h-5" />
           <span>Log out</span>
