@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, AlertCircle } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { format } from 'date-fns';
@@ -16,11 +16,13 @@ interface Activity {
 const ActivitySummary: React.FC = () => {
   const [upcomingActivities, setUpcomingActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchActivities = async () => {
       try {
         setLoading(true);
+        setError(null);
         const user = auth.currentUser;
         if (!user) return;
 
@@ -41,39 +43,45 @@ const ActivitySummary: React.FC = () => {
           dateFrom: todayStr
         });
 
-        const eventsDocs = await getDocs(eventsQuery);
-        console.log(`Found ${eventsDocs.size} upcoming events`);
-        
-        const activities: Activity[] = [];
-        
-        eventsDocs.forEach(doc => {
-          const data = doc.data();
-          console.log("Calendar event data:", data);
+        try {
+          const eventsDocs = await getDocs(eventsQuery);
+          console.log(`Found ${eventsDocs.size} upcoming events`);
           
-          activities.push({
-            id: doc.id,
-            title: data.title || "Untitled Event",
-            date: data.date || format(today, 'yyyy-MM-dd'),
-            time: data.time,
-            type: data.category as Activity['type'] || 'event'
+          const activities: Activity[] = [];
+          
+          eventsDocs.forEach(doc => {
+            const data = doc.data();
+            console.log("Calendar event data:", data);
+            
+            activities.push({
+              id: doc.id,
+              title: data.title || "Untitled Event",
+              date: data.date || format(today, 'yyyy-MM-dd'),
+              time: data.time,
+              type: data.category as Activity['type'] || 'event'
+            });
           });
-        });
 
-        // Sort manually by date since we removed orderBy
-        activities.sort((a, b) => {
-          // Compare dates
-          const dateA = new Date(a.date);
-          const dateB = new Date(b.date);
-          return dateA.getTime() - dateB.getTime();
-        });
+          // Sort manually by date since we removed orderBy
+          activities.sort((a, b) => {
+            // Compare dates
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return dateA.getTime() - dateB.getTime();
+          });
 
-        // Limit to 5 events
-        const limitedActivities = activities.slice(0, 5);
-        console.log("Processed activities:", limitedActivities);
-        
-        setUpcomingActivities(limitedActivities);
+          // Limit to 5 events
+          const limitedActivities = activities.slice(0, 5);
+          console.log("Processed activities:", limitedActivities);
+          
+          setUpcomingActivities(limitedActivities);
+        } catch (err) {
+          console.error("Error fetching activities:", err);
+          setError("Could not load upcoming events due to a database indexing error. Please try again later.");
+        }
       } catch (error) {
         console.error("Error fetching activities:", error);
+        setError("Failed to load upcoming events. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -109,8 +117,17 @@ const ActivitySummary: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-4">
+      <div className="flex justify-center items-center py-8">
         <div className="animate-spin w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800 text-center">
+        <AlertCircle className="h-6 w-6 text-red-500 mx-auto mb-2" />
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
       </div>
     );
   }
@@ -121,18 +138,20 @@ const ActivitySummary: React.FC = () => {
         upcomingActivities.map((activity) => (
           <div 
             key={activity.id}
-            className="flex items-start space-x-3 p-3 rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+            className="flex items-start space-x-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
           >
-            <div className={`mt-0.5 p-1.5 rounded-full ${getActivityTypeColor(activity.type).replace('text-', 'bg-')}/20`}>
+            <div className={`mt-0.5 p-2 rounded-full ${getActivityTypeColor(activity.type).replace('text-', 'bg-')}/20`}>
               <Calendar className={`h-4 w-4 ${getActivityTypeColor(activity.type)}`} />
             </div>
             <div className="flex-1">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-start">
                 <h4 className="font-medium text-sm">{activity.title}</h4>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{formatDate(activity.date)}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full ml-1">
+                  {formatDate(activity.date)}
+                </span>
               </div>
-              <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
-                <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 mr-2">
+              <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <span className="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-800 mr-2">
                   {activity.type.charAt(0).toUpperCase() + activity.type.slice(1)}
                 </span>
                 {activity.time && (
@@ -146,9 +165,18 @@ const ActivitySummary: React.FC = () => {
           </div>
         ))
       ) : (
-        <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
-          No upcoming activities. Add events in the Calendar section.
-        </p>
+        <div className="text-center py-8 px-4">
+          <Calendar className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-gray-400 mb-2">
+            No upcoming activities.
+          </p>
+          <a 
+            href="/calendar" 
+            className="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Add events in the Calendar section
+          </a>
+        </div>
       )}
     </div>
   );

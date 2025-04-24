@@ -41,21 +41,27 @@ const Dashboard = () => {
 
   return (
     <AppLayout title="Dashboard" hideHeader={true}>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto pb-12">
+        {/* Profile Header */}
         <ProfileHeader />
         
-        <div className="space-y-10 pb-10">
-          <OverviewCards />
+        <div className="space-y-12">
+          {/* Overview Cards */}
+          <div className="mt-8 mb-8 px-4 md:px-6">
+            <OverviewCards />
+          </div>
           
-          <div className="grid gap-8 px-6 md:grid-cols-3">
+          {/* Performance Insights & Upcoming Events */}
+          <div className="grid gap-6 px-4 md:px-6 md:grid-cols-3">
+            {/* Performance Insights */}
             <div className="md:col-span-2">
-              <Card className="h-full dark:bg-gray-800 shadow-md">
-                <CardHeader>
-                  <CardTitle className="text-xl dark:text-white">Performance Insights</CardTitle>
+              <Card className="h-full shadow-md dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl font-bold dark:text-white">Performance Insights</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Tabs defaultValue="academic" className="w-full">
-                    <TabsList className="mb-4">
+                    <TabsList className="mb-6">
                       <TabsTrigger value="academic">Academic</TabsTrigger>
                       <TabsTrigger value="sports">Sports</TabsTrigger>
                       <TabsTrigger value="extracurricular">Extracurricular</TabsTrigger>
@@ -80,10 +86,15 @@ const Dashboard = () => {
               </Card>
             </div>
             
+            {/* Upcoming Events */}
             <div>
-              <Card className="h-full dark:bg-gray-800 shadow-md">
-                <CardHeader>
-                  <CardTitle className="text-xl dark:text-white">Upcoming Events</CardTitle>
+              <Card className="h-full shadow-md dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-xl font-bold dark:text-white">Upcoming Events</CardTitle>
+                  <a href="/calendar" className="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center">
+                    View all
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1"><path d="m9 18 6-6-6-6"/></svg>
+                  </a>
                 </CardHeader>
                 <CardContent>
                   <ActivitySummary />
@@ -92,7 +103,8 @@ const Dashboard = () => {
             </div>
           </div>
           
-          <div className="grid gap-8 px-6 md:grid-cols-2">
+          {/* Academic Summary & Summary Cards */}
+          <div className="grid gap-6 px-4 md:px-6 md:grid-cols-2">
             <MarksSummaryCard />
             <SummaryCards />
           </div>
