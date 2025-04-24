@@ -15,16 +15,17 @@ const PrivateRoute = () => {
   const isStorageRoute = ['/gallery', '/documents'].includes(location.pathname);
   const isAIInsightsRoute = location.pathname === '/ai-insights';
 
-  // Allow admin to always access private routes regardless of verification status
-  if (currentUser && currentUser.email === ADMIN_EMAIL) {
-    return <Outlet />;
-  }
-
-  // Block all non-admins if not approved
+  // Block all non-authenticated users
   if (!currentUser) {
     return <Navigate to="/login" replace />;
   }
 
+  // Skip all checks for admin
+  if (currentUser.email === ADMIN_EMAIL) {
+    return <Outlet />;
+  }
+
+  // Block non-approved users
   if (currentUser.verificationStatus !== VERIFICATION_STATUS.APPROVED) {
     return <Navigate to="/verification-pending" replace />;
   }
