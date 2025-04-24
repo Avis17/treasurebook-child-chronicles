@@ -1,84 +1,71 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
+import { AuthProvider } from "@/lib/auth";
+import Index from "@/pages/Index";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import ResetPassword from "@/pages/ResetPassword";
+import VerificationPending from "@/pages/VerificationPending";
+import Dashboard from "@/pages/Dashboard";
+import NotFound from "@/pages/NotFound";
+import PrivateRoute from "@/components/PrivateRoute";
+import UsersManagement from "@/pages/UsersManagement";
+import AcademicRecords from "@/pages/AcademicRecords";
+import Extracurricular from "@/pages/Extracurricular";
+import Sports from "@/pages/Sports";
+import Goals from "@/pages/Goals";
+import Journal from "@/pages/Journal";
+import Resources from "@/pages/Resources";
+import Gallery from "@/pages/Gallery";
+import Documents from "@/pages/Documents";
+import Directory from "@/pages/Directory";
+import Milestones from "@/pages/Milestones";
+import AIInsights from "@/pages/AIInsights";
+import BackupExport from "@/pages/BackupExport";
+import Profile from "@/pages/Profile";
+import Settings from "@/pages/Settings";
+import Feedback from "@/pages/Feedback";
 
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import Dashboard from "./pages/Dashboard";
-import AcademicRecords from "./pages/AcademicRecords";
-import Gallery from "./pages/Gallery";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import Resources from "./pages/Resources";
-import Directory from "./pages/Directory";
-import Sports from "./pages/Sports";
-import Extracurricular from "./pages/Extracurricular";
-import NotFound from "./pages/NotFound";
-import UsersManagement from "./pages/UsersManagement";
-import VerificationPending from "./pages/VerificationPending";
-import PrivateRoute from "./components/auth/PrivateRoute";
-import AdminRoute from "./components/auth/AdminRoute";
-import Milestones from "./pages/Milestones";
-import Goals from "./pages/Goals";
-import Journal from "./pages/Journal";
-import Documents from "./pages/Documents";
-import Feedback from "./pages/Feedback";
-import BackupExport from "./pages/BackupExport";
-import AIInsights from "./pages/AIInsights";
+// Add Calendar page import
+import Calendar from "@/pages/Calendar";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+function App() {
+  return (
     <AuthProvider>
-      <ThemeProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<LoginPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/verification-pending" element={<VerificationPending />} />
-              
-              <Route element={<PrivateRoute />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/academics" element={<AcademicRecords />} />
-                <Route path="/sports" element={<Sports />} />
-                <Route path="/extracurricular" element={<Extracurricular />} />
-                <Route path="/gallery" element={<Gallery />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/resources" element={<Resources />} />
-                <Route path="/directory" element={<Directory />} />
-                <Route path="/milestones" element={<Milestones />} />
-                <Route path="/goals" element={<Goals />} />
-                <Route path="/journal" element={<Journal />} />
-                <Route path="/documents" element={<Documents />} />
-                <Route path="/feedback" element={<Feedback />} />
-                <Route path="/backup" element={<BackupExport />} />
-                <Route path="/ai-insights" element={<AIInsights />} />
-              </Route>
-              
-              <Route element={<AdminRoute />}>
-                <Route path="/users" element={<UsersManagement />} />
-              </Route>
-              
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <Toaster />
+        <BrowserRouter>
+          <Routes>
+            <Route index element={<Index />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+            <Route path="reset-password" element={<ResetPassword />} />
+            <Route path="verification-pending" element={<VerificationPending />} />
+            <Route path="dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+            <Route path="academic-records" element={<PrivateRoute><AcademicRecords /></PrivateRoute>} />
+            <Route path="extracurricular" element={<PrivateRoute><Extracurricular /></PrivateRoute>} />
+            <Route path="sports" element={<PrivateRoute><Sports /></PrivateRoute>} />
+            <Route path="goals" element={<PrivateRoute><Goals /></PrivateRoute>} />
+            <Route path="journal" element={<PrivateRoute><Journal /></PrivateRoute>} />
+            <Route path="calendar" element={<PrivateRoute><Calendar /></PrivateRoute>} />
+            <Route path="resources" element={<PrivateRoute><Resources /></PrivateRoute>} />
+            <Route path="gallery" element={<PrivateRoute><Gallery /></PrivateRoute>} />
+            <Route path="documents" element={<PrivateRoute><Documents /></PrivateRoute>} />
+            <Route path="directory" element={<PrivateRoute><Directory /></PrivateRoute>} />
+            <Route path="milestones" element={<PrivateRoute><Milestones /></PrivateRoute>} />
+            <Route path="ai-insights" element={<PrivateRoute><AIInsights /></PrivateRoute>} />
+            <Route path="backup-export" element={<PrivateRoute><BackupExport /></PrivateRoute>} />
+            <Route path="profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+            <Route path="settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+            <Route path="feedback" element={<PrivateRoute><Feedback /></PrivateRoute>} />
+            <Route path="users" element={<PrivateRoute requiresAdmin={true}><UsersManagement /></PrivateRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
       </ThemeProvider>
     </AuthProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;

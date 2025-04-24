@@ -1,80 +1,34 @@
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
+import ActivitySummary from "./ActivitySummary";
+import MarksSummaryCard from "./MarksSummaryCard";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Book, Image, Calendar, Award } from "lucide-react";
+export function SummaryCards() {
+  const navigate = useNavigate();
 
-interface SummaryCardProps {
-  title: string;
-  value: string;
-  description: string;
-  icon: React.ReactNode;
-  className: string;
-}
-
-interface SummaryCardsProps {
-  academics: {
-    grade: string;
-    lastAssessment: string;
+  const viewAllActivity = () => {
+    navigate('/calendar');
   };
-  sports: {
-    events: number;
-    recent: string;
-  };
-  talents: {
-    count: number;
-    latest: string;
-  };
-  gallery: {
-    count: number;
-    lastUpdate: string;
-  };
-}
 
-const SummaryCard = ({ title, value, description, icon, className }: SummaryCardProps) => (
-  <Card className={`border-l-4 ${className}`}>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      {icon}
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
-      <p className="text-xs text-muted-foreground">{description}</p>
-    </CardContent>
-  </Card>
-);
-
-const SummaryCards = ({ academics, sports, talents, gallery }: SummaryCardsProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <SummaryCard
-        title="Academics"
-        value={academics.grade}
-        description={`Last assessment: ${academics.lastAssessment}`}
-        icon={<Book className="h-4 w-4 text-treasure-blue" />}
-        className="border-blue-500"
-      />
-      <SummaryCard
-        title="Sports"
-        value={`${sports.events} Events`}
-        description={`Recent: ${sports.recent}`}
-        icon={<Calendar className="h-4 w-4 text-treasure-orange" />}
-        className="border-orange-500"
-      />
-      <SummaryCard
-        title="Talents"
-        value={`${talents.count} Skills`}
-        description={`Latest: ${talents.latest}`}
-        icon={<Award className="h-4 w-4 text-treasure-green" />}
-        className="border-green-500"
-      />
-      <SummaryCard
-        title="Gallery"
-        value={`${gallery.count} Photos`}
-        description={`Last update: ${gallery.lastUpdate}`}
-        icon={<Image className="h-4 w-4 text-gray-500" />}
-        className="border-gray-500"
-      />
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <Card className="md:col-span-2 lg:col-span-1">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center">
+            <CardTitle className="text-sm font-medium">Upcoming Activities</CardTitle>
+          </div>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={viewAllActivity}>
+            View all <ArrowRight className="ml-1 h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <ActivitySummary />
+        </CardContent>
+      </Card>
+
+      <MarksSummaryCard />
     </div>
   );
-};
-
-export default SummaryCards;
+}

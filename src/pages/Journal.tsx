@@ -1,3 +1,4 @@
+
 // Update Journal.tsx to use the hideHeader prop and fix any Firebase query issues
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
@@ -187,16 +188,16 @@ const JournalPage = () => {
                 <Plus className="mr-2 h-4 w-4" /> Add Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] dark:bg-gray-900">
+            <DialogContent className="sm:max-w-[500px] dark:bg-gray-800">
               <DialogHeader>
-                <DialogTitle>{isEditing ? "Edit Journal Entry" : "Add New Journal Entry"}</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="dark:text-white">{isEditing ? "Edit Journal Entry" : "Add New Journal Entry"}</DialogTitle>
+                <DialogDescription className="dark:text-gray-300">
                   Record your thoughts and experiences in your daily journal.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="title" className="text-sm font-medium">Title</label>
+                  <label htmlFor="title" className="text-sm font-medium dark:text-white">Title</label>
                   <Input
                     id="title"
                     name="title"
@@ -204,25 +205,25 @@ const JournalPage = () => {
                     onChange={handleInputChange}
                     placeholder="e.g., Today's Reflection"
                     required
-                    className="dark:bg-gray-800 dark:text-white"
+                    className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="content" className="text-sm font-medium">Content</label>
+                  <label htmlFor="content" className="text-sm font-medium dark:text-white">Content</label>
                   <textarea
                     id="content"
                     name="content"
                     value={formData.content || ""}
                     onChange={handleInputChange}
                     placeholder="Write about your day"
-                    className="w-full p-2 rounded border dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                    className="w-full p-2 rounded border dark:bg-gray-700 dark:text-white dark:border-gray-600"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="date" className="text-sm font-medium">Date</label>
+                  <label htmlFor="date" className="text-sm font-medium dark:text-white">Date</label>
                   <Input
                     type="date"
                     id="date"
@@ -231,6 +232,7 @@ const JournalPage = () => {
                     onChange={handleInputChange}
                     max={new Date().toISOString().split('T')[0]}
                     required
+                    className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   />
                 </div>
 
@@ -238,7 +240,8 @@ const JournalPage = () => {
                   <Button variant="outline" type="button" onClick={() => {
                     resetForm();
                     setOpenDialog(false);
-                  }}>
+                  }}
+                  className="dark:text-white">
                     Cancel
                   </Button>
                   <Button type="submit">

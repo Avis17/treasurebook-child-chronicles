@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Target, Edit, Trash2, Plus, Calendar, CheckCircle, Circle } from "lucide-react";
+import { Target, Edit, Trash2, Plus, Calendar, CheckCircle, Circle, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ const GoalsPage = () => {
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [validationError, setValidationError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -102,6 +104,10 @@ const GoalsPage = () => {
   };
 
   const handleSelectChange = (name: string, value: string) => {
+    // Clear validation error when changing status
+    if (name === "status") {
+      setValidationError(null);
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -139,8 +145,35 @@ const GoalsPage = () => {
     });
   };
 
+  const validateCompleted = () => {
+    // Check if all steps are completed when status is set to "Completed"
+    if (formData.status === "Completed") {
+      const steps = formData.steps || [];
+      const nonEmptySteps = steps.filter(step => step.text.trim() !== "");
+      
+      if (nonEmptySteps.length === 0) {
+        return true; // No steps to complete
+      }
+      
+      const allStepsCompleted = nonEmptySteps.every(step => step.completed);
+      
+      if (!allStepsCompleted) {
+        setValidationError("All steps must be completed before marking the goal as completed");
+        return false;
+      }
+    }
+    
+    setValidationError(null);
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate if all steps are completed when marking as completed
+    if (!validateCompleted()) {
+      return;
+    }
     
     try {
       const user = auth.currentUser;
@@ -230,6 +263,7 @@ const GoalsPage = () => {
     });
     setIsEditing(false);
     setCurrentId(null);
+    setValidationError(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -257,6 +291,14 @@ const GoalsPage = () => {
         return "bg-green-500";
       case "Financial":
         return "bg-yellow-500";
+      case "Sports":
+        return "bg-orange-500";
+      case "Social":
+        return "bg-indigo-500";
+      case "Spiritual":
+        return "bg-teal-500";
+      case "Creative":
+        return "bg-rose-500";
       default:
         return "bg-gray-500";
     }
@@ -287,16 +329,16 @@ const GoalsPage = () => {
                 <Plus className="mr-2 h-4 w-4" /> Add Goal
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] dark:bg-gray-800">
               <DialogHeader>
-                <DialogTitle>{isEditing ? "Edit Goal" : "Add New Goal"}</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="dark:text-white">{isEditing ? "Edit Goal" : "Add New Goal"}</DialogTitle>
+                <DialogDescription className="dark:text-gray-300">
                   Define your goals and track your progress towards achieving them.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="title" className="text-sm font-medium">Title</label>
+                  <label htmlFor="title" className="text-sm font-medium dark:text-white">Title</label>
                   <Input
                     id="title"
                     name="title"
@@ -304,53 +346,57 @@ const GoalsPage = () => {
                     onChange={handleInputChange}
                     placeholder="e.g., Improve Math Grades"
                     required
-                    className="dark:bg-gray-800 dark:text-white"
+                    className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="description" className="text-sm font-medium">Description</label>
+                  <label htmlFor="description" className="text-sm font-medium dark:text-white">Description</label>
                   <textarea
                     id="description"
                     name="description"
                     value={formData.description || ""}
                     onChange={handleInputChange}
                     placeholder="Details about this goal"
-                    className="w-full p-2 rounded border dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                    className="w-full p-2 rounded border dark:bg-gray-700 dark:text-white dark:border-gray-600"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="category" className="text-sm font-medium">Category</label>
+                    <label htmlFor="category" className="text-sm font-medium dark:text-white">Category</label>
                     <Select
                       value={formData.category}
                       onValueChange={(value) => handleSelectChange("category", value)}
                     >
-                      <SelectTrigger className="dark:bg-gray-800 dark:text-white">
+                      <SelectTrigger className="dark:bg-gray-700 dark:text-white dark:border-gray-600">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="dark:bg-gray-800">
                         <SelectItem value="Academic">Academic</SelectItem>
                         <SelectItem value="Career">Career</SelectItem>
                         <SelectItem value="Personal">Personal</SelectItem>
                         <SelectItem value="Health">Health</SelectItem>
                         <SelectItem value="Financial">Financial</SelectItem>
+                        <SelectItem value="Sports">Sports</SelectItem>
+                        <SelectItem value="Social">Social</SelectItem>
+                        <SelectItem value="Spiritual">Spiritual</SelectItem>
+                        <SelectItem value="Creative">Creative</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="timeframe" className="text-sm font-medium">Timeframe</label>
+                    <label htmlFor="timeframe" className="text-sm font-medium dark:text-white">Timeframe</label>
                     <Select
                       value={formData.timeframe}
                       onValueChange={(value) => handleSelectChange("timeframe", value)}
                     >
-                      <SelectTrigger className="dark:bg-gray-800 dark:text-white">
+                      <SelectTrigger className="dark:bg-gray-700 dark:text-white dark:border-gray-600">
                         <SelectValue placeholder="Select timeframe" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="dark:bg-gray-800">
                         <SelectItem value="Short-term">Short-term</SelectItem>
                         <SelectItem value="Medium-term">Medium-term</SelectItem>
                         <SelectItem value="Long-term">Long-term</SelectItem>
@@ -360,25 +406,31 @@ const GoalsPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label htmlFor="status" className="text-sm font-medium">Status</label>
+                  <label htmlFor="status" className="text-sm font-medium dark:text-white">Status</label>
                   <Select
                     value={formData.status}
                     onValueChange={(value) => handleSelectChange("status", value)}
                   >
-                    <SelectTrigger className="dark:bg-gray-800 dark:text-white">
+                    <SelectTrigger className="dark:bg-gray-700 dark:text-white dark:border-gray-600">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="dark:bg-gray-800">
                       <SelectItem value="Not Started">Not Started</SelectItem>
                       <SelectItem value="In Progress">In Progress</SelectItem>
                       <SelectItem value="Completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
+                  {validationError && (
+                    <div className="text-destructive flex items-center mt-1 text-sm">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      {validationError}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium">Action Steps</label>
+                    <label className="text-sm font-medium dark:text-white">Action Steps</label>
                     <Button type="button" variant="outline" size="sm" onClick={addStep}>
                       <Plus className="h-4 w-4 mr-1" /> Add Step
                     </Button>
@@ -404,7 +456,7 @@ const GoalsPage = () => {
                           value={step.text}
                           onChange={(e) => handleStepChange(index, e.target.value)}
                           placeholder={`Step ${index + 1}`}
-                          className={step.completed ? "line-through text-muted-foreground" : ""}
+                          className={`dark:bg-gray-700 dark:text-white dark:border-gray-600 ${step.completed ? "line-through text-muted-foreground" : ""}`}
                         />
                         <Button
                           type="button"
@@ -456,6 +508,10 @@ const GoalsPage = () => {
                     <SelectItem value="Personal">Personal</SelectItem>
                     <SelectItem value="Health">Health</SelectItem>
                     <SelectItem value="Financial">Financial</SelectItem>
+                    <SelectItem value="Sports">Sports</SelectItem>
+                    <SelectItem value="Social">Social</SelectItem>
+                    <SelectItem value="Spiritual">Spiritual</SelectItem>
+                    <SelectItem value="Creative">Creative</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

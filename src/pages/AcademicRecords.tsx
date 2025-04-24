@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +31,8 @@ const AcademicRecords = () => {
   const [filteredRecords, setFilteredRecords] = useState<AcademicRecord[]>([]);
   const [activeFilters, setActiveFilters] = useState<FilterOptions>({});
   const [loading, setLoading] = useState(true);
+  const [editingRecord, setEditingRecord] = useState<AcademicRecord | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -113,6 +115,91 @@ const AcademicRecords = () => {
       title: "Success",
       description: "Academic record added successfully",
     });
+    setIsFormOpen(false);
+  };
+
+  const handleEditRecord = (record: AcademicRecord) => {
+    setEditingRecord(record);
+    setIsFormOpen(true);
+  };
+
+  const handleDeleteRecord = async (record: AcademicRecord) => {
+    try {
+      if (!record.id) {
+        throw new Error("Record ID is missing");
+      }
+
+      await deleteDoc(doc(db, "academicRecords", record.id));
+      
+      const updatedRecords = records.filter((r) => r.id !== record.id);
+      setRecords(updatedRecords);
+      
+      // Re-apply filters after delete
+      const processedFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
+        acc[key] = value === "all" ? "" : value;
+        return acc;
+      }, {} as FilterOptions);
+      
+      const filtered = filterAcademicRecords(updatedRecords, processedFilters);
+      setFilteredRecords(filtered);
+      
+      toast({
+        title: "Success",
+        description: "Academic record deleted successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting academic record:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete academic record",
+      });
+    }
+  };
+
+  const handleUpdateRecord = async (updatedRecord: AcademicRecord) => {
+    try {
+      if (!updatedRecord.id) {
+        throw new Error("Record ID is missing");
+      }
+
+      const recordRef = doc(db, "academicRecords", updatedRecord.id);
+      
+      // Remove id field from the data to update
+      const { id, ...recordData } = updatedRecord;
+      
+      await updateDoc(recordRef, recordData);
+
+      const updatedRecords = records.map((record) =>
+        record.id === updatedRecord.id ? updatedRecord : record
+      );
+      
+      setRecords(updatedRecords);
+      
+      // Re-apply filters after update
+      const processedFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
+        acc[key] = value === "all" ? "" : value;
+        return acc;
+      }, {} as FilterOptions);
+      
+      const filtered = filterAcademicRecords(updatedRecords, processedFilters);
+      setFilteredRecords(filtered);
+      
+      toast({
+        title: "Success",
+        description: "Academic record updated successfully",
+      });
+      
+      setIsFormOpen(false);
+      setEditingRecord(null);
+    } catch (error) {
+      console.error("Error updating academic record:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update academic record",
+      });
+    }
   };
 
   const applyFilters = (filters: FilterOptions) => {
@@ -124,6 +211,11 @@ const AcademicRecords = () => {
   };
 
   const hasActiveFilters = Object.values(activeFilters).some(value => !!value && value !== "all");
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditingRecord(null);
+  };
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
@@ -155,7 +247,13 @@ const AcademicRecords = () => {
                 onApplyFilters={applyFilters}
                 hasActiveFilters={hasActiveFilters}
               />
-              <AcademicRecordForm onRecordAdded={handleRecordAdded} />
+              <AcademicRecordForm 
+                onRecordAdded={handleRecordAdded} 
+                onRecordUpdated={handleUpdateRecord}
+                initialData={editingRecord}
+                isOpen={isFormOpen}
+                onClose={closeForm}
+              />
             </div>
           </div>
 
@@ -176,6 +274,8 @@ const AcademicRecords = () => {
                   records={filteredRecords}
                   hasActiveFilters={hasActiveFilters}
                   onClearFilters={clearFilters}
+                  onEdit={handleEditRecord}
+                  onDelete={handleDeleteRecord}
                 />
               )}
             </CardContent>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -24,7 +23,11 @@ import {
   BookOpen,
   Calendar,
   FileArchive,
-  Lightbulb
+  Lightbulb,
+  Home,
+  GraduationCap,
+  CalendarDays,
+  BookOpenText
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -179,3 +182,36 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
 };
 
 export default Sidebar;
+
+export const navItems = [
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: Home,
+    requiresAuth: true,
+  },
+  {
+    title: "Academic Records",
+    href: "/academic-records",
+    icon: GraduationCap,
+    requiresAuth: true,
+  },
+  {
+    title: "Calendar",
+    href: "/calendar",
+    icon: CalendarDays,
+    requiresAuth: true,
+  },
+  {
+    title: "Goals",
+    href: "/goals",
+    icon: Target,
+    requiresAuth: true,
+  },
+  {
+    title: "Journal",
+    href: "/journal",
+    icon: BookOpenText,
+    requiresAuth: true,
+  },
+];
