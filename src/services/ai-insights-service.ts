@@ -814,46 +814,33 @@ const getForecastForStudent = (
           break;
 
         case "gradeLevel":
-          if (condition.subject) {
-            const subjectScore = academic.subjectScores.find(
-              s => s.subject.toLowerCase() === condition.subject?.toLowerCase()
-            )?.score;
-            
-            if (subjectScore !== undefined && condition.threshold !== undefined) {
-              if (condition.operator === "lt" && subjectScore < condition.threshold) {
-                conditionMet = true;
-              } else if (condition.operator === "gt" && subjectScore > condition.threshold) {
-                conditionMet = true;
-              } else if (condition.operator === "gte" && subjectScore >= condition.threshold) {
-                conditionMet = true;
-              } else if (condition.operator === "eq" && subjectScore === condition.threshold) {
-                conditionMet = true;
-              }
-            }
-          } else if (condition.activity && condition.threshold !== undefined) {
-            if (talent.topActivity === condition.activity || physical.topSport === condition.activity) {
-              if (academic.averageScore !== undefined) {
-                if (condition.operator === "lt" && academic.averageScore < condition.threshold) {
-                  conditionMet = true;
-                } else if (condition.operator === "gt" && academic.averageScore > condition.threshold) {
-                  conditionMet = true;
-                } else if (condition.operator === "gte" && academic.averageScore >= condition.threshold) {
-                  conditionMet = true;
-                } else if (condition.operator === "eq" && academic.averageScore === condition.threshold) {
-                  conditionMet = true;
+          if (condition.subjects && condition.subjects.length > 0) {
+            const subjectFound = condition.subjects.some(subject => {
+              const subjectScore = academic.subjectScores.find(
+                s => s.subject.toLowerCase() === subject.toLowerCase()
+              )?.score;
+              
+              if (subjectScore !== undefined && condition.minCount !== undefined) {
+                if (condition.minCount > 0) {
+                  return subjectScore >= condition.minCount;
                 }
               }
-            }
-          } else if (condition.threshold !== undefined) {
-            if (condition.operator === "eq" && academic.averageScore === condition.threshold) {
-              conditionMet = true;
-            } else if (condition.operator === "lt" && academic.averageScore < condition.threshold) {
-              conditionMet = true;
-            } else if (condition.operator === "gt" && academic.averageScore > condition.threshold) {
-              conditionMet = true;
-            } else if (condition.operator === "gte" && academic.averageScore >= condition.threshold) {
-              conditionMet = true;
-            }
+              return false;
+            });
+            conditionMet = subjectFound;
+          } 
+          else if (condition.activities && condition.activities.length > 0) {
+            const activityMatched = condition.activities.some(activity => 
+              (talent.topActivity === activity || physical.topSport === activity) && 
+              condition.minCount !== undefined && 
+              academic.averageScore >= condition.minCount
+            );
+            conditionMet = activityMatched;
+          } 
+          else if (condition.minCount !== undefined) {
+            conditionMet = academic.averageScore >= condition.minCount;
+          } else {
+            conditionMet = true;
           }
           break;
 
