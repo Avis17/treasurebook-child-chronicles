@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -116,6 +115,20 @@ export const AcademicTable = ({
         title: "Record deleted",
         description: "The academic record has been deleted successfully.",
       });
+    }
+  };
+
+  const handleEdit = async (record: AcademicRecord) => {
+    // Implementation will be handled by the parent component
+    if (onEdit) {
+      onEdit(record);
+    }
+  };
+
+  const handleDelete = async (record: AcademicRecord) => {
+    // Implementation will be handled by the parent component
+    if (onDelete) {
+      onDelete(record);
     }
   };
 

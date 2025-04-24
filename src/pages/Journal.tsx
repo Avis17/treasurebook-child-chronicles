@@ -187,7 +187,7 @@ const JournalPage = () => {
                 <Plus className="mr-2 h-4 w-4" /> Add Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] dark:bg-gray-900">
               <DialogHeader>
                 <DialogTitle>{isEditing ? "Edit Journal Entry" : "Add New Journal Entry"}</DialogTitle>
                 <DialogDescription>
@@ -204,6 +204,7 @@ const JournalPage = () => {
                     onChange={handleInputChange}
                     placeholder="e.g., Today's Reflection"
                     required
+                    className="dark:bg-gray-800 dark:text-white"
                   />
                 </div>
                 
@@ -215,7 +216,7 @@ const JournalPage = () => {
                     value={formData.content || ""}
                     onChange={handleInputChange}
                     placeholder="Write about your day"
-                    className="w-full p-2 rounded border min-h-[100px]"
+                    className="w-full p-2 rounded border dark:bg-gray-800 dark:text-white dark:border-gray-700"
                     required
                   />
                 </div>

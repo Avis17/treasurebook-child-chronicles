@@ -304,6 +304,7 @@ const GoalsPage = () => {
                     onChange={handleInputChange}
                     placeholder="e.g., Improve Math Grades"
                     required
+                    className="dark:bg-gray-800 dark:text-white"
                   />
                 </div>
                 
@@ -315,7 +316,7 @@ const GoalsPage = () => {
                     value={formData.description || ""}
                     onChange={handleInputChange}
                     placeholder="Details about this goal"
-                    className="w-full p-2 rounded border min-h-[80px]"
+                    className="w-full p-2 rounded border dark:bg-gray-800 dark:text-white dark:border-gray-700"
                     required
                   />
                 </div>
@@ -327,7 +328,7 @@ const GoalsPage = () => {
                       value={formData.category}
                       onValueChange={(value) => handleSelectChange("category", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="dark:bg-gray-800 dark:text-white">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent>
@@ -346,7 +347,7 @@ const GoalsPage = () => {
                       value={formData.timeframe}
                       onValueChange={(value) => handleSelectChange("timeframe", value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="dark:bg-gray-800 dark:text-white">
                         <SelectValue placeholder="Select timeframe" />
                       </SelectTrigger>
                       <SelectContent>
@@ -364,7 +365,7 @@ const GoalsPage = () => {
                     value={formData.status}
                     onValueChange={(value) => handleSelectChange("status", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="dark:bg-gray-800 dark:text-white">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>

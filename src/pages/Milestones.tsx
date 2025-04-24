@@ -201,7 +201,7 @@ const Milestones = () => {
                 <Plus className="mr-2 h-4 w-4" /> Add Milestone
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] dark:bg-gray-900">
               <DialogHeader>
                 <DialogTitle>{isEditing ? "Edit Milestone" : "Add New Milestone"}</DialogTitle>
                 <DialogDescription>
@@ -218,6 +218,7 @@ const Milestones = () => {
                     onChange={handleInputChange}
                     placeholder="e.g., Won Science Competition"
                     required
+                    className="dark:bg-gray-800 dark:text-white"
                   />
                 </div>
                 
@@ -229,7 +230,7 @@ const Milestones = () => {
                     value={formData.description || ""}
                     onChange={handleInputChange}
                     placeholder="Details about this milestone"
-                    className="w-full p-2 rounded border min-h-[100px]"
+                    className="w-full p-2 rounded border dark:bg-gray-800 dark:text-white dark:border-gray-700"
                     required
                   />
                 </div>
