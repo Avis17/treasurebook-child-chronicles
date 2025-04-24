@@ -101,7 +101,7 @@ const Directory = () => {
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar isMobile={isMobile} />
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto md:ml-64">
         {isMobile && (
           <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b shadow-sm z-10">
             <div className="flex items-center justify-between">

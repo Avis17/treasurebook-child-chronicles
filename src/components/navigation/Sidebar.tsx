@@ -96,10 +96,10 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
 
   return (
     <div 
-      className={`fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-sidebar-primary/10 to-sidebar-primary/5 backdrop-blur-sm shadow-md transition-all duration-300 ease-in-out`}
+      className="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-md transition-all duration-300 ease-in-out flex flex-col"
     >
-      <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
-        <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-treasure-blue to-blue-500 dark:from-blue-300 dark:to-blue-500">TreasureBook</h1>
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <h1 className="text-xl font-bold text-treasure-blue dark:text-blue-400">TreasureBook</h1>
       </div>
 
       <ScrollArea className="flex-1 h-[calc(100vh-8rem)]">
@@ -116,24 +116,22 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
                           cn(
                             "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative",
                             isActive
-                              ? "bg-gradient-to-r from-sidebar-primary/20 to-sidebar-primary/10 text-sidebar-primary-foreground font-semibold shadow-sm"
-                              : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                              ? "bg-blue-50 text-treasure-blue font-semibold dark:bg-blue-900/30 dark:text-blue-300"
+                              : "text-gray-700 hover:bg-blue-50 hover:text-treasure-blue dark:text-gray-200 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
                           )
                         }
                       >
                         <span className={cn(
                           "flex items-center justify-center",
-                          isActiveRoute(item.path) && "text-sidebar-primary"
+                          isActiveRoute(item.path) ? "text-treasure-blue dark:text-blue-300" : "text-gray-500 dark:text-gray-400"
                         )}>
                           {item.icon}
                         </span>
-                        <span className={cn(
-                          isActiveRoute(item.path) && "text-sidebar-primary"
-                        )}>
+                        <span>
                           {item.name}
                         </span>
                         {isActiveRoute(item.path) && (
-                          <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-sidebar-primary rounded-r-md" />
+                          <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-treasure-blue dark:bg-blue-400 rounded-r-md" />
                         )}
                       </NavLink>
                     </TooltipTrigger>
@@ -145,48 +143,37 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         </nav>
       </ScrollArea>
 
-      <div className="border-t border-sidebar-border p-4 space-y-2">
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full text-left font-normal"
-                onClick={toggleTheme}
-              >
-                {theme === "light" ? (
-                  <>
-                    <Moon className="h-4 w-4 mr-2" />
-                    Dark Mode
-                  </>
-                ) : (
-                  <>
-                    <Sun className="h-4 w-4 mr-2" />
-                    Light Mode
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="w-full font-normal"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Log out
-              </Button>
-            </TooltipTrigger>
-          </Tooltip>
-        </TooltipProvider>
+      <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full text-left font-normal justify-start text-gray-700 dark:text-gray-200"
+          onClick={toggleTheme}
+        >
+          {theme === "light" ? (
+            <>
+              <Moon className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
+              Dark Mode
+            </>
+          ) : (
+            <>
+              <Sun className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
+              Light Mode
+            </>
+          )}
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          className="w-full font-normal justify-start text-gray-700 dark:text-gray-200"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-2 text-gray-600 dark:text-gray-300" />
+          Log out
+        </Button>
       </div>
     </div>
   );
 };
 
 export default Sidebar;
-

@@ -32,9 +32,9 @@ const AppLayout = ({ children, title, hideHeader = false }: AppLayoutProps) => {
     <div className="flex h-screen bg-background text-foreground">
       <Sidebar isMobile={isMobile} />
       
-      <div className="flex-1 overflow-hidden flex flex-col ml-64">
+      <div className="flex-1 overflow-hidden flex flex-col md:ml-64">
         {isMobile && (
-          <div className="sticky top-0 bg-card p-4 border-b shadow-sm z-10">
+          <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b shadow-sm z-10">
             <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
@@ -42,7 +42,7 @@ const AppLayout = ({ children, title, hideHeader = false }: AppLayoutProps) => {
               >
                 <List className="h-6 w-6" />
               </Button>
-              <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-treasure-blue to-blue-500 dark:from-blue-300 dark:to-blue-500">
+              <h1 className="text-xl font-bold text-treasure-blue dark:text-blue-400">
                 TreasureBook
               </h1>
               <div className="w-6"></div>
