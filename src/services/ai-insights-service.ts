@@ -84,6 +84,64 @@ export interface AIInsightData {
   };
 }
 
+interface ForecastCondition {
+  type: string;
+  subjects?: string[];
+  activities?: string[];
+  keyword?: string | null;
+  minCount?: number;
+  deviation?: number;
+}
+
+interface ForecastTrigger {
+  conditions: ForecastCondition[];
+}
+
+interface Forecast {
+  id: string;
+  trigger: ForecastTrigger;
+  content: string;
+}
+
+interface ActionPlanTrigger {
+  condition: string;
+  subject: string | null;
+  activity: string | null;
+  threshold: number;
+  operator?: string;
+}
+
+interface ActionPlan {
+  id: string;
+  trigger: ActionPlanTrigger;
+  shortTerm: string[];
+  mediumTerm: string[];
+  longTerm: string[];
+}
+
+interface SuggestionTrigger {
+  condition: string;
+  subject?: string;
+  activity?: string;
+  activityType?: string;
+  threshold?: number;
+  timeframe?: string;
+  operator?: string;
+  completed?: boolean;
+}
+
+interface Suggestion {
+  id: string;
+  trigger: SuggestionTrigger;
+  content: string;
+  priority: number;
+  category: string;
+}
+
+const typedForecasts = forecasts as Forecast[];
+const typedActionPlans = actionPlans as ActionPlan[];
+const typedSuggestions = suggestions as Suggestion[];
+
 const getGradeFromScore = (score: number): string => {
   if (score >= 90) return "A";
   if (score >= 80) return "B+";
@@ -483,7 +541,7 @@ const getSuggestionsForStudent = (
 ): string[] => {
   const matchedSuggestions: string[] = [];
   
-  suggestions.forEach(suggestion => {
+  typedSuggestions.forEach(suggestion => {
     let isMatch = false;
     
     if (suggestion.trigger.condition === "academicScore" && suggestion.trigger.subject) {
@@ -543,13 +601,15 @@ const getForecastForStudent = (
   talent: TalentData,
   physical: PhysicalData
 ): string => {
-  for (const forecast of forecasts) {
+  for (const forecast of typedForecasts) {
     let allConditionsMet = true;
     
     for (const condition of forecast.trigger.conditions) {
+      let conditionMet = false;
+      
       switch (condition.type) {
         case "academicStrength":
-          if (condition.subjects) {
+          if (condition.subjects && condition.minCount) {
             const strongSubjectsCount = condition.subjects.filter(subject => {
               const matchingSubject = academic.subjectScores.find(
                 s => s.subject.toLowerCase() === subject.toLowerCase()
@@ -557,53 +617,56 @@ const getForecastForStudent = (
               return matchingSubject && matchingSubject.score > 75;
             }).length;
             
-            if (strongSubjectsCount < condition.minCount) {
-              allConditionsMet = false;
-            }
-          } else if (condition.activities) {
-            allConditionsMet = physical.topSport.toLowerCase().includes(
-              condition.activities[0].toLowerCase()
+            conditionMet = strongSubjectsCount >= condition.minCount;
+          } else if (condition.activities && condition.minCount) {
+            conditionMet = condition.activities.some(activity =>
+              physical.topSport.toLowerCase().includes(activity.toLowerCase())
             );
+          } else {
+            conditionMet = true;
           }
           break;
 
         case "activityEngagement":
-          if (condition.activities) {
+          if (condition.activities && condition.minCount) {
             const activityMatched = condition.activities.some(activity => 
               talent.topActivity.toLowerCase().includes(activity.toLowerCase())
             );
             
-            if (!activityMatched) {
-              allConditionsMet = false;
-            }
+            conditionMet = activityMatched;
+          } else {
+            conditionMet = true;
           }
           break;
 
         case "sportAchievement":
-          if (physical.achievements.length < condition.minCount) {
-            allConditionsMet = false;
+          if (condition.minCount) {
+            conditionMet = physical.achievements.length >= condition.minCount;
+          } else {
+            conditionMet = true;
           }
           break;
 
         case "balancedScores":
-          if (academic.subjectScores.length > 1) {
+          if (academic.subjectScores.length > 1 && condition.deviation) {
             const scores = academic.subjectScores.map(s => s.score);
             const max = Math.max(...scores);
             const min = Math.min(...scores);
-            if ((max - min) > (condition.deviation || 20)) {
-              allConditionsMet = false;
-            }
+            conditionMet = (max - min) <= condition.deviation;
           } else {
-            allConditionsMet = false;
+            conditionMet = false;
           }
           break;
 
         default:
-          allConditionsMet = true;
+          conditionMet = true;
           break;
       }
 
-      if (!allConditionsMet) break;
+      if (!conditionMet) {
+        allConditionsMet = false;
+        break;
+      }
     }
     
     if (allConditionsMet) {
@@ -626,7 +689,7 @@ const getActionPlanForStudent = (
     longTerm: [] as string[]
   };
   
-  for (const plan of actionPlans) {
+  for (const plan of typedActionPlans) {
     let isMatch = false;
     
     if (plan.trigger.condition === "academicScore" && plan.trigger.subject) {
@@ -639,6 +702,10 @@ const getActionPlanForStudent = (
           isMatch = true;
         } else if (plan.trigger.operator === "gt" && subjectScore > plan.trigger.threshold) {
           isMatch = true;
+        } else if (plan.trigger.operator === "gte" && subjectScore >= plan.trigger.threshold) {
+          isMatch = true;
+        } else if (plan.trigger.operator === "eq" && subjectScore === plan.trigger.threshold) {
+          isMatch = true;
         }
       }
     } else if (plan.trigger.condition === "activityEngagement" && plan.trigger.activity) {
@@ -649,9 +716,19 @@ const getActionPlanForStudent = (
       if (physical.topSport !== "N/A") {
         isMatch = true;
       }
-    } else if (plan.trigger.condition === "journalCount") {
+      
+      if (plan.trigger.activity && physical.topSport !== plan.trigger.activity) {
+        isMatch = false;
+      }
+    } else if (plan.trigger.condition === "journalCount" || plan.trigger.condition === "moodPattern") {
       const journalCount = emotional.moodHistory.reduce((sum, item) => sum + item.count, 0);
       if (plan.trigger.operator === "gt" && journalCount > (plan.trigger.threshold || 0)) {
+        isMatch = true;
+      } else if (plan.trigger.operator === "lt" && journalCount < (plan.trigger.threshold || 0)) {
+        isMatch = true;
+      } else if (plan.trigger.operator === "eq" && journalCount === (plan.trigger.threshold || 0)) {
+        isMatch = true;
+      } else if (plan.trigger.operator === "gte" && journalCount >= (plan.trigger.threshold || 0)) {
         isMatch = true;
       }
     }

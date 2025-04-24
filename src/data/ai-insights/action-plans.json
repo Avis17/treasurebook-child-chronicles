@@ -5,6 +5,7 @@
     "trigger": {
       "condition": "academicScore",
       "subject": "Math",
+      "activity": null,
       "threshold": 75,
       "operator": "lt"
     },
@@ -25,8 +26,10 @@
     "id": "music_development_plan",
     "trigger": {
       "condition": "activityEngagement",
+      "subject": null,
       "activity": "Piano",
-      "threshold": 1
+      "threshold": 1,
+      "operator": "eq"
     },
     "shortTerm": [
       "Schedule weekly piano practice time",
@@ -45,7 +48,10 @@
     "id": "physical_development_plan",
     "trigger": {
       "condition": "sportEngagement",
-      "threshold": 1
+      "subject": null,
+      "activity": null,
+      "threshold": 1,
+      "operator": "eq"
     },
     "shortTerm": [
       "Maintain regular practice schedule",
@@ -64,6 +70,8 @@
     "id": "emotional_development_plan",
     "trigger": {
       "condition": "journalCount",
+      "subject": null,
+      "activity": null,
       "threshold": 0,
       "operator": "gt"
     },
