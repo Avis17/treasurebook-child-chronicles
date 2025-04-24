@@ -1,6 +1,9 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock } from 'lucide-react';
+import { auth, db } from '@/lib/firebase';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 interface Activity {
   id: string;
@@ -11,29 +14,50 @@ interface Activity {
 }
 
 const ActivitySummary: React.FC = () => {
-  // Sample upcoming activities data
-  const upcomingActivities: Activity[] = [
-    {
-      id: '1',
-      title: 'Mathematics Final Exam',
-      date: '2025-05-10',
-      time: '09:00 AM',
-      type: 'exam'
-    },
-    {
-      id: '2',
-      title: 'Science Project Submission',
-      date: '2025-05-15',
-      type: 'assignment'
-    },
-    {
-      id: '3',
-      title: 'Football Tournament',
-      date: '2025-05-20',
-      time: '03:30 PM',
-      type: 'sports'
-    }
-  ];
+  const [upcomingActivities, setUpcomingActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const activities: Activity[] = [];
+        const today = new Date();
+
+        // Fetch calendar events
+        const eventsRef = collection(db, "calendarEvents");
+        const eventsQuery = query(
+          eventsRef,
+          where("userId", "==", user.uid),
+          where("date", ">=", format(today, 'yyyy-MM-dd')),
+          orderBy("date", "asc"),
+          limit(5)
+        );
+
+        const eventsDocs = await getDocs(eventsQuery);
+        eventsDocs.forEach(doc => {
+          const data = doc.data();
+          activities.push({
+            id: doc.id,
+            title: data.title,
+            date: data.date,
+            time: data.time,
+            type: data.category as Activity['type']
+          });
+        });
+
+        setUpcomingActivities(activities);
+      } catch (error) {
+        console.error("Error fetching activities:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
+  }, []);
 
   const getActivityTypeColor = (type: Activity['type']) => {
     switch(type) {
@@ -52,11 +76,16 @@ const ActivitySummary: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric'
-    });
+    return format(date, 'MMM d');
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-4">
+        <div className="animate-spin w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
