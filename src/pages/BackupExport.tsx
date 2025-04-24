@@ -74,12 +74,10 @@ const BackupExportPage = () => {
 
       let completed = 0;
       
-      for (const collection of selectedCollections) {
-        const collectionRef = collection.name;
+      for (const collectionItem of selectedCollections) {
+        const collectionRef = collectionItem.name;
         const q = query(
-          collection.name === "profiles" 
-            ? collection(db, collectionRef) 
-            : collection(db, collectionRef),
+          collection(db, collectionRef),
           where("userId", "==", user.uid)
         );
 
@@ -93,7 +91,7 @@ const BackupExportPage = () => {
           });
         });
         
-        exportData[collection.name] = collectionData;
+        exportData[collectionItem.name] = collectionData;
         
         completed++;
         setProgress(Math.floor((completed / selectedCollections.length) * 100));

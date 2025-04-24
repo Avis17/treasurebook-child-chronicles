@@ -24,6 +24,7 @@ interface FeedbackNote {
   author: string;
   userId: string;
   createdAt: Date;
+  [key: string]: any; // Add index signature for Firebase compatibility
 }
 
 const FeedbackPage = () => {
@@ -104,7 +105,9 @@ const FeedbackPage = () => {
       } as FeedbackNote;
       
       if (isEditing && currentId) {
-        await updateDoc(doc(db, "feedback", currentId), noteData);
+        // Create a copy without id before updating
+        const { id, ...updateData } = noteData;
+        await updateDoc(doc(db, "feedback", currentId), updateData);
         toast({
           title: "Note updated",
           description: "Your feedback note has been successfully updated",

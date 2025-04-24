@@ -20,6 +20,7 @@ interface MilestoneItem {
   date: string;
   category: string;
   userId: string;
+  [key: string]: any; // Add index signature for Firebase compatibility
 }
 
 const categories = [
@@ -100,7 +101,9 @@ const Milestones = () => {
       } as MilestoneItem;
       
       if (isEditing && currentId) {
-        await updateDoc(doc(db, "milestones", currentId), milestoneData);
+        // Create a copy without id before updating
+        const { id, ...updateData } = milestoneData;
+        await updateDoc(doc(db, "milestones", currentId), updateData);
         toast({
           title: "Milestone updated",
           description: "Your milestone has been successfully updated",

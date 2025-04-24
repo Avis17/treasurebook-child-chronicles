@@ -23,6 +23,7 @@ interface JournalEntry {
   mood?: string;
   userId: string;
   createdAt: Date;
+  [key: string]: any; // Add index signature for Firebase compatibility
 }
 
 const moods = [
@@ -153,7 +154,9 @@ const JournalPage = () => {
       } as JournalEntry;
       
       if (isEditing && currentId) {
-        await updateDoc(doc(db, "journal", currentId), entryData);
+        // Create a copy without id before updating
+        const { id, ...updateData } = entryData;
+        await updateDoc(doc(db, "journal", currentId), updateData);
         toast({
           title: "Journal entry updated",
           description: "Your journal entry has been successfully updated",

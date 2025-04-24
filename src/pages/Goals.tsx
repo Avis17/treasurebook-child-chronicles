@@ -25,6 +25,7 @@ interface Goal {
   userId: string;
   achievementNotes?: string;
   createdAt: Date;
+  [key: string]: any; // Add index signature for Firebase compatibility
 }
 
 const categories = [
@@ -118,7 +119,9 @@ const GoalsPage = () => {
       } as Goal;
       
       if (isEditing && currentId) {
-        await updateDoc(doc(db, "goals", currentId), goalData);
+        // Create a copy without id before updating
+        const { id, ...updateData } = goalData;
+        await updateDoc(doc(db, "goals", currentId), updateData);
         toast({
           title: "Goal updated",
           description: "Your goal has been successfully updated",
