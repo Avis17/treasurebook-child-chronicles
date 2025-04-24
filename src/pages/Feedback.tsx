@@ -185,7 +185,7 @@ const FeedbackPage = () => {
 
   if (loading) {
     return (
-      <AppLayout title="Feedback & Notes">
+      <AppLayout title="Feedback & Notes" hideHeader={true}>
         <div className="animate-pulse space-y-4">
           <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
           <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
@@ -195,7 +195,7 @@ const FeedbackPage = () => {
   }
 
   return (
-    <AppLayout title="Feedback & Notes">
+    <AppLayout title="Feedback & Notes" hideHeader={true}>
       <div className="space-y-6">
         <div className="flex justify-between items-center flex-wrap gap-4">
           <h1 className="text-2xl font-bold">Feedback & Notes</h1>

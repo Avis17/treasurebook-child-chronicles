@@ -1,105 +1,68 @@
+// Update Journal.tsx to use the hideHeader prop and fix any Firebase query issues
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { BookText, Edit, Trash2, Plus, Calendar, Search, Tag, Filter } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { BookText, Edit, Trash2, Plus, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 
 interface JournalEntry {
   id?: string;
   title: string;
   content: string;
   date: string;
-  tags: string[];
-  mood?: string;
   userId: string;
-  createdAt: Date;
   [key: string]: any; // Add index signature for Firebase compatibility
 }
 
-const moods = [
-  { name: "Happy", emoji: "😀" },
-  { name: "Excited", emoji: "🤩" },
-  { name: "Calm", emoji: "😌" },
-  { name: "Tired", emoji: "😴" },
-  { name: "Sad", emoji: "😔" },
-  { name: "Confused", emoji: "😕" },
-  { name: "Determined", emoji: "😤" },
-];
-
 const JournalPage = () => {
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState<Partial<JournalEntry>>({
     title: "",
     content: "",
-    date: new Date().toISOString().split("T")[0],
-    tags: [],
-    mood: "Happy"
+    date: new Date().toISOString().split("T")[0]
   });
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState<string | null>(null);
-  const [tagInput, setTagInput] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPeriod, setSelectedPeriod] = useState("week");
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchJournalEntries();
-  }, [selectedPeriod]);
+    fetchEntries();
+  }, []);
 
-  const fetchJournalEntries = async () => {
+  const fetchEntries = async () => {
     try {
       const user = auth.currentUser;
       if (!user) return;
 
-      const entriesRef = collection(db, "journal");
-      
+      // Remove the orderBy clause to avoid composite index requirement
+      const journalRef = collection(db, "journal");
       const q = query(
-        entriesRef,
+        journalRef,
         where("userId", "==", user.uid)
       );
 
       const querySnapshot = await getDocs(q);
-      const entriesData: JournalEntry[] = [];
+      const entriesData = [];
       querySnapshot.forEach((doc) => {
         entriesData.push({
           id: doc.id,
-          ...doc.data() as JournalEntry
+          ...doc.data()
         });
       });
       
-      let filteredEntries = [...entriesData];
+      // Sort locally instead of in the query
+      entriesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
-      if (selectedPeriod !== "all") {
-        const now = new Date();
-        let startDate = new Date();
-        
-        if (selectedPeriod === "week") {
-          startDate.setDate(now.getDate() - 7);
-        } else if (selectedPeriod === "month") {
-          startDate.setMonth(now.getMonth() - 1);
-        } else if (selectedPeriod === "year") {
-          startDate.setFullYear(now.getFullYear() - 1);
-        }
-        
-        filteredEntries = entriesData.filter(entry => 
-          new Date(entry.date) >= startDate
-        );
-      }
-      
-      filteredEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      
-      setEntries(filteredEntries);
+      setJournalEntries(entriesData);
     } catch (error) {
       console.error("Error fetching journal entries:", error);
       toast({
@@ -112,26 +75,9 @@ const JournalPage = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const addTag = () => {
-    if (tagInput.trim() && !formData.tags?.includes(tagInput.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...(prev.tags || []), tagInput.trim()]
-      }));
-      setTagInput("");
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags?.filter((t) => t !== tag) || []
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,11 +89,11 @@ const JournalPage = () => {
 
       const entryData = {
         ...formData,
-        userId: user.uid,
-        createdAt: new Date()
+        userId: user.uid
       } as JournalEntry;
       
       if (isEditing && currentId) {
+        // Create a copy without id before updating
         const { id, ...updateData } = entryData;
         await updateDoc(doc(db, "journal", currentId), updateData);
         toast({
@@ -163,7 +109,7 @@ const JournalPage = () => {
       }
       
       resetForm();
-      fetchJournalEntries();
+      fetchEntries();
       setOpenDialog(false);
     } catch (error) {
       console.error("Error saving journal entry:", error);
@@ -181,9 +127,7 @@ const JournalPage = () => {
     setFormData({
       title: entry.title,
       content: entry.content,
-      date: entry.date,
-      tags: entry.tags,
-      mood: entry.mood
+      date: entry.date
     });
     setOpenDialog(true);
   };
@@ -197,7 +141,7 @@ const JournalPage = () => {
         title: "Journal entry deleted",
         description: "The journal entry has been successfully deleted",
       });
-      fetchJournalEntries();
+      fetchEntries();
     } catch (error) {
       console.error("Error deleting journal entry:", error);
       toast({
@@ -212,24 +156,11 @@ const JournalPage = () => {
     setFormData({
       title: "",
       content: "",
-      date: new Date().toISOString().split("T")[0],
-      tags: [],
-      mood: "Happy"
+      date: new Date().toISOString().split("T")[0]
     });
     setIsEditing(false);
     setCurrentId(null);
   };
-
-  const getMoodEmoji = (mood: string | undefined) => {
-    const foundMood = moods.find(m => m.name === mood);
-    return foundMood ? foundMood.emoji : "😐";
-  };
-
-  const filteredEntries = entries.filter(entry =>
-    entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
 
   if (loading) {
     return (
@@ -243,9 +174,9 @@ const JournalPage = () => {
   }
 
   return (
-    <AppLayout title="Daily Journal">
+    <AppLayout title="Daily Journal" hideHeader={true}>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Daily Journal</h1>
           <Dialog open={openDialog} onOpenChange={setOpenDialog}>
             <DialogTrigger asChild>
@@ -256,11 +187,11 @@ const JournalPage = () => {
                 <Plus className="mr-2 h-4 w-4" /> Add Entry
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle>{isEditing ? "Edit Journal Entry" : "Add New Journal Entry"}</DialogTitle>
                 <DialogDescription>
-                  Record your thoughts, progress, and reflections.
+                  Record your thoughts and experiences in your daily journal.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -271,83 +202,35 @@ const JournalPage = () => {
                     name="title"
                     value={formData.title || ""}
                     onChange={handleInputChange}
-                    placeholder="e.g., My Science Project Progress"
+                    placeholder="e.g., Today's Reflection"
                     required
                   />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="date" className="text-sm font-medium">Date</label>
-                    <Input
-                      type="date"
-                      id="date"
-                      name="date"
-                      value={formData.date || ""}
-                      onChange={handleInputChange}
-                      max={new Date().toISOString().split('T')[0]}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="mood" className="text-sm font-medium">Mood</label>
-                    <select
-                      id="mood"
-                      name="mood"
-                      value={formData.mood || "Happy"}
-                      onChange={handleInputChange}
-                      className="w-full p-2 rounded border dark:bg-gray-700 dark:text-white"
-                    >
-                      {moods.map((mood) => (
-                        <option key={mood.name} value={mood.name}>
-                          {mood.emoji} {mood.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                
                 <div className="space-y-2">
-                  <label htmlFor="content" className="text-sm font-medium">Journal Entry</label>
+                  <label htmlFor="content" className="text-sm font-medium">Content</label>
                   <textarea
                     id="content"
                     name="content"
                     value={formData.content || ""}
                     onChange={handleInputChange}
-                    placeholder="Write your journal entry here..."
-                    className="w-full p-2 rounded border min-h-[150px]"
+                    placeholder="Write about your day"
+                    className="w-full p-2 rounded border min-h-[100px]"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Tags</label>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.tags?.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="px-2 py-1">
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="ml-2 text-xs"
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      placeholder="Add a tag"
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                    />
-                    <Button type="button" onClick={addTag} variant="outline">
-                      Add
-                    </Button>
-                  </div>
+                  <label htmlFor="date" className="text-sm font-medium">Date</label>
+                  <Input
+                    type="date"
+                    id="date"
+                    name="date"
+                    value={formData.date || ""}
+                    onChange={handleInputChange}
+                    max={new Date().toISOString().split('T')[0]}
+                    required
+                  />
                 </div>
 
                 <DialogFooter>
@@ -366,70 +249,30 @@ const JournalPage = () => {
           </Dialog>
         </div>
 
-        <Card>
-          <CardContent className="p-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="col-span-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search journal entries..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-              <div>
-                <Tabs defaultValue="week" value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <TabsList className="grid grid-cols-4 w-full">
-                    <TabsTrigger value="week">Week</TabsTrigger>
-                    <TabsTrigger value="month">Month</TabsTrigger>
-                    <TabsTrigger value="year">Year</TabsTrigger>
-                    <TabsTrigger value="all">All</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {entries.length === 0 ? (
+        {journalEntries.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center p-10 gap-4">
               <BookText className="h-16 w-16 text-muted-foreground" />
               <div className="text-center">
                 <h3 className="text-lg font-medium">No journal entries yet</h3>
-                <p className="text-muted-foreground">Start documenting your journey and daily progress</p>
+                <p className="text-muted-foreground">Start recording your daily thoughts and experiences</p>
               </div>
               <Button onClick={() => setOpenDialog(true)}>
-                <Plus className="mr-2 h-4 w-4" /> Write Your First Entry
+                <Plus className="mr-2 h-4 w-4" /> Add Your First Entry
               </Button>
             </CardContent>
           </Card>
-        ) : filteredEntries.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center p-10 gap-4">
-              <div className="text-center">
-                <h3 className="text-lg font-medium">No matching entries</h3>
-                <p className="text-muted-foreground">Try changing your search term or time filter</p>
-              </div>
-            </CardContent>
-          </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {filteredEntries.map((entry) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {journalEntries.map((entry) => (
               <Card key={entry.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <CardTitle className="text-xl">{entry.title}</CardTitle>
-                        <span className="text-xl" title={entry.mood}>{getMoodEmoji(entry.mood)}</span>
-                      </div>
-                      <CardDescription className="flex items-center">
+                      <CardTitle className="text-xl">{entry.title}</CardTitle>
+                      <CardDescription>
                         <Calendar className="h-4 w-4 inline mr-1" />
-                        {entry.date && format(new Date(entry.date), "EEEE, MMMM d, yyyy")}
+                        {entry.date && format(new Date(entry.date), "MMMM d, yyyy")}
                       </CardDescription>
                     </div>
                     <div className="flex space-x-2">
@@ -452,17 +295,7 @@ const JournalPage = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="whitespace-pre-wrap">{entry.content}</p>
-                  
-                  {entry.tags && entry.tags.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <Tag className="h-4 w-4 text-muted-foreground" />
-                      {entry.tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="px-2 py-0.5">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                  <Separator className="my-4" />
                 </CardContent>
               </Card>
             ))}

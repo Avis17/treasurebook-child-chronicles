@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -69,7 +68,6 @@ const Milestones = () => {
         });
       });
       
-      // Sort locally instead of in the query
       milestonesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
       setMilestones(milestonesData);
@@ -103,7 +101,6 @@ const Milestones = () => {
       } as MilestoneItem;
       
       if (isEditing && currentId) {
-        // Create a copy without id before updating
         const { id, ...updateData } = milestoneData;
         await updateDoc(doc(db, "milestones", currentId), updateData);
         toast({
@@ -191,7 +188,7 @@ const Milestones = () => {
   }
 
   return (
-    <AppLayout title="Milestones">
+    <AppLayout title="Milestones" hideHeader={true}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Timeline of Important Events</h1>

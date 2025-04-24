@@ -6,15 +6,16 @@ import { auth } from "@/lib/firebase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import Sidebar from "@/components/navigation/Sidebar";
-import { List } from "lucide-react";
+import { List, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
   title: string;
+  hideHeader?: boolean;
 }
 
-const AppLayout = ({ children, title }: AppLayoutProps) => {
-  const [isOpen, setIsOpen] = useState(false);
+const AppLayout = ({ children, title, hideHeader = false }: AppLayoutProps) => {
+  const [isOpen, setIsOpen] = useState(true);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -32,7 +33,19 @@ const AppLayout = ({ children, title }: AppLayoutProps) => {
     <div className="flex h-screen bg-background text-foreground">
       <Sidebar isMobile={isMobile} isOpen={isOpen} setIsOpen={setIsOpen} />
       
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto relative">
+        {!isMobile && (
+          <Button
+            onClick={() => setIsOpen(!isOpen)}
+            variant="outline"
+            size="icon"
+            className="absolute top-4 left-4 z-20 rounded-full shadow-md"
+            aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {isOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </Button>
+        )}
+        
         {isMobile && (
           <div className="sticky top-0 bg-card p-4 border-b shadow-sm z-10">
             <div className="flex items-center justify-between">
@@ -50,7 +63,7 @@ const AppLayout = ({ children, title }: AppLayoutProps) => {
         )}
         
         <main className="container mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold mb-6">{title}</h1>
+          {!hideHeader && <h1 className="text-2xl font-bold mb-6">{title}</h1>}
           {children}
         </main>
       </div>

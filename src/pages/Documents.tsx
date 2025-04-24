@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useRef } from "react";
-import { collection, query, where, orderBy, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { auth, db, storage } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
@@ -67,8 +66,7 @@ const DocumentsPage = () => {
       const documentsRef = collection(db, "documents");
       const q = query(
         documentsRef,
-        where("userId", "==", user.uid),
-        orderBy("uploadDate", "desc")
+        where("userId", "==", user.uid)
       );
 
       const querySnapshot = await getDocs(q);
@@ -79,7 +77,9 @@ const DocumentsPage = () => {
           ...doc.data() as Document
         });
       });
-
+      
+      documentsData.sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+      
       setDocuments(documentsData);
     } catch (error) {
       console.error("Error fetching documents:", error);
@@ -172,18 +172,14 @@ const DocumentsPage = () => {
       setIsUploading(true);
       setUploadProgress(10);
       
-      // Upload file to Firebase Storage
       const fileType = getFileType(selectedFile);
       const storageReference = ref(storage, `documents/${user.uid}/${Date.now()}_${selectedFile.name}`);
       
-      // Upload the file
       await uploadBytes(storageReference, selectedFile);
       setUploadProgress(70);
       
-      // Get download URL
       const downloadURL = await getDownloadURL(storageReference);
       
-      // Save document metadata to Firestore
       const documentData: Document = {
         fileName: formData.fileName || selectedFile.name,
         description: formData.description || "",
@@ -227,11 +223,9 @@ const DocumentsPage = () => {
     try {
       if (!document.id) return;
       
-      // Delete file from storage
       const storageRef = ref(storage, document.storageRef);
       await deleteObject(storageRef);
       
-      // Delete document metadata from Firestore
       await deleteDoc(doc(db, "documents", document.id));
       
       toast({
@@ -281,7 +275,7 @@ const DocumentsPage = () => {
   }
 
   return (
-    <AppLayout title="Documents">
+    <AppLayout title="Documents" hideHeader={true}>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <h1 className="text-2xl font-bold">Documents</h1>
