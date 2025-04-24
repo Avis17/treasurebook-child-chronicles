@@ -11,7 +11,6 @@ import { SummaryCards } from "@/components/dashboard/SummaryCards";
 import ExtracurricularChart from "@/components/dashboard/ExtracurricularChart";
 import Sidebar from "@/components/navigation/Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const Dashboard = () => {
   const { currentUser, loading } = useAuth();
@@ -24,10 +23,6 @@ const Dashboard = () => {
       navigate('/login');
     }
   }, [currentUser, navigate, loading]);
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
 
   if (loading) {
     return (
@@ -67,19 +62,16 @@ const Dashboard = () => {
                 </TabsList>
                 <TabsContent value="academic">
                   <div className="grid gap-4">
-                    <CardTitle className="dark:text-white">Academic Performance</CardTitle>
                     <AcademicChart />
                   </div>
                 </TabsContent>
                 <TabsContent value="sports">
                   <div className="grid gap-4">
-                    <CardTitle className="dark:text-white">Sports Activities</CardTitle>
                     <SportsChart />
                   </div>
                 </TabsContent>
                 <TabsContent value="extracurricular">
                   <div className="grid gap-4">
-                    <CardTitle className="dark:text-white">Extracurricular Activities</CardTitle>
                     <ExtracurricularChart />
                   </div>
                 </TabsContent>

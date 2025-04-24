@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { format, isSameDay, parseISO, startOfToday, isFuture } from "date-fns";
 import { Calendar as CalendarIcon, Plus, Edit, Trash2, CalendarDays } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
@@ -284,7 +284,7 @@ const CalendarPage = () => {
           {/* Calendar */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Calendar</CardTitle>
+              <CardTitle>Calendar View</CardTitle>
             </CardHeader>
             <CardContent>
               <CalendarComponent

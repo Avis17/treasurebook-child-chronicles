@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
@@ -77,70 +76,50 @@ const AcademicChart = () => {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Academic Performance</CardTitle>
-          <CardDescription>Subject-wise performance in percentage</CardDescription>
-        </CardHeader>
-        <CardContent className="flex justify-center items-center h-64">
-          <div className="animate-spin w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin w-8 h-8 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Academic Performance</CardTitle>
-          <CardDescription>Subject-wise performance in percentage</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center items-center h-64 text-red-500">
-            {error}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-center items-center h-64 text-red-500">
+        {error}
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Academic Performance</CardTitle>
-        <CardDescription>Subject-wise performance in percentage</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {chartData.length > 0 ? (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="subject" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip 
-                  formatter={(value) => [`${value}%`, 'Score']}
-                  labelFormatter={(label) => `Subject: ${label}`}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="percentage"
-                  stroke="#4f46e5"
-                  activeDot={{ r: 8 }}
-                  name="Score (%)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="flex justify-center items-center h-64 text-gray-500">
-            No academic data available.
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div>
+      {chartData.length > 0 ? (
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="subject" />
+              <YAxis domain={[0, 100]} />
+              <Tooltip 
+                formatter={(value) => [`${value}%`, 'Score']}
+                labelFormatter={(label) => `Subject: ${label}`}
+              />
+              <Legend />
+              <Line
+                type="monotone"
+                dataKey="percentage"
+                stroke="#4f46e5"
+                activeDot={{ r: 8 }}
+                name="Score (%)"
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="flex justify-center items-center h-64 text-gray-500">
+          No academic data available.
+        </div>
+      )}
+    </div>
   );
 };
 

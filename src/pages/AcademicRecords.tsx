@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -15,7 +14,6 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import Sidebar from "@/components/navigation/Sidebar";
-import { List } from "lucide-react";
 import { 
   AcademicRecord,
   saveAcademicRecords, 
@@ -25,6 +23,7 @@ import {
 import { AcademicFilters, FilterOptions } from "@/components/academic/AcademicFilters";
 import { AcademicRecordForm } from "@/components/academic/AcademicRecordForm";
 import { AcademicTable } from "@/components/academic/AcademicTable";
+import AppLayout from "@/components/layout/AppLayout";
 
 const AcademicRecords = () => {
   const [records, setRecords] = useState<AcademicRecord[]>([]);
@@ -38,7 +37,6 @@ const AcademicRecords = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Fetch records from Firebase instead of localStorage
   const fetchRecords = async (userId: string) => {
     try {
       setLoading(true);
@@ -51,6 +49,7 @@ const AcademicRecords = () => {
         fetchedRecords.push({ id: doc.id, ...doc.data() } as AcademicRecord);
       });
       
+      console.log("Fetched academic records:", fetchedRecords.length);
       setRecords(fetchedRecords);
       setFilteredRecords(fetchedRecords);
     } catch (error) {
@@ -60,7 +59,6 @@ const AcademicRecords = () => {
         title: "Error",
         description: "Failed to load academic records",
       });
-      // Fallback to localStorage if Firebase fails
       const loadedRecords = loadAcademicRecords().filter(
         record => record.userId === userId
       );
@@ -76,6 +74,7 @@ const AcademicRecords = () => {
       if (!user) {
         navigate("/login");
       } else {
+        console.log("Fetching records for user:", user.uid);
         fetchRecords(user.uid);
       }
     });
@@ -83,10 +82,8 @@ const AcademicRecords = () => {
     return () => unsubscribe();
   }, [navigate]);
 
-  // Apply filters when activeFilters changes
   useEffect(() => {
     if (records.length > 0) {
-      // Convert "all" values to empty strings for filtering
       const processedFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
         acc[key] = value === "all" ? "" : value;
         return acc;
@@ -102,7 +99,6 @@ const AcademicRecords = () => {
     setRecords(updatedRecords);
     saveAcademicRecords(updatedRecords);
     
-    // Apply any active filters to the updated records
     const processedFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
       acc[key] = value === "all" ? "" : value;
       return acc;
@@ -134,7 +130,6 @@ const AcademicRecords = () => {
       const updatedRecords = records.filter((r) => r.id !== record.id);
       setRecords(updatedRecords);
       
-      // Re-apply filters after delete
       const processedFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
         acc[key] = value === "all" ? "" : value;
         return acc;
@@ -165,7 +160,6 @@ const AcademicRecords = () => {
 
       const recordRef = doc(db, "academicRecords", updatedRecord.id);
       
-      // Remove id field from the data to update
       const { id, ...recordData } = updatedRecord;
       
       await updateDoc(recordRef, recordData);
@@ -176,7 +170,6 @@ const AcademicRecords = () => {
       
       setRecords(updatedRecords);
       
-      // Re-apply filters after update
       const processedFilters = Object.entries(activeFilters).reduce((acc, [key, value]) => {
         acc[key] = value === "all" ? "" : value;
         return acc;
@@ -218,71 +211,47 @@ const AcademicRecords = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar isMobile={isMobile} />
-
-      <div className="flex-1 overflow-auto md:ml-64">
-        {isMobile && (
-          <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b shadow-sm z-10">
-            <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="icon"
-              >
-                <List className="h-6 w-6" />
-              </Button>
-              <h1 className="text-xl font-bold text-treasure-blue dark:text-blue-400">
-                TreasureBook
-              </h1>
-              <div className="w-6"></div>
-            </div>
-          </div>
-        )}
-
-        <main className="container mx-auto px-4 py-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold dark:text-white">Academic Records</h1>
-            <div className="flex space-x-2">
-              <AcademicFilters 
-                onApplyFilters={applyFilters}
-                hasActiveFilters={hasActiveFilters}
-              />
-              <AcademicRecordForm 
-                onRecordAdded={handleRecordAdded} 
-                onRecordUpdated={handleUpdateRecord}
-                initialData={editingRecord}
-                isOpen={isFormOpen}
-                onClose={closeForm}
-              />
-            </div>
-          </div>
-
-          <Card className="dark:bg-gray-800">
-            <CardHeader>
-              <CardTitle className="dark:text-white">Subject Performance</CardTitle>
-              <CardDescription className="dark:text-gray-300">
-                Track academic progress across different subjects
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <div className="animate-spin w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
-                </div>
-              ) : (
-                <AcademicTable 
-                  records={filteredRecords}
-                  hasActiveFilters={hasActiveFilters}
-                  onClearFilters={clearFilters}
-                  onEdit={handleEditRecord}
-                  onDelete={handleDeleteRecord}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </main>
+    <AppLayout title="Academic Records">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex space-x-2">
+          <AcademicFilters 
+            onApplyFilters={applyFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
+          <AcademicRecordForm 
+            onRecordAdded={handleRecordAdded} 
+            onRecordUpdated={handleUpdateRecord}
+            initialData={editingRecord}
+            isOpen={isFormOpen}
+            onClose={closeForm}
+          />
+        </div>
       </div>
-    </div>
+
+      <Card className="dark:bg-gray-800">
+        <CardHeader>
+          <CardTitle className="dark:text-white">Subject Performance</CardTitle>
+          <CardDescription className="dark:text-gray-300">
+            Track academic progress across different subjects
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="animate-spin w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full"></div>
+            </div>
+          ) : (
+            <AcademicTable 
+              records={filteredRecords}
+              hasActiveFilters={hasActiveFilters}
+              onClearFilters={clearFilters}
+              onEdit={handleEditRecord}
+              onDelete={handleDeleteRecord}
+            />
+          )}
+        </CardContent>
+      </Card>
+    </AppLayout>
   );
 };
 
