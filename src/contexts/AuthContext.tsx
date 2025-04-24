@@ -36,6 +36,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
+          // Check if user is admin first before fetching additional data
+          const isAdminUser = user.email === ADMIN_EMAIL;
+          setIsAdmin(isAdminUser);
+
+          // For admin, skip verification checks and set default permissions
+          if (isAdminUser) {
+            const enhancedAdmin = {
+              ...user,
+              verificationStatus: VERIFICATION_STATUS.APPROVED, // Always approved for admin
+              permissions: { storage: true, aiInsights: true }, // Full permissions for admin
+            };
+            setCurrentUser(enhancedAdmin);
+            setLoading(false);
+            return; // Skip further processing for admin
+          }
+
+          // For regular users, fetch their data from Firestore
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
@@ -45,14 +62,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               permissions: userData.permissions || { storage: false, aiInsights: false },
             };
             setCurrentUser(enhancedUser);
-            setIsAdmin(user.email === ADMIN_EMAIL);
           } else {
             setCurrentUser({
               ...user,
               verificationStatus: VERIFICATION_STATUS.PENDING,
               permissions: { storage: false, aiInsights: false }
             });
-            setIsAdmin(user.email === ADMIN_EMAIL);
           }
         } catch (error) {
           console.error("Error fetching user data", error);
@@ -61,7 +76,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             verificationStatus: VERIFICATION_STATUS.PENDING,
             permissions: { storage: false, aiInsights: false }
           });
-          setIsAdmin(user.email === ADMIN_EMAIL);
         }
       } else {
         setCurrentUser(null);

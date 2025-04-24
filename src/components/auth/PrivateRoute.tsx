@@ -25,11 +25,13 @@ const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.Rea
 
   // Skip all checks for admin
   if (currentUser.email === ADMIN_EMAIL) {
+    console.log("Admin user detected in PrivateRoute, bypassing all checks");
     return <>{children}</>;
   }
 
   // Block non-approved users
   if (currentUser.verificationStatus !== VERIFICATION_STATUS.APPROVED) {
+    console.log("User not approved, redirecting to verification pending");
     return <Navigate to="/verification-pending" replace />;
   }
 

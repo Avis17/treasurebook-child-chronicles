@@ -22,6 +22,7 @@ const VerificationPending = () => {
 
     // Allow admin to bypass verification check
     if (currentUser.email === ADMIN_EMAIL) {
+      console.log("Admin detected, redirecting to dashboard");
       navigate('/dashboard');
       return;
     }
