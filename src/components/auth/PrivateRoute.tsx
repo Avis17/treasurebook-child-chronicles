@@ -11,10 +11,6 @@ const PrivateRoute = () => {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  // Check for storage-related routes and AI insights route
-  const isStorageRoute = ['/gallery', '/documents'].includes(location.pathname);
-  const isAIInsightsRoute = location.pathname === '/ai-insights';
-
   // Block all non-authenticated users
   if (!currentUser) {
     return <Navigate to="/login" replace />;
@@ -31,11 +27,13 @@ const PrivateRoute = () => {
   }
 
   // Check storage permission for storage routes
+  const isStorageRoute = ['/gallery', '/documents'].includes(location.pathname);
   if (isStorageRoute && !currentUser.permissions?.storage) {
     return <Navigate to="/dashboard" replace />;
   }
 
   // Check AI insights permission for AI insights route
+  const isAIInsightsRoute = location.pathname === '/ai-insights';
   if (isAIInsightsRoute && !currentUser.permissions?.aiInsights) {
     return <Navigate to="/dashboard" replace />;
   }

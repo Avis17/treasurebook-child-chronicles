@@ -100,7 +100,8 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
 
     const processedItems = items.map(item => ({
       ...item,
-      disabled: item.requiresPermission ? !currentUser?.permissions?.[item.requiresPermission] : false,
+      // Update this line to bypass permission check for admin users
+      disabled: item.requiresPermission && !isAdmin ? !currentUser?.permissions?.[item.requiresPermission] : false,
     }));
 
     if (isAdmin) {
