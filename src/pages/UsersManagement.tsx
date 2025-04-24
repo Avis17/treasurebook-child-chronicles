@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -27,6 +26,7 @@ interface User {
   verificationStatus: string;
   permissions?: {
     storage: boolean;
+    aiInsights: boolean;
   };
   createdAt: any;
 }
@@ -53,7 +53,7 @@ const UsersManagement = () => {
       const usersData = usersSnapshot.docs.map(doc => ({
         uid: doc.id,
         ...doc.data(),
-        permissions: doc.data().permissions || { storage: false }
+        permissions: doc.data().permissions || { storage: false, aiInsights: false }
       } as User));
       
       setUsers(usersData);
@@ -127,6 +127,38 @@ const UsersManagement = () => {
     }
   };
 
+  const handleAIInsightsPermissionChange = async (userId: string, enabled: boolean) => {
+    try {
+      await updateDoc(doc(db, "users", userId), {
+        "permissions.aiInsights": enabled,
+      });
+
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.uid === userId ? { 
+            ...user, 
+            permissions: { 
+              ...user.permissions, 
+              aiInsights: enabled 
+            } 
+          } : user
+        )
+      );
+
+      toast({
+        title: "Permissions Updated",
+        description: `AI Insights permission ${enabled ? 'enabled' : 'disabled'} for user`,
+      });
+    } catch (error) {
+      console.error("Error updating AI Insights permission:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update AI Insights permission",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (timestamp: any) => {
     if (!timestamp) return "N/A";
     if (timestamp.toDate) {
@@ -138,7 +170,7 @@ const UsersManagement = () => {
   return (
     <AppLayout title="Users Management">
       <div className="space-y-6">
-        <p className="text-muted-foreground">Manage user verification statuses</p>
+        <p className="text-muted-foreground">Manage user verification statuses and permissions</p>
         
         {loading ? (
           <div className="flex justify-center p-4">Loading users...</div>
@@ -152,6 +184,7 @@ const UsersManagement = () => {
                   <TableHead>Registration Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Storage Access</TableHead>
+                  <TableHead>AI Insights Access</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -182,6 +215,14 @@ const UsersManagement = () => {
                         )}
                       </TableCell>
                       <TableCell>
+                        {user.verificationStatus === VERIFICATION_STATUS.APPROVED && (
+                          <Switch
+                            checked={user.permissions?.aiInsights || false}
+                            onCheckedChange={(checked) => handleAIInsightsPermissionChange(user.uid, checked)}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Select
                           value={user.verificationStatus}
                           onValueChange={(value) => handleStatusChange(user.uid, value)}
@@ -203,7 +244,7 @@ const UsersManagement = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center">No users found</TableCell>
+                    <TableCell colSpan={7} className="text-center">No users found</TableCell>
                   </TableRow>
                 )}
               </TableBody>

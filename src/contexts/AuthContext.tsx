@@ -9,6 +9,7 @@ export interface AuthUser extends User {
   verificationStatus?: string;
   permissions?: {
     storage: boolean;
+    aiInsights: boolean;
   };
 }
 
@@ -41,7 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const enhancedUser = {
               ...user,
               verificationStatus: userData.verificationStatus || VERIFICATION_STATUS.PENDING,
-              permissions: userData.permissions || { storage: false },
+              permissions: userData.permissions || { storage: false, aiInsights: false },
             };
             setCurrentUser(enhancedUser);
             setIsAdmin(user.email === ADMIN_EMAIL);
@@ -49,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setCurrentUser({
               ...user,
               verificationStatus: VERIFICATION_STATUS.PENDING,
-              permissions: { storage: false }
+              permissions: { storage: false, aiInsights: false }
             });
             setIsAdmin(user.email === ADMIN_EMAIL);
           }
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setCurrentUser({
             ...user,
             verificationStatus: VERIFICATION_STATUS.PENDING,
-            permissions: { storage: false }
+            permissions: { storage: false, aiInsights: false }
           });
           setIsAdmin(user.email === ADMIN_EMAIL);
         }

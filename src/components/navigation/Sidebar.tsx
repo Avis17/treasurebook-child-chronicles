@@ -60,15 +60,15 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   const getNavItems = () => {
     const baseItems = [
       { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
-      { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights" },
+      { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights", requiresPermission: 'aiInsights' },
       { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
       { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
       { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
     ];
 
     const storageItems = [
-      { name: "Gallery", icon: <ImageIcon className="w-5 h-5" />, path: "/gallery" },
-      { name: "Documents", icon: <FileArchive className="w-5 h-5" />, path: "/documents" },
+      { name: "Gallery", icon: <ImageIcon className="w-5 h-5" />, path: "/gallery", requiresPermission: 'storage' },
+      { name: "Documents", icon: <FileArchive className="w-5 h-5" />, path: "/documents", requiresPermission: 'storage' },
     ];
 
     const remainingItems = [
@@ -84,18 +84,20 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
 
     const items = [
       ...baseItems,
-      ...storageItems.map(item => ({
-        ...item,
-        disabled: !currentUser?.permissions?.storage,
-      })),
+      ...storageItems,
       ...remainingItems
     ];
 
+    const processedItems = items.map(item => ({
+      ...item,
+      disabled: item.requiresPermission ? !currentUser?.permissions?.[item.requiresPermission] : false,
+    }));
+
     if (isAdmin) {
-      items.push({ name: "User Management", icon: <Users className="w-5 h-5" />, path: "/users" });
+      processedItems.push({ name: "User Management", icon: <Users className="w-5 h-5" />, path: "/users", disabled: false });
     }
 
-    return items;
+    return processedItems;
   };
 
   return (

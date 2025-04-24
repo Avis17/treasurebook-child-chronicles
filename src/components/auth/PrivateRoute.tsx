@@ -11,8 +11,9 @@ const PrivateRoute = () => {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  // Check for storage-related routes
+  // Check for storage-related routes and AI insights route
   const isStorageRoute = ['/gallery', '/documents'].includes(location.pathname);
+  const isAIInsightsRoute = location.pathname === '/ai-insights';
 
   // Allow admin to always access private routes regardless of verification status
   if (currentUser && currentUser.email === ADMIN_EMAIL) {
@@ -30,6 +31,11 @@ const PrivateRoute = () => {
 
   // Check storage permission for storage routes
   if (isStorageRoute && !currentUser.permissions?.storage) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Check AI insights permission for AI insights route
+  if (isAIInsightsRoute && !currentUser.permissions?.aiInsights) {
     return <Navigate to="/dashboard" replace />;
   }
 
