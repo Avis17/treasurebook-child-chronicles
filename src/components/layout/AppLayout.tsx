@@ -4,9 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Button } from "@/components/ui/button";
 import Sidebar from "@/components/navigation/Sidebar";
-import { List } from "lucide-react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -29,32 +27,17 @@ const AppLayout = ({ children, title, hideHeader = false }: AppLayoutProps) => {
   }, [navigate]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar isMobile={isMobile} />
       
-      <div className="flex-1 overflow-hidden flex flex-col md:ml-64">
-        {isMobile && (
-          <div className="sticky top-0 bg-white dark:bg-gray-800 p-4 border-b shadow-sm z-10">
-            <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="icon"
-              >
-                <List className="h-6 w-6" />
-              </Button>
-              <h1 className="text-xl font-bold text-treasure-blue dark:text-blue-400">
-                TreasureBook
-              </h1>
-              <div className="w-6"></div>
-            </div>
-          </div>
-        )}
-        
-        <main className="flex-1 overflow-auto">
-          <div className="container mx-auto px-4 py-6">
-            {!hideHeader && <h1 className="text-2xl font-bold mb-6">{title}</h1>}
-            {children}
-          </div>
+      <div className="flex-1 ml-64 overflow-auto">
+        <main className="container mx-auto px-6 py-8">
+          {!hideHeader && (
+            <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+              {title}
+            </h1>
+          )}
+          {children}
         </main>
       </div>
     </div>
