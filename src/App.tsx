@@ -1,6 +1,7 @@
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/lib/auth";
 import Index from "@/pages/Index";
 import Login from "@/pages/Login";
@@ -26,8 +27,6 @@ import BackupExport from "@/pages/BackupExport";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
 import Feedback from "@/pages/Feedback";
-
-// Add Calendar page import
 import Calendar from "@/pages/Calendar";
 
 function App() {

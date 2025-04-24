@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import ActivitySummary from "./ActivitySummary";
 import MarksSummaryCard from "./MarksSummaryCard";
 
-export function SummaryCards() {
+const SummaryCards = () => {
   const navigate = useNavigate();
 
   const viewAllActivity = () => {
@@ -31,4 +32,6 @@ export function SummaryCards() {
       <MarksSummaryCard />
     </div>
   );
-}
+};
+
+export { SummaryCards };
