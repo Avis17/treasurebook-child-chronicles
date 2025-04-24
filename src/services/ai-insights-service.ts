@@ -1,4 +1,3 @@
-
 import { auth, db } from "@/lib/firebase";
 import {
   collection,
@@ -101,7 +100,6 @@ const calculateAverageScore = (scores: number[]): number => {
   return Math.round((sum / scores.length) * 100) / 100;
 };
 
-// Function to extract academic data from records
 const processAcademicData = (academicRecords: DocumentData[]): AcademicData => {
   if (academicRecords.length === 0) {
     return {
@@ -116,7 +114,6 @@ const processAcademicData = (academicRecords: DocumentData[]): AcademicData => {
 
   const subjectData: { [key: string]: { scores: number[]; grades: string[] } } = {};
 
-  // Organize data by subject
   academicRecords.forEach((record) => {
     const subject = record.subject;
     const score = record.isPercentage 
@@ -132,19 +129,15 @@ const processAcademicData = (academicRecords: DocumentData[]): AcademicData => {
     subjectData[subject].grades.push(grade);
   });
 
-  // Calculate average score per subject
   const subjectScores = Object.entries(subjectData).map(([subject, data]) => {
     const avgScore = calculateAverageScore(data.scores);
-    // Use the most recent grade or calculate from average score
     const grade = data.grades.length > 0 ? data.grades[data.grades.length - 1] : getGradeFromScore(avgScore);
     
     return { subject, score: Math.round(avgScore), grade };
   });
 
-  // Sort subjects by score (descending)
   subjectScores.sort((a, b) => b.score - a.score);
 
-  // Calculate overall average
   const allScores = subjectScores.map(item => item.score);
   const averageScore = calculateAverageScore(allScores);
 
@@ -168,7 +161,6 @@ const processAcademicData = (academicRecords: DocumentData[]): AcademicData => {
   };
 };
 
-// Function to extract extracurricular data
 const processTalentData = (extraRecords: DocumentData[]): TalentData => {
   if (extraRecords.length === 0) {
     return {
@@ -178,35 +170,30 @@ const processTalentData = (extraRecords: DocumentData[]): TalentData => {
     };
   }
 
-  // Count activity frequency
   const activityCount: { [key: string]: number } = {};
   extraRecords.forEach((record) => {
     const activity = record.activity;
     activityCount[activity] = (activityCount[activity] || 0) + 1;
   });
 
-  // Find top activity
   const topActivity = Object.entries(activityCount)
     .sort(([, a], [, b]) => b - a)[0][0];
 
-  // Extract achievements related to top activity
   const achievements = extraRecords
     .filter(record => record.activity === topActivity && record.achievement)
     .map(record => record.achievement);
 
-  // Generate enjoyment insight
   const enjoyment = achievements.length > 0
     ? `Child shows consistent engagement in ${topActivity} with notable achievements.`
     : `Child regularly participates in ${topActivity} activities.`;
 
   return {
     topActivity,
-    achievements: achievements.slice(0, 3), // Limit to 3 achievements
+    achievements: achievements.slice(0, 3),
     enjoyment,
   };
 };
 
-// Function to extract sports data
 const processPhysicalData = (sportsRecords: DocumentData[]): PhysicalData => {
   if (sportsRecords.length === 0) {
     return {
@@ -216,23 +203,19 @@ const processPhysicalData = (sportsRecords: DocumentData[]): PhysicalData => {
     };
   }
 
-  // Count sport frequency
   const sportCount: { [key: string]: number } = {};
   sportsRecords.forEach((record) => {
     const sport = record.sport;
     sportCount[sport] = (sportCount[sport] || 0) + 1;
   });
 
-  // Find top sport
   const topSport = Object.entries(sportCount)
     .sort(([, a], [, b]) => b - a)[0][0];
 
-  // Extract achievements related to top sport
   const achievements = sportsRecords
     .filter(record => record.sport === topSport && record.achievement)
     .map(record => record.achievement);
 
-  // Generate recommendation based on sport engagement
   let recommendation = "";
   
   const sportsArray = Object.keys(sportCount);
@@ -246,12 +229,11 @@ const processPhysicalData = (sportsRecords: DocumentData[]): PhysicalData => {
 
   return {
     topSport,
-    achievements: achievements.slice(0, 3), // Limit to 3 achievements
+    achievements: achievements.slice(0, 3),
     recommendation,
   };
 };
 
-// Function to extract emotional data from journals
 const processEmotionalData = (journalRecords: DocumentData[]): EmotionalData => {
   if (journalRecords.length === 0) {
     return {
@@ -261,15 +243,12 @@ const processEmotionalData = (journalRecords: DocumentData[]): EmotionalData => 
     };
   }
 
-  // Sort journals by date (descending)
   const sortedJournals = [...journalRecords].sort(
     (a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0)
   );
 
-  // Extract current mood from most recent journal
   const currentMood = sortedJournals[0]?.mood || "Unknown";
 
-  // Count mood frequency
   const moodCount: { [key: string]: number } = {};
   journalRecords.forEach((record) => {
     if (record.mood) {
@@ -277,12 +256,10 @@ const processEmotionalData = (journalRecords: DocumentData[]): EmotionalData => 
     }
   });
 
-  // Convert to array format for charts
   const moodHistory = Object.entries(moodCount)
     .map(([mood, count]) => ({ mood, count }))
     .sort((a, b) => b.count - a.count);
 
-  // Generate recommendation based on journal patterns
   let recommendation = "";
   if (journalRecords.length < 4) {
     recommendation = "Encourage more regular journaling to better understand emotional patterns.";
@@ -299,7 +276,6 @@ const processEmotionalData = (journalRecords: DocumentData[]): EmotionalData => 
   };
 };
 
-// Function to process achievements data
 const processAchievementData = (
   academicRecords: DocumentData[],
   extraRecords: DocumentData[],
@@ -311,7 +287,6 @@ const processAchievementData = (
     date: number;
   }[] = [];
 
-  // Process academic achievements
   academicRecords.forEach(record => {
     if (record.achievement || (record.score && record.score > 80)) {
       achievements.push({
@@ -322,7 +297,6 @@ const processAchievementData = (
     }
   });
 
-  // Process extracurricular achievements
   extraRecords.forEach(record => {
     if (record.achievement) {
       achievements.push({
@@ -333,7 +307,6 @@ const processAchievementData = (
     }
   });
 
-  // Process sports achievements
   sportsRecords.forEach(record => {
     if (record.achievement) {
       achievements.push({
@@ -344,10 +317,8 @@ const processAchievementData = (
     }
   });
 
-  // Sort by date (most recent first)
   achievements.sort((a, b) => b.date - a.date);
 
-  // Count achievements by category
   const byCategory: { [key: string]: number } = {};
   achievements.forEach(item => {
     byCategory[item.category] = (byCategory[item.category] || 0) + 1;
@@ -359,7 +330,6 @@ const processAchievementData = (
   };
 };
 
-// Function to process goals data
 const processGoalData = (goalRecords: DocumentData[]): GoalData => {
   if (goalRecords.length === 0) {
     return {
@@ -376,7 +346,6 @@ const processGoalData = (goalRecords: DocumentData[]): GoalData => {
     .sort((a, b) => (a.priority || 999) - (b.priority || 999))
     .map(goal => goal.title);
 
-  // Generate recommendation based on goal completion patterns
   let recommendation = "";
   const completionRate = goalRecords.length > 0 
     ? completed / goalRecords.length
@@ -394,12 +363,11 @@ const processGoalData = (goalRecords: DocumentData[]): GoalData => {
 
   return {
     completed,
-    pending: pendingGoals.slice(0, 3), // Limit to 3 pending goals
+    pending: pendingGoals.slice(0, 3),
     recommendation,
   };
 };
 
-// Function to process feedback data
 const processFeedbackData = (feedbackRecords: DocumentData[]): FeedbackData => {
   if (feedbackRecords.length === 0) {
     return {
@@ -409,32 +377,27 @@ const processFeedbackData = (feedbackRecords: DocumentData[]): FeedbackData => {
     };
   }
 
-  // Sort feedback by date (recent first)
   const sortedFeedback = [...feedbackRecords].sort(
     (a, b) => (b.date?.toMillis() || 0) - (a.date?.toMillis() || 0)
   );
 
-  // Extract positive feedback points
   const positive = sortedFeedback
     .filter(record => record.positivePoints)
     .flatMap(record => record.positivePoints)
     .filter((item: string, index: number, self: string[]) => 
-      self.indexOf(item) === index // Remove duplicates
+      self.indexOf(item) === index
     );
 
-  // Extract areas of improvement
   const areasOfImprovement = sortedFeedback
     .filter(record => record.improvementAreas)
     .flatMap(record => record.improvementAreas)
     .filter((item: string, index: number, self: string[]) => 
-      self.indexOf(item) === index // Remove duplicates
+      self.indexOf(item) === index
     );
 
-  // Generate recommendation based on feedback patterns
   let recommendation = "";
   
   if (sortedFeedback.length > 0 && sortedFeedback[0].teacherRecommendation) {
-    // Use the most recent teacher recommendation if available
     recommendation = sortedFeedback[0].teacherRecommendation;
   } else if (areasOfImprovement.length > 0) {
     recommendation = `Focus on improving: ${areasOfImprovement[0]}.`;
@@ -443,13 +406,12 @@ const processFeedbackData = (feedbackRecords: DocumentData[]): FeedbackData => {
   }
 
   return {
-    positive: positive.slice(0, 3), // Limit to 3 points
-    areasOfImprovement: areasOfImprovement.slice(0, 2), // Limit to 2 points
+    positive: positive.slice(0, 3),
+    areasOfImprovement: areasOfImprovement.slice(0, 2),
     recommendation,
   };
 };
 
-// Function to determine child's top skill and weak area
 const determineStrengthsAndWeaknesses = (
   academic: AcademicData,
   talent: TalentData,
@@ -457,12 +419,10 @@ const determineStrengthsAndWeaknesses = (
 ): { topSkill: string, weakArea: string, growthScore: number } => {
   let topSkill = "Not enough data";
   let weakArea = "Not enough data";
-  let growthScore = 50; // Default score
-  
-  // Determine top skill
+  let growthScore = 50;
+
   if (academic.subjectScores.length > 0 && academic.strongSubject !== "N/A") {
     if (talent.topActivity !== "N/A" && physical.topSport !== "N/A") {
-      // Check which area has the highest achievement
       const academicScore = academic.subjectScores.find(s => s.subject === academic.strongSubject)?.score || 0;
       const hasExtracurricularAchievements = talent.achievements.length > 0;
       const hasSportsAchievements = physical.achievements.length > 0;
@@ -474,7 +434,6 @@ const determineStrengthsAndWeaknesses = (
       } else if (academicScore > 85) {
         topSkill = academic.strongSubject;
       } else {
-        // If multiple areas have achievements, provide a combined strength
         if (hasExtracurricularAchievements && hasSportsAchievements) {
           topSkill = `${talent.topActivity} + ${physical.topSport}`;
         } else {
@@ -494,34 +453,27 @@ const determineStrengthsAndWeaknesses = (
     topSkill = physical.topSport;
   }
   
-  // Determine weak area
   if (academic.subjectScores.length > 0 && academic.weakSubject !== "N/A") {
     weakArea = academic.weakSubject;
   }
   
-  // Calculate growth score
   if (academic.subjectScores.length > 0) {
-    // Base score on average academic performance
     growthScore = academic.averageScore;
     
-    // Adjust for extracurricular achievements
     if (talent.achievements.length > 0) {
       growthScore += 5;
     }
     
-    // Adjust for sports achievements
     if (physical.achievements.length > 0) {
       growthScore += 5;
     }
     
-    // Cap at 100
     growthScore = Math.min(100, Math.round(growthScore));
   }
   
   return { topSkill, weakArea, growthScore };
 };
 
-// Function to match appropriate suggestions from JSON
 const getSuggestionsForStudent = (
   academic: AcademicData,
   talent: TalentData,
@@ -549,14 +501,10 @@ const getSuggestionsForStudent = (
         }
       }
     } else if (suggestion.trigger.condition === "activityFrequency" && suggestion.trigger.activity) {
-      // In a real implementation, we would check frequency data
-      // For now, match if the activity exists
       if (talent.topActivity === suggestion.trigger.activity) {
         isMatch = true;
       }
     } else if (suggestion.trigger.condition === "journalCount") {
-      // In a real implementation, check actual journal count
-      // For now, match based on mood history length
       const journalCount = emotional.moodHistory.reduce((sum, item) => sum + item.count, 0);
       
       if (suggestion.trigger.operator === "lt" && journalCount < (suggestion.trigger.threshold || 0)) {
@@ -565,7 +513,6 @@ const getSuggestionsForStudent = (
         isMatch = true;
       }
     } else if (suggestion.trigger.condition === "goalExists" && suggestion.trigger.activityType) {
-      // Check if a goal with the activity type exists
       const matchingGoal = goals.pending.some(goal => 
         goal.toLowerCase().includes(suggestion.trigger.activityType?.toLowerCase() || "")
       );
@@ -580,7 +527,6 @@ const getSuggestionsForStudent = (
     }
   });
   
-  // If no suggestions matched, provide a default one
   if (matchedSuggestions.length === 0) {
     if (academic.weakSubject !== "N/A") {
       matchedSuggestions.push(`Focus on improving ${academic.weakSubject} with regular practice.`);
@@ -592,7 +538,6 @@ const getSuggestionsForStudent = (
   return matchedSuggestions;
 };
 
-// Function to match appropriate forecast from JSON
 const getForecastForStudent = (
   academic: AcademicData,
   talent: TalentData,
@@ -602,53 +547,63 @@ const getForecastForStudent = (
     let allConditionsMet = true;
     
     for (const condition of forecast.trigger.conditions) {
-      if (condition.type === "academicStrength" && condition.subjects) {
-        // Check if the required number of subjects are strong
-        const strongSubjectsCount = condition.subjects.filter(subject => {
-          const matchingSubject = academic.subjectScores.find(
-            s => s.subject.toLowerCase() === subject.toLowerCase()
-          );
-          return matchingSubject && matchingSubject.score > 75;
-        }).length;
-        
-        if (strongSubjectsCount < (condition.minCount || 1)) {
-          allConditionsMet = false;
-          break;
-        }
-      } else if (condition.type === "activityEngagement" && condition.activities) {
-        // Check if any activity matches
-        let activityMatched = false;
-        for (const activity of condition.activities) {
-          if (talent.topActivity.toLowerCase().includes(activity.toLowerCase())) {
-            activityMatched = true;
-            break;
+      switch (condition.type) {
+        case "academicStrength":
+          if (condition.subjects) {
+            const strongSubjectsCount = condition.subjects.filter(subject => {
+              const matchingSubject = academic.subjectScores.find(
+                s => s.subject.toLowerCase() === subject.toLowerCase()
+              );
+              return matchingSubject && matchingSubject.score > 75;
+            }).length;
+            
+            if (strongSubjectsCount < condition.minCount) {
+              allConditionsMet = false;
+            }
+          } else if (condition.activities) {
+            allConditionsMet = physical.topSport.toLowerCase().includes(
+              condition.activities[0].toLowerCase()
+            );
           }
-        }
-        
-        if (!activityMatched) {
-          allConditionsMet = false;
           break;
-        }
-      } else if (condition.type === "sportAchievement") {
-        if (physical.achievements.length < (condition.minCount || 1)) {
-          allConditionsMet = false;
+
+        case "activityEngagement":
+          if (condition.activities) {
+            const activityMatched = condition.activities.some(activity => 
+              talent.topActivity.toLowerCase().includes(activity.toLowerCase())
+            );
+            
+            if (!activityMatched) {
+              allConditionsMet = false;
+            }
+          }
           break;
-        }
-      } else if (condition.type === "balancedScores") {
-        // Check if scores across subjects are balanced
-        if (academic.subjectScores.length > 1) {
-          const scores = academic.subjectScores.map(s => s.score);
-          const max = Math.max(...scores);
-          const min = Math.min(...scores);
-          if ((max - min) > (condition.deviation || 20)) {
+
+        case "sportAchievement":
+          if (physical.achievements.length < condition.minCount) {
             allConditionsMet = false;
-            break;
           }
-        } else {
-          allConditionsMet = false;
           break;
-        }
+
+        case "balancedScores":
+          if (academic.subjectScores.length > 1) {
+            const scores = academic.subjectScores.map(s => s.score);
+            const max = Math.max(...scores);
+            const min = Math.min(...scores);
+            if ((max - min) > (condition.deviation || 20)) {
+              allConditionsMet = false;
+            }
+          } else {
+            allConditionsMet = false;
+          }
+          break;
+
+        default:
+          allConditionsMet = true;
+          break;
       }
+
+      if (!allConditionsMet) break;
     }
     
     if (allConditionsMet) {
@@ -656,11 +611,9 @@ const getForecastForStudent = (
     }
   }
   
-  // Default forecast if none matched
   return "Continue to monitor progress across different areas to identify emerging patterns and strengths.";
 };
 
-// Function to get action plan
 const getActionPlanForStudent = (
   academic: AcademicData,
   talent: TalentData,
@@ -704,7 +657,6 @@ const getActionPlanForStudent = (
     }
     
     if (isMatch) {
-      // Add unique plans
       plan.shortTerm.forEach(item => {
         if (!result.shortTerm.includes(item)) {
           result.shortTerm.push(item);
@@ -725,7 +677,6 @@ const getActionPlanForStudent = (
     }
   }
   
-  // If no plans matched, provide defaults
   if (result.shortTerm.length === 0) {
     result.shortTerm.push("Set specific learning goals for the next month");
   }
@@ -741,10 +692,8 @@ const getActionPlanForStudent = (
   return result;
 };
 
-// Main function to fetch insight data
 export const fetchInsightData = async (userId: string): Promise<AIInsightData | null> => {
   try {
-    // Fetch academic records
     const academicQuery = query(
       collection(db, "academicRecords"),
       where("userId", "==", userId),
@@ -753,7 +702,6 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
     const academicSnapshot = await getDocs(academicQuery);
     const academicRecords = academicSnapshot.docs.map(doc => doc.data());
     
-    // Fetch extracurricular records
     const extraQuery = query(
       collection(db, "extraCurricularRecords"),
       where("userId", "==", userId),
@@ -762,7 +710,6 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
     const extraSnapshot = await getDocs(extraQuery);
     const extraRecords = extraSnapshot.docs.map(doc => doc.data());
     
-    // Fetch sports records
     const sportsQuery = query(
       collection(db, "sportsRecords"),
       where("userId", "==", userId),
@@ -771,7 +718,6 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
     const sportsSnapshot = await getDocs(sportsQuery);
     const sportsRecords = sportsSnapshot.docs.map(doc => doc.data());
     
-    // Fetch journals for mood analysis
     const journalsQuery = query(
       collection(db, "journals"),
       where("userId", "==", userId),
@@ -780,7 +726,6 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
     const journalsSnapshot = await getDocs(journalsQuery);
     const journalRecords = journalsSnapshot.docs.map(doc => doc.data());
     
-    // Fetch goals
     const goalsQuery = query(
       collection(db, "goals"),
       where("userId", "==", userId)
@@ -788,7 +733,6 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
     const goalsSnapshot = await getDocs(goalsQuery);
     const goalRecords = goalsSnapshot.docs.map(doc => doc.data());
     
-    // Fetch feedback records
     const feedbackQuery = query(
       collection(db, "feedback"),
       where("userId", "==", userId),
@@ -797,7 +741,6 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
     const feedbackSnapshot = await getDocs(feedbackQuery);
     const feedbackRecords = feedbackSnapshot.docs.map(doc => doc.data());
     
-    // Fetch profile info
     const profileQuery = query(
       collection(db, "profiles"),
       where("userId", "==", userId),
@@ -806,7 +749,6 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
     const profileSnapshot = await getDocs(profileQuery);
     const profileData = profileSnapshot.docs.length > 0 ? profileSnapshot.docs[0].data() : null;
     
-    // Process all data
     const academic = processAcademicData(academicRecords);
     const talent = processTalentData(extraRecords);
     const physical = processPhysicalData(sportsRecords);
@@ -815,17 +757,14 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
     const goals = processGoalData(goalRecords);
     const feedback = processFeedbackData(feedbackRecords);
     
-    // Determine top skill, weak area, and growth score
     const { topSkill, weakArea, growthScore } = determineStrengthsAndWeaknesses(
       academic, talent, physical
     );
     
-    // Generate AI-driven insights
     const suggestions = getSuggestionsForStudent(academic, talent, physical, emotional, goals);
     const forecast = getForecastForStudent(academic, talent, physical);
     const actionPlan = getActionPlanForStudent(academic, talent, physical, emotional);
     
-    // Create the child snapshot
     const childSnapshot: ChildData = {
       name: profileData?.fullName || "Student",
       age: profileData?.age || calculateAgeFromGrade(profileData?.grade),
@@ -854,14 +793,11 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData | 
   }
 };
 
-// Helper function to calculate age from grade
 const calculateAgeFromGrade = (grade?: string): number => {
   if (!grade) return 10;
   
-  // Extract number from grade string
   const gradeNum = parseInt(grade.match(/\d+/)?.[0] || "5");
   
-  // Approximate age calculation (kindergarten age is around 5)
   return gradeNum + 5;
 };
 
