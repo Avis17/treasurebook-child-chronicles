@@ -33,15 +33,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    console.log("Setting up auth state listener");
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        console.log("User authenticated:", user.email);
         try {
           // Check if user is admin first before fetching additional data
           const isAdminUser = user.email === ADMIN_EMAIL;
+          console.log("Is admin user check:", user.email, ADMIN_EMAIL, isAdminUser);
           setIsAdmin(isAdminUser);
 
           // For admin, skip verification checks and set default permissions
           if (isAdminUser) {
+            console.log("Admin user detected, setting enhanced permissions");
             const enhancedAdmin = {
               ...user,
               verificationStatus: VERIFICATION_STATUS.APPROVED, // Always approved for admin
@@ -78,6 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
         }
       } else {
+        console.log("No authenticated user");
         setCurrentUser(null);
         setIsAdmin(false);
       }

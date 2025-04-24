@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,19 +14,28 @@ const VerificationPending = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("VerificationPending component mounted", {
+      currentUser: currentUser?.email,
+      isAdmin: currentUser?.email === ADMIN_EMAIL,
+      verificationStatus: currentUser?.verificationStatus,
+      adminEmail: ADMIN_EMAIL
+    });
+
     if (!currentUser) {
+      console.log("No current user, redirecting to login");
       navigate('/login');
       return;
     }
 
-    // Allow admin to bypass verification check
+    // Allow admin to bypass verification check - critical check
     if (currentUser.email === ADMIN_EMAIL) {
-      console.log("Admin detected, redirecting to dashboard");
+      console.log("Admin detected in VerificationPending, redirecting to dashboard");
       navigate('/dashboard');
       return;
     }
 
     if (currentUser.verificationStatus === VERIFICATION_STATUS.APPROVED) {
+      console.log("User is approved, redirecting to dashboard");
       navigate('/dashboard');
     }
   }, [currentUser, navigate]);
@@ -51,6 +59,11 @@ const VerificationPending = () => {
   };
 
   if (!currentUser) {
+    return null; // Will redirect in the useEffect
+  }
+
+  // An additional safety check to prevent admin from seeing this page
+  if (currentUser.email === ADMIN_EMAIL) {
     return null; // Will redirect in the useEffect
   }
 

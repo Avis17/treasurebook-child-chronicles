@@ -5,4 +5,4 @@ export const VERIFICATION_STATUS = {
   REJECTED: 'rejected'
 };
 
-export const ADMIN_EMAIL = 'admin@example.com';
+export const ADMIN_EMAIL = 'ashrav.siva@gmail.com';

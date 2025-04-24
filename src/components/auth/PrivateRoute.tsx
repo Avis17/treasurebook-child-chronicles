@@ -7,6 +7,15 @@ const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.Rea
   const { currentUser, loading, isAdmin } = useAuth();
   const location = useLocation();
 
+  console.log("PrivateRoute render", { 
+    currentUser: currentUser?.email, 
+    loading, 
+    isAdmin,
+    adminEmail: ADMIN_EMAIL,
+    isAdminComparison: currentUser?.email === ADMIN_EMAIL,
+    verificationStatus: currentUser?.verificationStatus
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -20,10 +29,11 @@ const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.Rea
 
   // Block all non-authenticated users
   if (!currentUser) {
+    console.log("No current user, redirecting to login");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Skip all checks for admin
+  // Skip all checks for admin - this is the critical part
   if (currentUser.email === ADMIN_EMAIL) {
     console.log("Admin user detected in PrivateRoute, bypassing all checks");
     return <>{children}</>;
@@ -37,18 +47,21 @@ const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.Rea
 
   // If admin access is required but user is not admin
   if (requiresAdmin && !isAdmin) {
+    console.log("Admin access required but user is not admin");
     return <Navigate to="/dashboard" replace />;
   }
 
   // Check storage permission for storage routes
   const isStorageRoute = ['/gallery', '/documents'].includes(location.pathname);
   if (isStorageRoute && !currentUser.permissions?.storage) {
+    console.log("Storage permission needed but not granted");
     return <Navigate to="/dashboard" replace />;
   }
 
   // Check AI insights permission for AI insights route
   const isAIInsightsRoute = location.pathname === '/ai-insights';
   if (isAIInsightsRoute && !currentUser.permissions?.aiInsights) {
+    console.log("AI insights permission needed but not granted");
     return <Navigate to="/dashboard" replace />;
   }
 
