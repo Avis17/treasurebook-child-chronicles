@@ -24,6 +24,12 @@ import UsersManagement from "./pages/UsersManagement";
 import VerificationPending from "./pages/VerificationPending";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import AdminRoute from "./components/auth/AdminRoute";
+import Milestones from "./pages/Milestones";
+import Goals from "./pages/Goals";
+import Journal from "./pages/Journal";
+import Documents from "./pages/Documents";
+import Feedback from "./pages/Feedback";
+import BackupExport from "./pages/BackupExport";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +58,12 @@ const App = () => (
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/resources" element={<Resources />} />
                 <Route path="/directory" element={<Directory />} />
+                <Route path="/milestones" element={<Milestones />} />
+                <Route path="/goals" element={<Goals />} />
+                <Route path="/journal" element={<Journal />} />
+                <Route path="/documents" element={<Documents />} />
+                <Route path="/feedback" element={<Feedback />} />
+                <Route path="/backup" element={<BackupExport />} />
               </Route>
               
               <Route element={<AdminRoute />}>

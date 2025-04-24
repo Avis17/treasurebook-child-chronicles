@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -16,7 +17,12 @@ import {
   FileText, 
   Users,
   Trophy,
-  Award
+  Award,
+  Milestone,
+  BookText,
+  MessageSquare,
+  FileDown,
+  Download
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,9 +68,15 @@ const Sidebar = ({ isMobile, isOpen, setIsOpen }: SidebarProps) => {
     { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
     { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
     { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
+    { name: "Milestones", icon: <Milestone className="w-5 h-5" />, path: "/milestones" },
+    { name: "Goals & Vision", icon: <Award className="w-5 h-5" />, path: "/goals" },
+    { name: "Daily Journal", icon: <BookText className="w-5 h-5" />, path: "/journal" },
+    { name: "Documents", icon: <FileText className="w-5 h-5" />, path: "/documents" },
+    { name: "Feedback Notes", icon: <MessageSquare className="w-5 h-5" />, path: "/feedback" },
     { name: "Gallery", icon: <Image className="w-5 h-5" />, path: "/gallery" },
     { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
     { name: "Directory", icon: <Users className="w-5 h-5" />, path: "/directory" },
+    { name: "Backup & Export", icon: <Download className="w-5 h-5" />, path: "/backup" },
     { name: "Profile", icon: <User className="w-5 h-5" />, path: "/profile" },
     { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
   ];
