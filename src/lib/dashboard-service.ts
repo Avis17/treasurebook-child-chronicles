@@ -183,8 +183,93 @@ export const useCalendarEvents = (userId: string | undefined) =>
 export const useMilestones = (userId: string | undefined) => 
   useFirebaseData<Milestone>(userId, "milestones");
 
-export const useJournalEntries = (userId: string | undefined) => 
-  useFirebaseData<JournalEntry>(userId, "journalEntries");
+// Modified to check both "journal" and "journalEntries" collections
+export const useJournalEntries = (userId: string | undefined) => {
+  const [data, setData] = useState<JournalEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!userId) {
+      setData([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    
+    // Try with journalEntries collection first
+    const q1 = query(
+      collection(db, "journalEntries"),
+      where("userId", "==", userId)
+    );
+
+    // Also try with journal collection
+    const q2 = query(
+      collection(db, "journal"),
+      where("userId", "==", userId)
+    );
+
+    // Subscribe to both collections
+    const unsubscribe1 = onSnapshot(
+      q1,
+      (querySnapshot) => {
+        const items: JournalEntry[] = [];
+        querySnapshot.forEach((doc) => {
+          items.push({ id: doc.id, ...doc.data() } as JournalEntry);
+        });
+        setData(prevData => {
+          // Combine with any data we might have from the other collection
+          const newData = [...prevData];
+          items.forEach(item => {
+            if (!newData.some(existing => existing.id === item.id)) {
+              newData.push(item);
+            }
+          });
+          return newData;
+        });
+        setLoading(false);
+      },
+      (err) => {
+        console.log("No data in journalEntries collection or error:", err);
+        // Don't set error here as we're also checking another collection
+      }
+    );
+
+    const unsubscribe2 = onSnapshot(
+      q2,
+      (querySnapshot) => {
+        const items: JournalEntry[] = [];
+        querySnapshot.forEach((doc) => {
+          items.push({ id: doc.id, ...doc.data() } as JournalEntry);
+        });
+        setData(prevData => {
+          // Combine with any data we might have from the other collection
+          const newData = [...prevData];
+          items.forEach(item => {
+            if (!newData.some(existing => existing.id === item.id)) {
+              newData.push(item);
+            }
+          });
+          return newData;
+        });
+        setLoading(false);
+      },
+      (err) => {
+        console.error(`Error listening to journal collection:`, err);
+        setError(err);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
+  }, [userId]);
+
+  return { data, loading, error };
+};
 
 export const useFeedback = (userId: string | undefined) => 
   useFirebaseData<Feedback>(userId, "feedback");
@@ -255,7 +340,10 @@ export const useDashboardStats = (userId: string | undefined) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
     const fetchStats = async () => {
       try {
@@ -278,18 +366,66 @@ export const useDashboardStats = (userId: string | undefined) => {
         const futureDate = new Date();
         futureDate.setMonth(futureDate.getMonth() + 1);
 
-        const eventsSnapshot = await getDocs(query(
+        // Check calendarEvents collection
+        const eventsSnapshot1 = await getDocs(query(
           collection(db, "calendarEvents"),
-          where("userId", "==", userId),
-          where("date", ">=", now),
-          where("date", "<=", futureDate)
+          where("userId", "==", userId)
         ));
+
+        // Also check the events collection
+        const eventsSnapshot2 = await getDocs(query(
+          collection(db, "events"),
+          where("userId", "==", userId)
+        ));
+
+        // Filter events that are upcoming
+        const upcomingEvents1 = eventsSnapshot1.docs.filter(doc => {
+          const data = doc.data();
+          if (!data.date) return false;
+          
+          let eventDate;
+          try {
+            if (typeof data.date === 'string') {
+              eventDate = new Date(data.date);
+            } else if (data.date.toDate) {
+              eventDate = data.date.toDate();
+            } else {
+              eventDate = new Date(data.date);
+            }
+            
+            return eventDate >= now;
+          } catch (e) {
+            console.error("Error parsing date:", e);
+            return false;
+          }
+        });
+
+        const upcomingEvents2 = eventsSnapshot2.docs.filter(doc => {
+          const data = doc.data();
+          if (!data.date) return false;
+          
+          let eventDate;
+          try {
+            if (typeof data.date === 'string') {
+              eventDate = new Date(data.date);
+            } else if (data.date.toDate) {
+              eventDate = data.date.toDate();
+            } else {
+              eventDate = new Date(data.date);
+            }
+            
+            return eventDate >= now;
+          } catch (e) {
+            console.error("Error parsing date:", e);
+            return false;
+          }
+        });
 
         setData({
           totalExams: examSnapshot.size,
           totalSportsEvents: sportsSnapshot.size,
           totalAchievements: achievementsSnapshot.size,
-          upcomingEvents: eventsSnapshot.size
+          upcomingEvents: upcomingEvents1.length + upcomingEvents2.length
         });
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);

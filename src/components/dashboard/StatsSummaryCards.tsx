@@ -21,7 +21,7 @@ export const StatsSummaryCards = () => {
   const summaryCards = [
     {
       title: "Academic Tests",
-      value: stats.totalExams || 0,
+      value: stats.totalExams,
       icon: <BookOpen className="h-6 w-6" />,
       gradient: "from-blue-500 to-indigo-600",
       bgLight: "from-blue-50 to-indigo-50",
@@ -29,7 +29,7 @@ export const StatsSummaryCards = () => {
     },
     {
       title: "Sports Events",
-      value: stats.totalSportsEvents || 0,
+      value: stats.totalSportsEvents,
       icon: <Trophy className="h-6 w-6" />,
       gradient: "from-amber-500 to-orange-600",
       bgLight: "from-amber-50 to-orange-50",
@@ -37,7 +37,7 @@ export const StatsSummaryCards = () => {
     },
     {
       title: "Achievements",
-      value: stats.totalAchievements || 0,
+      value: stats.totalAchievements,
       icon: <Award className="h-6 w-6" />,
       gradient: "from-green-500 to-emerald-600",
       bgLight: "from-green-50 to-emerald-50",
@@ -45,7 +45,7 @@ export const StatsSummaryCards = () => {
     },
     {
       title: "Upcoming Events",
-      value: stats.upcomingEvents || 0,
+      value: stats.upcomingEvents,
       icon: <Calendar className="h-6 w-6" />,
       gradient: "from-purple-500 to-fuchsia-600",
       bgLight: "from-purple-50 to-fuchsia-50",

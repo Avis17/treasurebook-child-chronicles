@@ -29,7 +29,9 @@ const JournalPage = () => {
   const [formData, setFormData] = useState<Partial<JournalEntry>>({
     title: "",
     content: "",
-    date: new Date().toISOString().split("T")[0]
+    date: new Date().toISOString().split("T")[0],
+    mood: "Neutral",
+    tags: []
   });
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState<string | null>(null);
@@ -44,24 +46,53 @@ const JournalPage = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      // Remove the orderBy clause to avoid composite index requirement
-      const journalRef = collection(db, "journal");
-      const q = query(
-        journalRef,
+      // Check journal collection
+      const journalRef1 = collection(db, "journal");
+      const q1 = query(
+        journalRef1,
         where("userId", "==", user.uid)
       );
 
-      const querySnapshot = await getDocs(q);
-      const entriesData = [];
-      querySnapshot.forEach((doc) => {
+      // Also check journalEntries collection for backward compatibility
+      const journalRef2 = collection(db, "journalEntries");
+      const q2 = query(
+        journalRef2,
+        where("userId", "==", user.uid)
+      );
+
+      // Fetch from both collections
+      const [querySnapshot1, querySnapshot2] = await Promise.all([
+        getDocs(q1),
+        getDocs(q2)
+      ]);
+
+      const entriesData: JournalEntry[] = [];
+      
+      // Process entries from journal collection
+      querySnapshot1.forEach((doc) => {
         entriesData.push({
           id: doc.id,
           ...doc.data()
-        });
+        } as JournalEntry);
       });
       
-      // Sort locally instead of in the query
-      entriesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      // Process entries from journalEntries collection
+      querySnapshot2.forEach((doc) => {
+        const data = doc.data();
+        if (!entriesData.some(entry => entry.id === doc.id)) {
+          entriesData.push({
+            id: doc.id,
+            ...data
+          } as JournalEntry);
+        }
+      });
+      
+      // Sort locally
+      entriesData.sort((a, b) => {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        return dateB - dateA; // Sort in descending order (newest first)
+      });
       
       setJournalEntries(entriesData);
     } catch (error) {
@@ -90,19 +121,39 @@ const JournalPage = () => {
 
       const entryData = {
         ...formData,
-        userId: user.uid
+        userId: user.uid,
+        mood: formData.mood || "Neutral",
+        tags: formData.tags || []
       } as JournalEntry;
       
+      // Always use the journal collection for new entries
       if (isEditing && currentId) {
-        // Create a copy without id before updating
-        const { id, ...updateData } = entryData;
-        await updateDoc(doc(db, "journal", currentId), updateData);
+        // Try to update in both collections to ensure consistency
+        try {
+          // Update in journalEntries collection
+          await updateDoc(doc(db, "journalEntries", currentId), entryData);
+        } catch (error) {
+          console.log("Entry not found in journalEntries, trying journal collection");
+        }
+        
+        try {
+          // Update in journal collection
+          await updateDoc(doc(db, "journal", currentId), entryData);
+        } catch (error) {
+          console.log("Entry not found in journal collection");
+        }
+        
         toast({
           title: "Journal entry updated",
           description: "Your journal entry has been successfully updated",
         });
       } else {
-        await addDoc(collection(db, "journal"), entryData);
+        // Always add new entries to the journal collection
+        await addDoc(collection(db, "journal"), {
+          ...entryData,
+          createdAt: new Date()
+        });
+        
         toast({
           title: "Journal entry added",
           description: "Your journal entry has been successfully added",
@@ -137,7 +188,19 @@ const JournalPage = () => {
     if (!id) return;
     
     try {
-      await deleteDoc(doc(db, "journal", id));
+      // Try deleting from both collections to ensure consistency
+      try {
+        await deleteDoc(doc(db, "journalEntries", id));
+      } catch (error) {
+        console.log("Entry not found in journalEntries or already deleted");
+      }
+      
+      try {
+        await deleteDoc(doc(db, "journal", id));
+      } catch (error) {
+        console.log("Entry not found in journal or already deleted");
+      }
+      
       toast({
         title: "Journal entry deleted",
         description: "The journal entry has been successfully deleted",
@@ -157,7 +220,9 @@ const JournalPage = () => {
     setFormData({
       title: "",
       content: "",
-      date: new Date().toISOString().split("T")[0]
+      date: new Date().toISOString().split("T")[0],
+      mood: "Neutral",
+      tags: []
     });
     setIsEditing(false);
     setCurrentId(null);

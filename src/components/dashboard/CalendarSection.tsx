@@ -6,25 +6,87 @@ import { useCalendarEvents } from "@/lib/dashboard-service";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Check, Clock, Calendar as CalendarIcon, BookOpen, Trophy, Music } from "lucide-react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export const CalendarSection = () => {
   const { currentUser } = useAuth();
-  const { data: events, loading } = useCalendarEvents(currentUser?.uid);
+  const { data: calendarEvents, loading: calendarLoading } = useCalendarEvents(currentUser?.uid);
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [month, setMonth] = React.useState<string>(
     new Date().toLocaleDateString("default", { month: "long", year: "numeric" })
   );
+  const [events, setEvents] = React.useState<any[]>([]); 
+  const [loading, setLoading] = React.useState(true);
+
+  // Load events from both collections
+  React.useEffect(() => {
+    if (!currentUser?.uid) return;
+    
+    setLoading(true);
+    
+    // Combine events from calendarEvents
+    setEvents(calendarEvents);
+
+    // Also check the events collection
+    const q = query(
+      collection(db, "events"),
+      where("userId", "==", currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const items: any[] = [];
+        querySnapshot.forEach((doc) => {
+          items.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // Merge with calendar events
+        setEvents(prev => {
+          const combined = [...prev];
+          items.forEach(item => {
+            if (!combined.some(existing => existing.id === item.id)) {
+              combined.push(item);
+            }
+          });
+          return combined;
+        });
+        
+        setLoading(false);
+      },
+      (err) => {
+        console.log("No events collection or error:", err);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [currentUser?.uid, calendarEvents]);
 
   // Process events by date
   const eventsByDate = React.useMemo(() => {
     return events.reduce((acc: Record<string, typeof events>, event) => {
-      const eventDate = event.date?.toDate 
-        ? new Date(event.date.toDate()) 
-        : new Date(event.date);
+      if (!event.date) return acc;
       
-      const dateKey = eventDate.toISOString().split("T")[0];
-      if (!acc[dateKey]) acc[dateKey] = [];
-      acc[dateKey].push(event);
+      let eventDate;
+      try {
+        if (typeof event.date === 'string') {
+          eventDate = new Date(event.date);
+        } else if (event.date.toDate) {
+          eventDate = event.date.toDate();
+        } else {
+          eventDate = new Date(event.date);
+        }
+        
+        const dateKey = eventDate.toISOString().split("T")[0];
+        if (!acc[dateKey]) acc[dateKey] = [];
+        acc[dateKey].push(event);
+      } catch (e) {
+        console.error("Error processing event date:", e, event);
+      }
       return acc;
     }, {});
   }, [events]);
@@ -84,7 +146,7 @@ export const CalendarSection = () => {
     return Object.keys(eventsByDate).map(dateStr => new Date(dateStr));
   }, [eventsByDate]);
 
-  if (loading) {
+  if (loading || calendarLoading) {
     return (
       <DashboardCard title="Calendar Events">
         <div className="flex justify-center items-center h-40">
