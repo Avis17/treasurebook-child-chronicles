@@ -231,6 +231,8 @@ const transformData = (
   const strongSubjects = subjectScores
     .filter(s => s.score >= 80)
     .map(s => s.subject);
+  
+  // Get subjects with scores below 40%
   const weakSubjects = subjectScores
     .filter(s => s.score < 40)
     .map(s => s.subject);
@@ -254,6 +256,92 @@ const transformData = (
   
   // Process journal entries for mood data
   const moodData = processMoodData(journalEntries);
+  
+  // Identify weak areas in sports (if any sports events with low performance)
+  const weakSports: string[] = [];
+  
+  // Group sports by type and check performance
+  const sportPerformance = new Map<string, { count: number, positions: string[] }>();
+  
+  sportsRecords.forEach(record => {
+    const sportType = record.eventType || record.sportName || 'Unknown';
+    if (!sportPerformance.has(sportType)) {
+      sportPerformance.set(sportType, { count: 0, positions: [] });
+    }
+    
+    const perf = sportPerformance.get(sportType);
+    if (perf) {
+      perf.count += 1;
+      if (record.position) {
+        perf.positions.push(record.position.toLowerCase());
+      }
+    }
+  });
+  
+  // Analyze each sport's performance
+  sportPerformance.forEach((perf, sport) => {
+    // Check if there are achievements in this sport
+    const hasGoodPerformance = perf.positions.some(pos => 
+      pos.includes('1st') || 
+      pos.includes('gold') || 
+      pos.includes('winner') || 
+      pos.includes('first')
+    );
+    
+    const hasAveragePerformance = perf.positions.some(pos => 
+      pos.includes('2nd') || 
+      pos.includes('3rd') || 
+      pos.includes('silver') || 
+      pos.includes('bronze')
+    );
+    
+    // If more than 3 events in this sport with no good performance, consider it a weak area
+    if (perf.count >= 3 && !hasGoodPerformance) {
+      weakSports.push(sport);
+    }
+    // Or if many events (5+) with no top-3 finishes
+    else if (perf.count >= 5 && !hasAveragePerformance) {
+      weakSports.push(sport);
+    }
+  });
+  
+  // Identify potential weak areas in extracurricular activities
+  const weakActivities: string[] = [];
+  
+  // If there are no extracurricular activities recorded, suggest exploring them
+  if (extracurricularRecords.length === 0) {
+    weakActivities.push("Creative activities");
+    weakActivities.push("Music");
+    weakActivities.push("Arts");
+  }
+  
+  // Check if there are any activity categories with no achievements
+  const activityCategories = new Set(extracurricularRecords.map(r => r.category || 'Unknown'));
+  for (const category of activityCategories) {
+    const activitiesInCategory = extracurricularRecords.filter(r => (r.category || 'Unknown') === category);
+    const achievementsInCategory = activitiesInCategory.filter(r => r.achievement && r.achievement.trim() !== '');
+    
+    if (achievementsInCategory.length === 0 && activitiesInCategory.length > 0) {
+      weakActivities.push(category);
+    }
+  }
+  
+  // Get combined weak areas
+  const combinedWeakAreas = [
+    ...weakSubjects.map(subject => subject),
+    ...weakSports.map(sport => sport),
+    ...weakActivities
+  ];
+  
+  // If there are no identified weak areas, add a placeholder
+  if (combinedWeakAreas.length === 0 && subjectScores.length > 0) {
+    // Find the lowest scoring subjects
+    const sortedScores = [...subjectScores].sort((a, b) => a.score - b.score);
+    if (sortedScores.length > 0) {
+      // Take the lowest scoring subject as an area for improvement
+      combinedWeakAreas.push(sortedScores[0].subject);
+    }
+  }
   
   // Process achievements by category
   const achievementsByCategory: Record<string, number> = {
@@ -329,15 +417,6 @@ const transformData = (
     ...activitiesList.map(activity => ({ type: 'extracurricular', skill: activity }))
   ];
   
-  // Get combined weak areas
-  const combinedWeakAreas = [
-    ...weakSubjects.map(subject => ({ type: 'academic', area: subject })),
-    // For sports, consider any with low achievements
-    ...(sportsList.length === 0 ? [{ type: 'sports', area: 'Physical activities' }] : []),
-    // For extracurricular, consider any with low participation
-    ...(activitiesList.length === 0 ? [{ type: 'extracurricular', area: 'Creative activities' }] : [])
-  ];
-  
   // Generate suggestions based on available data
   const suggestions = generateSuggestions(
     subjectScores, 
@@ -373,7 +452,7 @@ const transformData = (
       class: profile?.class || profile?.grade || 'Student',
       growthScore: Math.min(growthScore, 100),
       topSkills: combinedTopSkills.slice(0, 5).map(item => item.skill),
-      weakAreas: combinedWeakAreas.slice(0, 5).map(item => item.area),
+      weakAreas: combinedWeakAreas.slice(0, 5),
     },
     academic: {
       averageScore,

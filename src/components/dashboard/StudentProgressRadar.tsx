@@ -15,7 +15,7 @@ const StudentProgressRadar = () => {
   const radarData = useMemo(() => {
     // Calculate academic performance (average percentage)
     let academicScore = 0;
-    if (academicRecords.length > 0) {
+    if (academicRecords && academicRecords.length > 0) {
       academicScore = academicRecords.reduce((acc, record) => {
         // Check if the record has a valid score
         if (record.score === undefined || record.score === null) return acc;
@@ -32,7 +32,7 @@ const StudentProgressRadar = () => {
 
     // Calculate sports performance (based on positions)
     let sportsScore = 0;
-    if (sportsRecords.length > 0) {
+    if (sportsRecords && sportsRecords.length > 0) {
       sportsScore = sportsRecords.reduce((acc, record) => {
         const position = (record.position || '').toLowerCase();
         
@@ -56,7 +56,7 @@ const StudentProgressRadar = () => {
     }
 
     // Calculate extracurricular performance
-    const extraScore = extracurricularRecords.length > 0 ? 
+    const extraScore = extracurricularRecords && extracurricularRecords.length > 0 ? 
       Math.min(100, extracurricularRecords.length * 20) :
       0;
 
