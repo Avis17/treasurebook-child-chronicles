@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import {
   AreaChart,
@@ -35,7 +34,6 @@ export const AcademicPerformanceSection = () => {
   const { currentUser } = useAuth();
   const { data: academicRecords, loading } = useAcademicRecords(currentUser?.uid);
   
-  // State for filters
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
   const [selectedTerm, setSelectedTerm] = useState<string>("all");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
@@ -43,7 +41,6 @@ export const AcademicPerformanceSection = () => {
   const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
   
-  // Extract unique filters from data
   const filters = useMemo(() => {
     const grades = new Set<string>();
     const terms = new Set<string>();
@@ -65,7 +62,6 @@ export const AcademicPerformanceSection = () => {
     };
   }, [academicRecords]);
   
-  // Filter records based on selection
   const filteredRecords = useMemo(() => {
     return academicRecords.filter(record => {
       const gradeMatch = selectedGrade === "all" || record.class === selectedGrade;
@@ -76,7 +72,6 @@ export const AcademicPerformanceSection = () => {
     });
   }, [academicRecords, selectedGrade, selectedTerm, selectedSubject, selectedYear]);
   
-  // Process data for bar/line charts
   const chartData = useMemo(() => {
     try {
       const subjectData: Record<string, { marks: number, totalMarks: number, count: number }> = {};
@@ -89,9 +84,8 @@ export const AcademicPerformanceSection = () => {
           subjectData[subject] = { marks: 0, totalMarks: 0, count: 0 };
         }
         
-        // Handle scores differently based on whether they're percentages
         if (record.isPercentage) {
-          subjectData[subject].marks += record.score * 100; // Store as points out of 100
+          subjectData[subject].marks += record.score * 100;
           subjectData[subject].totalMarks += 100;
         } else {
           subjectData[subject].marks += record.score;
@@ -116,14 +110,12 @@ export const AcademicPerformanceSection = () => {
     }
   }, [filteredRecords]);
   
-  // Process data for term comparison line chart
   const termComparisonData = useMemo(() => {
     try {
       if (selectedSubject === "all") {
         return [];
       }
       
-      // Group data by terms for the selected subject
       interface TermRecord {
         term: string;
         percentage: number;
@@ -165,7 +157,6 @@ export const AcademicPerformanceSection = () => {
         }
       });
       
-      // Calculate averages and format for chart
       const result: any[] = [];
       termData.forEach((value, key) => {
         result.push({
@@ -177,7 +168,6 @@ export const AcademicPerformanceSection = () => {
         });
       });
       
-      // Sort by year and term
       return result.sort((a, b) => {
         if (a.year !== b.year) {
           return parseInt(a.year) - parseInt(b.year);
@@ -200,7 +190,6 @@ export const AcademicPerformanceSection = () => {
     }
   }, [academicRecords, selectedSubject]);
   
-  // Safely calculate trend with error handling
   const trend = useMemo(() => {
     try {
       if (filteredRecords.length < 2) return "Consistent";
@@ -211,7 +200,6 @@ export const AcademicPerformanceSection = () => {
     }
   }, [filteredRecords]);
 
-  // Safely get latest exam grade with error handling
   const { grade, subject } = useMemo(() => {
     try {
       if (filteredRecords.length === 0) return { grade: "N/A", subject: "No Data" };
@@ -222,7 +210,6 @@ export const AcademicPerformanceSection = () => {
     }
   }, [filteredRecords]);
 
-  // Class distribution
   const classDistribution = useMemo(() => {
     const classes: Record<string, number> = {};
     filteredRecords.forEach(record => {
@@ -235,7 +222,6 @@ export const AcademicPerformanceSection = () => {
     }));
   }, [filteredRecords]);
 
-  // Generate colors for chart
   const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   if (loading) {
@@ -361,8 +347,8 @@ export const AcademicPerformanceSection = () => {
           </div>
           
           <div className="flex justify-between mb-2">
-            <Select value={selectedYear} onValueChange={setSelectedYear} className="w-32">
-              <SelectTrigger className="bg-white dark:bg-gray-950 h-8">
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="bg-white dark:bg-gray-950 h-8 w-32">
                 <SelectValue placeholder="All Years" />
               </SelectTrigger>
               <SelectContent>

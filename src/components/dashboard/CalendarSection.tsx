@@ -1,4 +1,3 @@
-
 import React from "react";
 import { DashboardCard } from "./DashboardCard";
 import { Calendar } from "@/components/ui/calendar";
@@ -19,16 +18,13 @@ export const CalendarSection = () => {
   const [events, setEvents] = React.useState<any[]>([]); 
   const [loading, setLoading] = React.useState(true);
 
-  // Load events from both collections
   React.useEffect(() => {
     if (!currentUser?.uid) return;
     
     setLoading(true);
     
-    // Combine events from calendarEvents
     setEvents(calendarEvents);
 
-    // Also check the events collection
     const q = query(
       collection(db, "events"),
       where("userId", "==", currentUser.uid)
@@ -42,7 +38,6 @@ export const CalendarSection = () => {
           items.push({ id: doc.id, ...doc.data() });
         });
         
-        // Merge with calendar events
         setEvents(prev => {
           const combined = [...prev];
           items.forEach(item => {
@@ -66,7 +61,6 @@ export const CalendarSection = () => {
     };
   }, [currentUser?.uid, calendarEvents]);
 
-  // Process events by date
   const eventsByDate = React.useMemo(() => {
     const eventMap: Record<string, {events: any[], categories: Set<string>}> = {};
     
@@ -104,19 +98,16 @@ export const CalendarSection = () => {
     return eventMap;
   }, [events]);
 
-  // Handle month change in calendar
   const handleMonthChange = (date: Date) => {
     setMonth(date.toLocaleDateString("default", { month: "long", year: "numeric" }));
   };
 
-  // Get events for the selected day
   const selectedDayEvents = React.useMemo(() => {
     if (!date) return [];
     const dateKey = date.toISOString().split("T")[0];
     return eventsByDate[dateKey]?.events || [];
   }, [date, eventsByDate]);
 
-  // Event category icons and colors
   const categoryConfig: Record<string, {
     icon: React.ReactNode,
     color: string, 
@@ -160,17 +151,14 @@ export const CalendarSection = () => {
     return categoryConfig[normalizedCategory] || categoryConfig.default;
   };
 
-  // Prepare data for highlighting dates with events
   const eventDotsByDate = React.useMemo(() => {
     const modifiers: Record<string, Date[]> = {};
     
-    // Create a modifier for each category and an "all" category
     Object.keys(categoryConfig).forEach(category => {
       modifiers[category] = [];
     });
     modifiers.all = [];
     
-    // Populate the modifiers
     Object.entries(eventsByDate).forEach(([dateStr, data]) => {
       const date = new Date(dateStr);
       modifiers.all.push(date);
@@ -181,7 +169,6 @@ export const CalendarSection = () => {
         }
       });
       
-      // If no specific category, add to default
       if (data.categories.size === 0) {
         modifiers.default.push(date);
       }
@@ -190,9 +177,7 @@ export const CalendarSection = () => {
     return modifiers;
   }, [eventsByDate]);
 
-  // Generate dynamic CSS for the calendar day styling
   const getCalendarStyles = () => {
-    // Base CSS for the highlighted days
     const baseCss = `
       .highlighted-day {
         font-weight: bold;
@@ -211,7 +196,6 @@ export const CalendarSection = () => {
       }
     `;
     
-    // Individual category dot styles
     let categoryCss = '';
     Object.entries(categoryConfig).forEach(([category, config], index) => {
       categoryCss += `
@@ -229,7 +213,6 @@ export const CalendarSection = () => {
       `;
     });
     
-    // Multiple event dot styles
     const multiDotCss = `
       .multi-event::after {
         content: '';
@@ -247,25 +230,21 @@ export const CalendarSection = () => {
     return `<style>${baseCss}${categoryCss}${multiDotCss}</style>`;
   };
 
-  // Custom renderer for calendar days
   const getDayClassName = (date: Date): string => {
     const dateStr = date.toISOString().split('T')[0];
     const dateEvents = eventsByDate[dateStr];
     
     if (!dateEvents) return '';
     
-    // If there are multiple categories or multiple events
     if (dateEvents.categories.size > 1 || dateEvents.events.length > 1) {
       return 'multi-event highlighted-day';
     }
     
-    // If there's just one category
     if (dateEvents.categories.size === 1) {
       const category = Array.from(dateEvents.categories)[0];
       return `highlighted-${category} highlighted-day`;
     }
     
-    // Default case
     return 'highlighted-default highlighted-day';
   };
 
@@ -397,9 +376,9 @@ export const CalendarSection = () => {
               }
             }}
             components={{
-              Day: ({ day, ...props }) => {
-                const className = getDayClassName(day);
-                return <button {...props} className={`${props.className} ${className}`} />;
+              Day: ({ date: dayDate, ...props }) => {
+                const className = getDayClassName(dayDate);
+                return <button {...props} className={`${props.className || ''} ${className}`} />;
               }
             }}
           />
