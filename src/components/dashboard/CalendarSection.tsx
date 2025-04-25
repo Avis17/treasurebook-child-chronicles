@@ -42,7 +42,11 @@ export const CalendarSection = () => {
   }, [date, eventsByDate]);
 
   // Event category icons and colors
-  const categoryConfig = {
+  const categoryConfig: Record<string, {
+    icon: React.ReactNode,
+    color: string, 
+    bgColor: string
+  }> = {
     exam: { 
       icon: <BookOpen className="h-4 w-4" />, 
       color: "bg-red-500",
@@ -72,7 +76,7 @@ export const CalendarSection = () => {
 
   const getCategoryConfig = (category: string) => {
     const normalizedCategory = category?.toLowerCase() || 'default';
-    return categoryConfig[normalizedCategory as keyof typeof categoryConfig] || categoryConfig.default;
+    return categoryConfig[normalizedCategory] || categoryConfig.default;
   };
 
   // Highlight dates with events
@@ -153,7 +157,7 @@ export const CalendarSection = () => {
                       ) : (
                         <Clock className="h-3 w-3 mr-1" />
                       )}
-                      {event.time ? event.time : event.status || "Upcoming"}
+                      {event.time || event.status || "Upcoming"}
                     </Badge>
                   </div>
                 );

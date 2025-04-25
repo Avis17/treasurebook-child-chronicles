@@ -50,7 +50,7 @@ export const FeedbackSection = () => {
   }
 
   // Safely get the first character for the avatar
-  const getInitial = (name) => {
+  const getInitial = (name: string | undefined | null) => {
     if (!name || typeof name !== 'string' || name.length === 0) {
       return "F";
     }

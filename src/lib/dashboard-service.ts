@@ -77,6 +77,7 @@ export interface AcademicRecord {
   grade: string;
   examDate: any;
   userId: string;
+  class?: string; // Add class property as optional since it might not exist in all records
 }
 
 export interface SportsRecord {
@@ -86,6 +87,13 @@ export interface SportsRecord {
   position: "Gold" | "Silver" | "Bronze" | "Finalist" | string;
   eventDate: any;
   userId: string;
+  eventType?: string; // Add eventType property as optional
+  venue?: string;
+  coach?: string;
+  level?: string;
+  notes?: string;
+  achievement?: string;
+  date?: string;
 }
 
 export interface ExtracurricularRecord {
@@ -114,6 +122,7 @@ export interface CalendarEvent {
   category: string;
   status: string;
   userId: string;
+  time?: string; // Add time property as optional
 }
 
 export interface Milestone {
@@ -142,6 +151,8 @@ export interface Feedback {
   category: string;
   date: any;
   userId: string;
+  author?: string; // Add author property as optional
+  content?: string; // Add content property as optional
 }
 
 export interface Resource {

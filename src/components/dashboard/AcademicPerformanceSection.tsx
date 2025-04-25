@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   LineChart,
@@ -21,9 +20,11 @@ export const AcademicPerformanceSection = () => {
   const { currentUser } = useAuth();
   const { data: academicRecords, loading } = useAcademicRecords(currentUser?.uid);
   
-  // Process data for charts
+  React.useEffect(() => {
+    console.log("AcademicPerformanceSection: Records sample", academicRecords.slice(0, 1));
+  }, [academicRecords]);
+  
   const termData = React.useMemo(() => {
-    // Group by subject to show performance across subjects
     const subjects: Record<string, { marks: number, totalMarks: number }[]> = {};
     
     academicRecords.forEach(record => {
@@ -35,7 +36,6 @@ export const AcademicPerformanceSection = () => {
       });
     });
     
-    // Calculate average per subject
     return Object.entries(subjects).map(([subject, records]) => {
       const totalPercentage = records.reduce(
         (sum, record) => sum + (record.marks / record.totalMarks * 100), 
@@ -59,11 +59,10 @@ export const AcademicPerformanceSection = () => {
     [academicRecords]
   );
 
-  // Calculate class distribution
   const classDistribution = React.useMemo(() => {
     const classes: Record<string, number> = {};
     academicRecords.forEach(record => {
-      const className = record.class || "Unknown";
+      const className = record.class || "Not Specified";
       classes[className] = (classes[className] || 0) + 1;
     });
     return Object.entries(classes).map(([name, count]) => ({

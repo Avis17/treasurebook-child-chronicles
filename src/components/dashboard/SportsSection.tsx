@@ -1,4 +1,3 @@
-
 import React from "react";
 import { DashboardCard } from "./DashboardCard";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
@@ -14,7 +13,10 @@ export const SportsSection = () => {
 
   const loading = loadingSports || loadingExtra;
 
-  // Process data for the positions pie chart
+  React.useEffect(() => {
+    console.log("SportsSection: Sports records sample", sportsRecords.slice(0, 1));
+  }, [sportsRecords]);
+
   const positionsData = React.useMemo(() => {
     const positions = sportsRecords.reduce((acc: Record<string, number>, record) => {
       const position = record.position || "Other";
@@ -28,10 +30,9 @@ export const SportsSection = () => {
     }));
   }, [sportsRecords]);
 
-  // Process data for event types
   const eventTypesData = React.useMemo(() => {
     const types = sportsRecords.reduce((acc: Record<string, number>, record) => {
-      const type = record.eventType || "Other";
+      const type = record.eventType || record.sportName || "Other";
       acc[type] = (acc[type] || 0) + 1;
       return acc;
     }, {});
@@ -42,7 +43,6 @@ export const SportsSection = () => {
     }));
   }, [sportsRecords]);
 
-  // Color mapping for positions
   const POSITION_COLORS = {
     "1st Position / Gold": "#f59e0b",
     "2nd Position / Silver": "#94a3b8",
@@ -52,9 +52,7 @@ export const SportsSection = () => {
     "Other": "#6366f1",
   };
 
-  // Get color for a position
   const getPositionColor = (position: string) => {
-    // Check if the position contains any of the key terms
     for (const [key, color] of Object.entries(POSITION_COLORS)) {
       if (position.includes(key.split(' ')[0]) || 
           position.includes(key.split(' / ')[0]) || 
@@ -65,7 +63,6 @@ export const SportsSection = () => {
     return POSITION_COLORS.Other;
   };
 
-  // Format text for participation numbers
   const sportsCount = sportsRecords.length;
   const extracurricularCount = extracurricularRecords.length;
 
