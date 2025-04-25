@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -117,7 +118,12 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   return (
     <div className="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-center h-16 px-4 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex flex-col items-center justify-center h-32 px-4 border-b border-gray-200 dark:border-gray-800">
+        <img 
+          src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png" 
+          alt="Treasure Book Logo" 
+          className="h-16 w-auto mb-2"
+        />
         <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">
           TreasureBook
         </h1>
