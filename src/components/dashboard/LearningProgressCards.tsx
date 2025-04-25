@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Book, Star, Target, CircleDot, Info } from "lucide-react";
+import { Book, CircleDot, Info, PenTool, Target } from "lucide-react";
 
 interface ProgressData {
   academic: {
@@ -24,19 +24,26 @@ const mockData: ProgressData = {
     progress: 80,
     subjects: [
       { name: "Mathematics", score: 85 },
-      { name: "Science", score: 78 }
+      { name: "Science", score: 78 },
+      { name: "English", score: 92 },
+      { name: "History", score: 88 }
     ]
   },
   skills: {
     progress: 60,
     items: [
       { name: "Drawing", level: 70 },
-      { name: "Chess", level: 50 }
+      { name: "Piano", level: 45 },
+      { name: "Chess", level: 85 }
     ]
   },
   focus: {
     progress: 40,
-    goals: []
+    goals: [
+      "Complete Math assignment",
+      "Practice piano for 30 minutes daily",
+      "Prepare for Science quiz"
+    ]
   }
 };
 
@@ -51,7 +58,7 @@ const ProgressCard = ({
   children: React.ReactNode; 
   icon: React.ElementType;
 }) => (
-  <Card className="h-full transition-all duration-200 hover:shadow-lg dark:hover:shadow-purple-900/20 border border-gray-200 dark:border-gray-800">
+  <Card className="h-full min-h-[250px] transition-all duration-200 hover:shadow-lg dark:hover:shadow-purple-900/20 border border-gray-200 dark:border-gray-800">
     <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
       <CardTitle className="text-base font-semibold flex items-center gap-2">
         <Icon className="h-5 w-5 text-purple-500" />
@@ -97,13 +104,16 @@ export const LearningProgressCards = () => {
         )}
       </ProgressCard>
 
-      <ProgressCard title="Skill Progress" progress={data.skills.progress} icon={Star}>
+      <ProgressCard title="Skill Progress" progress={data.skills.progress} icon={PenTool}>
         {data.skills.items.length > 0 ? (
           <div className="space-y-3">
             {data.skills.items.map((skill, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 dark:text-gray-400">{skill.name}</span>
-                <Progress value={skill.level} className="w-20 h-1.5" />
+              <div key={index} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{skill.name}</span>
+                  <span className="text-sm font-medium">{skill.level}%</span>
+                </div>
+                <Progress value={skill.level} className="h-1.5" />
               </div>
             ))}
           </div>
