@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
+import { collection, query, where, getDocs, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { useState, useEffect } from "react";
 
 // Generic function to fetch user-specific data
@@ -515,4 +515,164 @@ export const useDashboardStats = (userId: string | undefined) => {
   }, [userId]);
 
   return { data, loading };
+};
+
+interface Profile {
+  childName: string;
+  age: string;
+  currentClass: string;
+  photoURL?: string;
+  // ... other profile fields
+}
+
+// Add new profile hook
+export const useProfile = (userId: string | undefined) => {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchProfile = async () => {
+      try {
+        const profileDoc = await getDoc(doc(db, "profiles", userId));
+        if (profileDoc.exists()) {
+          setProfile(profileDoc.data() as Profile);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [userId]);
+
+  return { profile, loading };
+};
+
+// Update growth score calculation
+export const calculateGrowthScore = (
+  academicRecords: AcademicRecord[],
+  sportsRecords: SportsRecord[],
+  extraRecords: ExtracurricularRecord[],
+  goals: Goal[],
+  milestones: Milestone[],
+  journalEntries: JournalEntry[]
+): number => {
+  // Academic performance (40% weight)
+  const academicScore = calculateAverageScore(academicRecords.map(r => ({
+    subject: r.subject,
+    score: r.isPercentage ? r.score : (r.score / r.maxScore) * 100
+  })));
+
+  // Sports achievement (20% weight)
+  const sportsScore = calculateSportsScore(sportsRecords);
+
+  // Extracurricular performance (20% weight)
+  const extraScore = calculateExtracurricularScore(extraRecords);
+
+  // Goals & Milestones progress (10% weight)
+  const goalsScore = calculateGoalsScore(goals, milestones);
+
+  // Journal engagement (10% weight)
+  const journalScore = calculateJournalScore(journalEntries);
+
+  const totalScore = (academicScore * 0.4) +
+    (sportsScore * 0.2) +
+    (extraScore * 0.2) +
+    (goalsScore * 0.1) +
+    (journalScore * 0.1);
+
+  return Math.min(Math.round(totalScore), 100);
+};
+
+// Helper function to identify weak areas
+export const identifyWeakAreas = (
+  academicRecords: AcademicRecord[],
+  sportsRecords: SportsRecord[],
+  extraRecords: ExtracurricularRecord[]
+): string[] => {
+  const weakAreas: string[] = [];
+
+  // Group academic records by subject and calculate average
+  const subjectScores = new Map<string, number[]>();
+  
+  academicRecords.forEach(record => {
+    const score = record.isPercentage ? record.score : (record.score / record.maxScore) * 100;
+    const subject = record.subject.toLowerCase();
+    
+    if (!subjectScores.has(subject)) {
+      subjectScores.set(subject, []);
+    }
+    subjectScores.get(subject)?.push(score);
+  });
+
+  // Find subjects with average below 40%
+  subjectScores.forEach((scores, subject) => {
+    const average = scores.reduce((a, b) => a + b, 0) / scores.length;
+    if (average < 40) {
+      weakAreas.push(`${subject.charAt(0).toUpperCase()}${subject.slice(1)}`);
+    }
+  });
+
+  // Identify weak sports areas (no achievements or consistently low performance)
+  const sportsPerformance = new Map<string, number>();
+  sportsRecords.forEach(record => {
+    const sport = record.eventType || record.sportName || '';
+    if (!sport) return;
+    
+    let score = 0;
+    if (record.position?.toLowerCase().includes('gold') || record.position?.toLowerCase().includes('1st')) {
+      score = 100;
+    } else if (record.position?.toLowerCase().includes('silver') || record.position?.toLowerCase().includes('2nd')) {
+      score = 80;
+    } else if (record.position?.toLowerCase().includes('bronze') || record.position?.toLowerCase().includes('3rd')) {
+      score = 60;
+    } else if (record.position?.toLowerCase().includes('finalist')) {
+      score = 40;
+    } else {
+      score = 20;
+    }
+
+    sportsPerformance.set(sport, (sportsPerformance.get(sport) || 0) + score);
+  });
+
+  sportsPerformance.forEach((score, sport) => {
+    if (score < 40) {
+      weakAreas.push(`${sport} (Sports)`);
+    }
+  });
+
+  // Identify weak extracurricular areas
+  const extraPerformance = new Map<string, number>();
+  extraRecords.forEach(record => {
+    const activity = record.activity;
+    if (!activity) return;
+    
+    let score = 0;
+    if (record.achievement?.toLowerCase().includes('1st') || record.achievement?.toLowerCase().includes('gold')) {
+      score = 100;
+    } else if (record.achievement?.toLowerCase().includes('2nd') || record.achievement?.toLowerCase().includes('silver')) {
+      score = 80;
+    } else if (record.achievement?.toLowerCase().includes('3rd') || record.achievement?.toLowerCase().includes('bronze')) {
+      score = 60;
+    } else {
+      score = 40;
+    }
+
+    extraPerformance.set(activity, (extraPerformance.get(activity) || 0) + score);
+  });
+
+  extraPerformance.forEach((score, activity) => {
+    if (score < 40) {
+      weakAreas.push(`${activity} (Activity)`);
+    }
+  });
+
+  return weakAreas;
 };
