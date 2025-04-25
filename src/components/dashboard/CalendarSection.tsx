@@ -8,7 +8,18 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Clock, Calendar as CalendarIcon, BookOpen, Trophy, Music } from "lucide-react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, parseISO, startOfDay } from "date-fns";
+
+// Define type for Day component props
+interface DayProps {
+  date: Date;
+  displayValue?: string;
+  isOutside?: boolean;
+  isSelected?: boolean;
+  isToday?: boolean;
+  disabled?: boolean;
+  className?: string;
+}
 
 export const CalendarSection = () => {
   const { currentUser } = useAuth();
@@ -72,13 +83,15 @@ export const CalendarSection = () => {
       let eventDate;
       try {
         if (typeof event.date === 'string') {
-          eventDate = new Date(event.date);
+          // Remove any timezone information and parse only the date part
+          eventDate = new Date(event.date.split('T')[0]);
         } else if (event.date.toDate) {
-          eventDate = event.date.toDate();
+          eventDate = startOfDay(event.date.toDate());
         } else {
-          eventDate = new Date(event.date);
+          eventDate = startOfDay(new Date(event.date));
         }
         
+        // Ensure we're using UTC-neutral date string (YYYY-MM-DD)
         const dateKey = eventDate.toISOString().split("T")[0];
         
         if (!eventMap[dateKey]) {
@@ -153,10 +166,22 @@ export const CalendarSection = () => {
     return categoryConfig[normalizedCategory] || categoryConfig.default;
   };
 
-  // Get dates with events for modifiers
+  // Get dates with events for modifiers - ensuring UTC consistency
   const eventDates = React.useMemo(() => {
-    return Object.keys(eventsByDate).map(dateStr => new Date(dateStr));
+    return Object.keys(eventsByDate).map(dateStr => {
+      // Parse the ISO date string without timezone adjustment
+      return new Date(dateStr);
+    });
   }, [eventsByDate]);
+
+  // Function to check if a date has events
+  const hasEvent = React.useCallback(
+    (day: Date) => {
+      const dateKey = startOfDay(day).toISOString().split('T')[0];
+      return !!eventsByDate[dateKey];
+    },
+    [eventsByDate]
+  );
 
   if (loading || calendarLoading) {
     return (
@@ -187,10 +212,23 @@ export const CalendarSection = () => {
             onMonthChange={handleMonthChange}
             className="rounded-md border pointer-events-auto"
             modifiers={{
-              hasEvent: eventDates,
+              hasEvent: hasEvent,
             }}
             modifiersClassNames={{
               hasEvent: "font-semibold text-primary bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 rounded-md",
+            }}
+            components={{
+              Day: ({ date: dayDate, ...props }: DayProps) => {
+                const isEventDay = hasEvent(dayDate);
+                return (
+                  <button
+                    {...props}
+                    className={`${props.className || ''} ${isEventDay ? 'font-semibold text-primary bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 rounded-md' : ''}`}
+                  >
+                    {props.displayValue}
+                  </button>
+                );
+              },
             }}
           />
         </div>
