@@ -30,6 +30,14 @@ interface AcademicRecordFormProps {
   onClose?: () => void;
 }
 
+// Helper function to convert string to Title Case
+const toTitleCase = (str: string): string => {
+  return str
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 export const AcademicRecordForm = ({ 
   onRecordAdded, 
   onRecordUpdated,
@@ -156,7 +164,8 @@ export const AcademicRecordForm = ({
     
     try {
       setIsSubmitting(true);
-      const finalSubject = selectedSubject === "Other" ? otherSubject : selectedSubject;
+      // Convert custom subject to Title Case format
+      const finalSubject = selectedSubject === "Other" ? toTitleCase(otherSubject) : selectedSubject;
       
       if (initialData && onRecordUpdated) {
         await onRecordUpdated({
@@ -169,6 +178,8 @@ export const AcademicRecordForm = ({
           title: "Success",
           description: "Academic record updated",
         });
+        
+        handleCloseDialog();
       } else {
         const recordData = {
           ...formData,
@@ -199,12 +210,12 @@ export const AcademicRecordForm = ({
           });
           setSelectedSubject("Other");
           setOtherSubject("");
+          
+          handleCloseDialog();
         } else {
           throw new Error("Failed to create record");
         }
       }
-      
-      handleCloseDialog();
     } catch (error) {
       console.error("Error adding/updating record:", error);
       toast({
@@ -220,9 +231,8 @@ export const AcademicRecordForm = ({
   const handleCloseDialog = () => {
     if (onClose) {
       onClose();
-    } else {
-      setIsAddDialogOpen(false);
     }
+    setIsAddDialogOpen(false);
   };
 
   const dialogTitle = initialData ? "Edit Academic Record" : "Add Academic Record";
@@ -236,7 +246,10 @@ export const AcademicRecordForm = ({
         </Button>
       )}
       
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+        if (!open) handleCloseDialog();
+        else setIsAddDialogOpen(true);
+      }}>
         <DialogContent className="dark:bg-gray-800">
           <DialogHeader>
             <DialogTitle className="dark:text-white">{dialogTitle}</DialogTitle>
