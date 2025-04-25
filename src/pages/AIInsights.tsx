@@ -206,17 +206,29 @@ const AIInsights = () => {
     try {
       setAddingGoal(`Adding all ${timeframe} goals`);
       
-      const goals = insightData.actionPlan[timeframe.toLowerCase().replace('-', '') as 'shortTerm' | 'mediumTerm' | 'longTerm'];
+      // Fix: Ensure we have a proper array before iterating
+      const goalsKey = timeframe.toLowerCase().replace('-', '') as keyof typeof insightData.actionPlan;
+      const goals = insightData.actionPlan[goalsKey];
       
-      // Add each goal sequentially
-      for (const goal of goals) {
-        await addGoalFromActionPlan(userId, goal.split('.')[0], goal, timeframe);
+      // Check if goals is an array before iterating
+      if (Array.isArray(goals)) {
+        // Add each goal sequentially
+        for (const goal of goals) {
+          await addGoalFromActionPlan(userId, goal.split('.')[0], goal, timeframe);
+        }
+        
+        toast({
+          title: "Goals Added",
+          description: `Successfully added ${goals.length} ${timeframe} goals`,
+        });
+      } else {
+        console.error("Goals is not an array:", goals);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Unable to process goals. Data format issue."
+        });
       }
-      
-      toast({
-        title: "Goals Added",
-        description: `Successfully added ${goals.length} ${timeframe} goals`,
-      });
       
     } catch (error) {
       console.error("Error adding goals:", error);
@@ -911,7 +923,7 @@ const AIInsights = () => {
                             formatter={(value, name, props) => {
                               const moods = props.payload.moods;
                               return [
-                                `${value} entries (${moods.join(', ')})`,
+                                `${value} entries (${moods ? moods.join(', ') : ''})`,
                                 name
                               ];
                             }}
@@ -1205,9 +1217,9 @@ const AIInsights = () => {
                         Add All
                       </Button>
                     </div>
-                    {insightData.actionPlan.shortTerm.length > 0 ? (
+                    {insightData.actionPlan.shortterm && Array.isArray(insightData.actionPlan.shortterm) && insightData.actionPlan.shortterm.length > 0 ? (
                       <ul className="space-y-3 pl-6 mt-4">
-                        {insightData.actionPlan.shortTerm.map((item, index) => (
+                        {insightData.actionPlan.shortterm.map((item, index) => (
                           <li key={index} className="text-sm flex items-start group">
                             <ChevronRight className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                             <div className="flex-1 flex items-center justify-between">
@@ -1248,9 +1260,9 @@ const AIInsights = () => {
                         Add All
                       </Button>
                     </div>
-                    {insightData.actionPlan.mediumTerm.length > 0 ? (
+                    {insightData.actionPlan.mediumterm && Array.isArray(insightData.actionPlan.mediumterm) && insightData.actionPlan.mediumterm.length > 0 ? (
                       <ul className="space-y-3 pl-6 mt-4">
-                        {insightData.actionPlan.mediumTerm.map((item, index) => (
+                        {insightData.actionPlan.mediumterm.map((item, index) => (
                           <li key={index} className="text-sm flex items-start group">
                             <ChevronRight className="h-4 w-4 text-purple-500 mr-2 flex-shrink-0 mt-0.5" />
                             <div className="flex-1 flex items-center justify-between">
@@ -1291,9 +1303,9 @@ const AIInsights = () => {
                         Add All
                       </Button>
                     </div>
-                    {insightData.actionPlan.longTerm.length > 0 ? (
+                    {insightData.actionPlan.longterm && Array.isArray(insightData.actionPlan.longterm) && insightData.actionPlan.longterm.length > 0 ? (
                       <ul className="space-y-3 pl-6 mt-4">
-                        {insightData.actionPlan.longTerm.map((item, index) => (
+                        {insightData.actionPlan.longterm.map((item, index) => (
                           <li key={index} className="text-sm flex items-start group">
                             <ChevronRight className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                             <div className="flex-1 flex items-center justify-between">

@@ -18,7 +18,7 @@ const LoadingOverlay = ({
 
   return (
     <div 
-      className={`${fullScreen ? 'fixed inset-0' : 'absolute inset-0'} backdrop-blur-sm z-50 flex items-center justify-center`}
+      className={`${fullScreen ? 'fixed inset-0' : 'absolute inset-0'} backdrop-blur-sm z-[1000] flex items-center justify-center`}
       style={{ backgroundColor: `rgba(0, 0, 0, ${opacity})` }}
     >
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center space-y-4">
