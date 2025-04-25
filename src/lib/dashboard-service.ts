@@ -286,40 +286,50 @@ export const calculateTrend = (records: AcademicRecord[]): "Improving" | "Declin
   
   if (validRecords.length < 2) return "Consistent";
   
-  const sortedRecords = [...validRecords].sort((a, b) => {
-    // Handle different date formats safely
-    const getDate = (record: any) => {
-      if (!record.examDate) return new Date(0);
+  try {
+    const sortedRecords = [...validRecords].sort((a, b) => {
+      // Handle different date formats safely
+      const getDate = (record: any) => {
+        if (!record.examDate) return new Date(0);
+        
+        try {
+          if (record.examDate && record.examDate.toDate && typeof record.examDate.toDate === 'function') {
+            return record.examDate.toDate();
+          }
+          
+          if (record.examDate instanceof Date) {
+            return record.examDate;
+          }
+          
+          // Handle string or timestamp
+          return new Date(record.examDate);
+        } catch (error) {
+          console.error("Failed to parse date:", error);
+          return new Date(0);
+        }
+      };
       
-      try {
-        if (record.examDate.toDate && typeof record.examDate.toDate === 'function') {
-          return record.examDate.toDate();
-        }
-        
-        if (record.examDate instanceof Date) {
-          return record.examDate;
-        }
-        
-        // Handle string or timestamp
-        return new Date(record.examDate);
-      } catch (error) {
-        console.error("Failed to parse date:", error);
-        return new Date(0);
-      }
-    };
+      return getDate(a).getTime() - getDate(b).getTime();
+    });
     
-    return getDate(a).getTime() - getDate(b).getTime();
-  });
-  
-  const recentScores = sortedRecords.slice(-3).map(r => (r.marks / r.totalMarks) * 100);
-  
-  if (recentScores.length < 2) return "Consistent";
-  
-  const trend = recentScores[recentScores.length - 1] - recentScores[0];
-  
-  if (trend > 5) return "Improving";
-  if (trend < -5) return "Declining";
-  return "Consistent";
+    const recentScores = sortedRecords.slice(-3).map(r => {
+      if (r.isPercentage) {
+        return r.marks;
+      }
+      return (r.marks / r.totalMarks) * 100;
+    });
+    
+    if (recentScores.length < 2) return "Consistent";
+    
+    const trend = recentScores[recentScores.length - 1] - recentScores[0];
+    
+    if (trend > 5) return "Improving";
+    if (trend < -5) return "Declining";
+    return "Consistent";
+  } catch (error) {
+    console.error("Error calculating trend:", error);
+    return "Consistent";
+  }
 };
 
 export const getLatestExamGrade = (records: AcademicRecord[]): { grade: string, subject: string } => {

@@ -11,7 +11,6 @@ interface AcademicRecord {
   subject: string;
   score: number;
   maxScore: number;
-  percentage: number;
   isPercentage: boolean;
   grade: string;
   createdAt: any;
@@ -51,16 +50,23 @@ const MarksSummaryCard = () => {
           const record = doc.data();
           console.log("Processing record:", record);
           
-          const score = parseFloat(record.score) || 0;
-          const maxScore = parseFloat(record.maxScore) || 100;
-          const percentage = record.isPercentage ? score : (score / maxScore) * 100;
+          const score = parseFloat(record.score?.toString() || '0');
+          const maxScore = parseFloat(record.maxScore?.toString() || '100');
+          let percentage: number;
+          
+          // Calculate percentage based on isPercentage flag
+          if (record.isPercentage) {
+            percentage = score;
+          } else {
+            percentage = (score / maxScore) * 100;
+          }
           
           academicRecords.push({
             id: doc.id,
             subject: record.subject || 'Unknown',
             score: score,
             maxScore: maxScore,
-            percentage: percentage,
+            percentage,
             isPercentage: record.isPercentage || false,
             grade: record.grade || 'N/A',
             createdAt: record.createdAt
@@ -77,9 +83,14 @@ const MarksSummaryCard = () => {
           
           // Get recent records
           const sortedByDate = [...academicRecords].sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt.toDate()).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt.toDate()).getTime() : 0;
-            return dateB - dateA;
+            try {
+              const dateA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date(a.createdAt)).getTime() : 0;
+              const dateB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date(b.createdAt)).getTime() : 0;
+              return dateB - dateA;
+            } catch (error) {
+              console.error("Error sorting by date:", error);
+              return 0;
+            }
           });
           
           // Get up to 5 most recent records
@@ -175,7 +186,11 @@ const MarksSummaryCard = () => {
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            {record.createdAt ? new Date(record.createdAt.toDate()).toLocaleDateString() : 'Unknown date'}
+                            {record.createdAt 
+                              ? (record.createdAt.toDate 
+                                ? new Date(record.createdAt.toDate()).toLocaleDateString() 
+                                : new Date(record.createdAt).toLocaleDateString())
+                              : 'Unknown date'}
                             {record.grade ? ` - Grade: ${record.grade}` : ''}
                           </div>
                         </div>

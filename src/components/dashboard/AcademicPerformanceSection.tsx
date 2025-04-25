@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import {
   AreaChart,
@@ -68,30 +67,42 @@ export const AcademicPerformanceSection = () => {
   
   // Process data for charts
   const chartData = useMemo(() => {
-    const subjectData: Record<string, { marks: number, totalMarks: number, count: number }> = {};
-    
-    filteredRecords.forEach(record => {
-      if (!record.subject) return;
+    try {
+      const subjectData: Record<string, { marks: number, totalMarks: number, count: number }> = {};
       
-      const subject = record.subject.toLowerCase();
-      if (!subjectData[subject]) {
-        subjectData[subject] = { marks: 0, totalMarks: 0, count: 0 };
-      }
+      filteredRecords.forEach(record => {
+        if (!record.subject) return;
+        
+        const subject = record.subject.toLowerCase();
+        if (!subjectData[subject]) {
+          subjectData[subject] = { marks: 0, totalMarks: 0, count: 0 };
+        }
+        
+        // Handle scores differently based on whether they're percentages
+        if (record.isPercentage) {
+          subjectData[subject].marks += record.score * 100; // Store as points out of 100
+          subjectData[subject].totalMarks += 100;
+        } else {
+          subjectData[subject].marks += record.score;
+          subjectData[subject].totalMarks += record.maxScore;
+        }
+        
+        subjectData[subject].count += 1;
+      });
       
-      subjectData[subject].marks += record.marks;
-      subjectData[subject].totalMarks += record.totalMarks;
-      subjectData[subject].count += 1;
-    });
-    
-    return Object.entries(subjectData).map(([subject, data]) => {
-      const percentage = (data.marks / data.totalMarks) * 100;
-      return {
-        subject: subject.charAt(0).toUpperCase() + subject.slice(1),
-        percentage: Math.round(percentage),
-        average: Math.round(percentage),
-        count: data.count
-      };
-    }).sort((a, b) => a.subject.localeCompare(b.subject));
+      return Object.entries(subjectData).map(([subject, data]) => {
+        const percentage = data.totalMarks > 0 ? (data.marks / data.totalMarks) * 100 : 0;
+        return {
+          subject: subject.charAt(0).toUpperCase() + subject.slice(1),
+          percentage: Math.round(percentage),
+          average: Math.round(percentage),
+          count: data.count
+        };
+      }).sort((a, b) => a.subject.localeCompare(b.subject));
+    } catch (error) {
+      console.error("Error processing chart data:", error);
+      return [];
+    }
   }, [filteredRecords]);
   
   // Safely calculate trend with error handling
@@ -318,7 +329,7 @@ export const AcademicPerformanceSection = () => {
                       </ResponsiveContainer>
                     ) : (
                       <div className="h-full flex items-center justify-center">
-                        <p className="text-muted-foreground">No subject data available</p>
+                        <p className="text-muted-foreground">No subject data available for the selected filters</p>
                       </div>
                     )}
                   </div>
@@ -342,13 +353,17 @@ export const AcademicPerformanceSection = () => {
                             <TableCell className="font-medium">{record.subject}</TableCell>
                             <TableCell>{record.class || "N/A"}</TableCell>
                             <TableCell>{record.term || "N/A"}</TableCell>
-                            <TableCell>{record.marks}/{record.totalMarks} ({Math.round((record.marks/record.totalMarks) * 100)}%)</TableCell>
+                            <TableCell>
+                              {record.isPercentage 
+                                ? `${record.score}%` 
+                                : `${record.score}/${record.maxScore} (${Math.round((record.score/record.maxScore) * 100)}%)`}
+                            </TableCell>
                             <TableCell>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                record.grade?.includes('A') ? 'bg-green-100 text-green-800' :
-                                record.grade?.includes('B') ? 'bg-blue-100 text-blue-800' :
-                                record.grade?.includes('C') ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
+                                record.grade?.includes('A') ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
+                                record.grade?.includes('B') ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300' :
+                                record.grade?.includes('C') ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' :
+                                'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
                               }`}>
                                 {record.grade}
                               </span>

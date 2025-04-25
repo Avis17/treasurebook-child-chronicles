@@ -1,21 +1,28 @@
 
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
 import { auth, db } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
-interface GradeScore {
+interface AcademicRecord {
+  id: string;
   subject: string;
   score: number;
   maxScore: number;
-  percentage: number;
-  createdAt: Date;
+  isPercentage: boolean;
+  grade: string;
+  class?: string;
+  term?: string;
+  createdAt: any;
+  examType?: string;
+  year?: string;
 }
 
 const AcademicChart = () => {
-  const [chartData, setChartData] = useState<GradeScore[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartType, setChartType] = useState<'bar' | 'line'>('bar');
 
   useEffect(() => {
     const fetchAcademicData = async () => {
@@ -37,31 +44,72 @@ const AcademicChart = () => {
         console.log("Records found:", querySnapshot.size);
         
         // Process the data
-        const academicData: GradeScore[] = [];
+        const academicData: AcademicRecord[] = [];
         
         querySnapshot.forEach((doc) => {
           const record = doc.data();
           console.log("Processing record:", record);
           
-          const score = parseFloat(record.score) || 0;
-          const maxScore = parseFloat(record.maxScore) || 100;
+          const score = parseFloat(record.score?.toString() || '0');
+          const maxScore = parseFloat(record.maxScore?.toString() || '100');
+          
+          // Calculate percentage based on isPercentage flag
           const percentage = record.isPercentage ? score : (score / maxScore) * 100;
-          const createdAtDate = record.createdAt ? new Date(record.createdAt.toDate()) : new Date();
           
           academicData.push({
+            id: doc.id,
             subject: record.subject || 'Unknown',
-            score,
-            maxScore,
+            score: score,
+            maxScore: maxScore,
+            isPercentage: record.isPercentage || false,
             percentage: Math.round(percentage),
-            createdAt: createdAtDate
+            grade: record.grade || 'N/A',
+            class: record.class || '',
+            term: record.term || '',
+            examType: record.examType || '',
+            year: record.year || '',
+            createdAt: record.createdAt
           });
         });
         
-        // Sort by subject name for consistent display
-        academicData.sort((a, b) => a.subject.localeCompare(b.subject));
-        console.log("Processed academic data:", academicData);
+        // Group data by subject
+        const subjectData: Record<string, any> = {};
         
-        setChartData(academicData);
+        academicData.forEach(record => {
+          if (!record.subject) return;
+          
+          const subject = record.subject;
+          if (!subjectData[subject]) {
+            subjectData[subject] = {
+              subject,
+              count: 0,
+              totalPercentage: 0,
+              scores: []
+            };
+          }
+          
+          subjectData[subject].count += 1;
+          subjectData[subject].totalPercentage += record.percentage;
+          subjectData[subject].scores.push({
+            score: record.score,
+            maxScore: record.maxScore,
+            percentage: record.percentage
+          });
+        });
+        
+        // Convert to chart data format
+        const formattedData = Object.entries(subjectData).map(([subject, data]) => {
+          const avgPercentage = data.totalPercentage / data.count;
+          
+          return {
+            subject,
+            percentage: Math.round(avgPercentage),
+            count: data.count
+          };
+        }).sort((a, b) => a.subject.localeCompare(b.subject));
+        
+        console.log("Formatted chart data:", formattedData);
+        setChartData(formattedData);
       } catch (error) {
         console.error('Error fetching academic data:', error);
         setError('Failed to load academic data. Please try again later.');
@@ -73,6 +121,10 @@ const AcademicChart = () => {
 
     fetchAcademicData();
   }, []);
+
+  const toggleChartType = () => {
+    setChartType(prev => prev === 'bar' ? 'line' : 'bar');
+  };
 
   if (isLoading) {
     return (
@@ -92,31 +144,88 @@ const AcademicChart = () => {
 
   return (
     <div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">Subject Performance</h3>
+        <button 
+          onClick={toggleChartType}
+          className="px-3 py-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+        >
+          Switch to {chartType === 'bar' ? 'Line' : 'Bar'} Chart
+        </button>
+      </div>
+      
       {chartData.length > 0 ? (
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="subject" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip 
-                formatter={(value) => [`${value}%`, 'Score']}
-                labelFormatter={(label) => `Subject: ${label}`}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="percentage"
-                stroke="#4f46e5"
-                activeDot={{ r: 8 }}
-                name="Score (%)"
-              />
-            </LineChart>
+            {chartType === 'bar' ? (
+              <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis 
+                  dataKey="subject" 
+                  tick={{ fontSize: 12 }}
+                  height={40}
+                  angle={-45}
+                  textAnchor="end"
+                />
+                <YAxis 
+                  domain={[0, 100]} 
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip 
+                  formatter={(value) => [`${value}%`, 'Score']}
+                  labelFormatter={(label) => `Subject: ${label}`}
+                />
+                <Legend />
+                <Bar
+                  dataKey="percentage"
+                  name="Score (%)"
+                  fill="#4f46e5"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            ) : (
+              <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis 
+                  dataKey="subject" 
+                  tick={{ fontSize: 12 }}
+                  height={40}
+                  angle={-45}
+                  textAnchor="end"
+                />
+                <YAxis 
+                  domain={[0, 100]}
+                  tickFormatter={(value) => `${value}%`}
+                />
+                <Tooltip 
+                  formatter={(value) => [`${value}%`, 'Score']}
+                  labelFormatter={(label) => `Subject: ${label}`}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="percentage"
+                  stroke="#4f46e5"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 8 }}
+                  name="Score (%)"
+                />
+              </LineChart>
+            )}
           </ResponsiveContainer>
         </div>
       ) : (
         <div className="flex justify-center items-center h-64 text-gray-500">
           No academic data available.
+        </div>
+      )}
+      
+      {chartData.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs text-gray-500">
+            Showing average scores across {chartData.length} subjects
+          </p>
         </div>
       )}
     </div>
