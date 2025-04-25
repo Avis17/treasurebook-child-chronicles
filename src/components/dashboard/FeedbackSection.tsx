@@ -57,18 +57,22 @@ export const FeedbackSection = () => {
     return name.charAt(0).toUpperCase();
   };
 
+  // Adapt to potential different field names in the data
+  const fromName = latestFeedback.from || latestFeedback.author || "Unknown";
+  const message = latestFeedback.message || latestFeedback.content || "No message content";
+
   return (
     <DashboardCard title="Feedback">
       <div className="space-y-4">
         <div className="flex items-center">
           <div className="flex-shrink-0">
             <div className="h-8 w-8 rounded-lg bg-primary-foreground text-primary dark:bg-primary dark:text-primary-foreground flex items-center justify-center">
-              <span className="text-sm font-medium">{getInitial(latestFeedback.from)}</span>
+              <span className="text-sm font-medium">{getInitial(fromName)}</span>
             </div>
           </div>
           <div className="ml-3">
             <div className="flex items-center">
-              <p className="text-sm font-medium">{latestFeedback.from || "Unknown"}</p>
+              <p className="text-sm font-medium">{fromName}</p>
               <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 rounded text-xs">
                 {latestFeedback.category || "General"}
               </span>
@@ -77,7 +81,7 @@ export const FeedbackSection = () => {
         </div>
         
         <div className="px-3 py-2 bg-muted/40 rounded-lg">
-          <p className="text-sm">{latestFeedback.message || "No message content"}</p>
+          <p className="text-sm">{message}</p>
         </div>
         
         <div className="text-xs text-right text-muted-foreground">
