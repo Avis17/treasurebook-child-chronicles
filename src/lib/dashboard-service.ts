@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { useState, useEffect } from "react";
@@ -244,4 +243,63 @@ export const formatDate = (date: any): string => {
     console.error("Error formatting date:", error);
     return "";
   }
+};
+
+export const useDashboardStats = (userId: string | undefined) => {
+  const [data, setData] = useState({
+    totalExams: 0,
+    totalSportsEvents: 0,
+    totalAchievements: 0,
+    upcomingEvents: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchStats = async () => {
+      try {
+        const examSnapshot = await getDocs(query(
+          collection(db, "academicRecords"),
+          where("userId", "==", userId)
+        ));
+
+        const sportsSnapshot = await getDocs(query(
+          collection(db, "sportsRecords"),
+          where("userId", "==", userId)
+        ));
+
+        const achievementsSnapshot = await getDocs(query(
+          collection(db, "milestones"),
+          where("userId", "==", userId)
+        ));
+
+        const now = new Date();
+        const futureDate = new Date();
+        futureDate.setMonth(futureDate.getMonth() + 1);
+
+        const eventsSnapshot = await getDocs(query(
+          collection(db, "calendarEvents"),
+          where("userId", "==", userId),
+          where("date", ">=", now),
+          where("date", "<=", futureDate)
+        ));
+
+        setData({
+          totalExams: examSnapshot.size,
+          totalSportsEvents: sportsSnapshot.size,
+          totalAchievements: achievementsSnapshot.size,
+          upcomingEvents: eventsSnapshot.size
+        });
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [userId]);
+
+  return { data, loading };
 };
