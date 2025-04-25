@@ -71,12 +71,17 @@ export interface AcademicRecord {
   id: string;
   subject: string;
   term: string;
-  marks: number;
-  totalMarks: number;
+  score: number;
+  maxScore: number;
   grade: string;
-  examDate: any;
+  examDate?: any;
   userId: string;
-  class?: string; // Add class property as optional since it might not exist in all records
+  class?: string;
+  isPercentage?: boolean;
+  year?: string;
+  examType?: string;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface SportsRecord {
@@ -86,7 +91,7 @@ export interface SportsRecord {
   position: "Gold" | "Silver" | "Bronze" | "Finalist" | string;
   eventDate: any;
   userId: string;
-  eventType?: string; // Add eventType property as optional
+  eventType?: string;
   venue?: string;
   coach?: string;
   level?: string;
@@ -121,7 +126,7 @@ export interface CalendarEvent {
   category: string;
   status: string;
   userId: string;
-  time?: string; // Add time property as optional
+  time?: string;
 }
 
 export interface Milestone {
@@ -150,8 +155,8 @@ export interface Feedback {
   category: string;
   date: any;
   userId: string;
-  author?: string; // Add author property as optional
-  content?: string; // Add content property as optional
+  author?: string;
+  content?: string;
 }
 
 export interface Resource {
@@ -314,9 +319,9 @@ export const calculateTrend = (records: AcademicRecord[]): "Improving" | "Declin
     
     const recentScores = sortedRecords.slice(-3).map(r => {
       if (r.isPercentage) {
-        return r.marks;
+        return r.score;
       }
-      return (r.marks / r.totalMarks) * 100;
+      return (r.score / r.maxScore) * 100;
     });
     
     if (recentScores.length < 2) return "Consistent";
