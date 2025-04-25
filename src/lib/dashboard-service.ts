@@ -281,9 +281,17 @@ export const useResources = (userId: string | undefined) =>
 export const calculateTrend = (records: AcademicRecord[]): "Improving" | "Declining" | "Consistent" => {
   if (records.length < 2) return "Consistent";
   
-  const sortedRecords = [...records].sort((a, b) => 
-    new Date(a.examDate.toDate()).getTime() - new Date(b.examDate.toDate()).getTime()
-  );
+  // Filter out records with missing examDate first
+  const validRecords = records.filter(record => record.examDate);
+  
+  if (validRecords.length < 2) return "Consistent";
+  
+  const sortedRecords = [...validRecords].sort((a, b) => {
+    // Handle different date formats safely
+    const dateA = a.examDate.toDate ? a.examDate.toDate() : new Date(a.examDate);
+    const dateB = b.examDate.toDate ? b.examDate.toDate() : new Date(b.examDate);
+    return dateA.getTime() - dateB.getTime();
+  });
   
   const recentScores = sortedRecords.slice(-3).map(r => (r.marks / r.totalMarks) * 100);
   
@@ -299,9 +307,17 @@ export const calculateTrend = (records: AcademicRecord[]): "Improving" | "Declin
 export const getLatestExamGrade = (records: AcademicRecord[]): { grade: string, subject: string } => {
   if (records.length === 0) return { grade: "N/A", subject: "N/A" };
   
-  const sortedRecords = [...records].sort((a, b) => 
-    new Date(b.examDate.toDate()).getTime() - new Date(a.examDate.toDate()).getTime()
-  );
+  // Filter out records with missing examDate first
+  const validRecords = records.filter(record => record.examDate);
+  
+  if (validRecords.length === 0) return { grade: "N/A", subject: "N/A" };
+  
+  const sortedRecords = [...validRecords].sort((a, b) => {
+    // Handle different date formats safely
+    const dateA = a.examDate.toDate ? a.examDate.toDate() : new Date(a.examDate);
+    const dateB = b.examDate.toDate ? b.examDate.toDate() : new Date(b.examDate);
+    return dateB.getTime() - dateA.getTime();
+  });
   
   return { 
     grade: sortedRecords[0].grade,

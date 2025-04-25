@@ -12,7 +12,8 @@ export const JournalsSection = () => {
   // Process mood data for the pie chart
   const moodData = React.useMemo(() => {
     const moods = journals.reduce((acc: Record<string, number>, journal) => {
-      const mood = journal.mood || "Neutral";
+      // Safely access mood with a fallback
+      const mood = (journal.mood || "Neutral").toString();
       acc[mood] = (acc[mood] || 0) + 1;
       return acc;
     }, {});
@@ -25,11 +26,16 @@ export const JournalsSection = () => {
 
   // Journal tags
   const journalTags = React.useMemo(() => {
-    const tags = journals.flatMap(journal => journal.tags || []);
+    // Filter out journals without tags first
+    const journalsWithTags = journals.filter(journal => Array.isArray(journal.tags) && journal.tags.length > 0);
+    
+    const tags = journalsWithTags.flatMap(journal => journal.tags);
     const tagCount: Record<string, number> = {};
     
     tags.forEach(tag => {
-      tagCount[tag] = (tagCount[tag] || 0) + 1;
+      if (typeof tag === 'string') {
+        tagCount[tag] = (tagCount[tag] || 0) + 1;
+      }
     });
     
     return Object.entries(tagCount)
@@ -61,6 +67,8 @@ export const JournalsSection = () => {
   }
 
   const hasJournals = journals && journals.length > 0;
+  
+  console.log("Journal data:", journals);
 
   return (
     <DashboardCard title="Journals">
@@ -68,43 +76,53 @@ export const JournalsSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-1">
             <div className="h-[150px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={moodData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={35}
-                    outerRadius={50}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {moodData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={getMoodColor(entry.name)}
-                      />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              {moodData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={moodData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={50}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {moodData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={getMoodColor(entry.name)}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-muted-foreground">No mood data</p>
+                </div>
+              )}
             </div>
             <p className="text-center font-medium">Mood</p>
           </div>
           
           <div className="md:col-span-2 space-y-3">
             <div className="flex flex-wrap gap-2">
-              {journalTags.map(([tag, count]) => (
-                <div 
-                  key={tag} 
-                  className="px-2 py-1 bg-primary-foreground text-primary dark:bg-primary dark:text-primary-foreground rounded text-xs flex items-center"
-                >
-                  <span>{tag}</span>
-                  <span className="ml-1 px-1.5 py-0.5 bg-primary text-primary-foreground dark:bg-primary-foreground dark:text-primary rounded-full text-[10px]">
-                    {count}
-                  </span>
-                </div>
-              ))}
+              {journalTags.length > 0 ? (
+                journalTags.map(([tag, count]) => (
+                  <div 
+                    key={tag} 
+                    className="px-2 py-1 bg-primary-foreground text-primary dark:bg-primary dark:text-primary-foreground rounded text-xs flex items-center"
+                  >
+                    <span>{tag}</span>
+                    <span className="ml-1 px-1.5 py-0.5 bg-primary text-primary-foreground dark:bg-primary-foreground dark:text-primary rounded-full text-[10px]">
+                      {count}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground">No tags found</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -113,9 +131,13 @@ export const JournalsSection = () => {
                   key={journal.id} 
                   className="p-2 rounded-lg bg-muted/40"
                 >
-                  <p className="text-sm font-medium">{journal.title}</p>
+                  <p className="text-sm font-medium">{journal.title || "Untitled Entry"}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {journal.content.substring(0, 60)}...
+                    {journal.content ? 
+                      (journal.content.length > 60 ? 
+                        `${journal.content.substring(0, 60)}...` : 
+                        journal.content) : 
+                      "No content"}
                   </p>
                 </div>
               ))}

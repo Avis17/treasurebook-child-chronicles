@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   LineChart,
@@ -28,6 +29,8 @@ export const AcademicPerformanceSection = () => {
     const subjects: Record<string, { marks: number, totalMarks: number }[]> = {};
     
     academicRecords.forEach(record => {
+      if (!record.subject) return; // Skip records without subject
+      
       const subject = record.subject.toLowerCase();
       if (!subjects[subject]) subjects[subject] = [];
       subjects[subject].push({
@@ -49,15 +52,25 @@ export const AcademicPerformanceSection = () => {
     }).sort((a, b) => a.subject.localeCompare(b.subject));
   }, [academicRecords]);
   
-  const trend = React.useMemo(
-    () => calculateTrend(academicRecords),
-    [academicRecords]
-  );
+  // Safely calculate trend with error handling
+  const trend = React.useMemo(() => {
+    try {
+      return calculateTrend(academicRecords);
+    } catch (error) {
+      console.error("Error calculating trend:", error);
+      return "Consistent";
+    }
+  }, [academicRecords]);
 
-  const { grade, subject } = React.useMemo(
-    () => getLatestExamGrade(academicRecords),
-    [academicRecords]
-  );
+  // Safely get latest exam grade with error handling
+  const { grade, subject } = React.useMemo(() => {
+    try {
+      return getLatestExamGrade(academicRecords);
+    } catch (error) {
+      console.error("Error getting latest exam grade:", error);
+      return { grade: "N/A", subject: "No Data" };
+    }
+  }, [academicRecords]);
 
   const classDistribution = React.useMemo(() => {
     const classes: Record<string, number> = {};
@@ -135,47 +148,53 @@ export const AcademicPerformanceSection = () => {
         <div className="lg:col-span-2">
           <p className="text-sm text-muted-foreground mb-2">Subject Performance</p>
           <div className="h-[180px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={termData}
-                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-              >
-                <defs>
-                  <linearGradient id="colorAvg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0.1}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                <XAxis 
-                  dataKey="subject" 
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                />
-                <YAxis 
-                  domain={[0, 100]}
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  tickFormatter={(value) => `${value}%`}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${value}%`, 'Average Score']}
-                  contentStyle={{
-                    borderRadius: '8px',
-                    border: '1px solid rgba(0,0,0,0.1)',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="average"
-                  stroke="#6366f1"
-                  strokeWidth={2}
-                  fill="url(#colorAvg)"
-                  activeDot={{ r: 6, fill: "#4f46e5", stroke: "#ffffff", strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {termData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={termData}
+                  margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                >
+                  <defs>
+                    <linearGradient id="colorAvg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis 
+                    dataKey="subject" 
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    domain={[0, 100]}
+                    tick={{ fontSize: 12 }}
+                    tickLine={false}
+                    tickFormatter={(value) => `${value}%`}
+                  />
+                  <Tooltip 
+                    formatter={(value) => [`${value}%`, 'Average Score']}
+                    contentStyle={{
+                      borderRadius: '8px',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="average"
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    fill="url(#colorAvg)"
+                    activeDot={{ r: 6, fill: "#4f46e5", stroke: "#ffffff", strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-muted-foreground">No subject data available</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -197,18 +216,22 @@ export const AcademicPerformanceSection = () => {
 
           <div>
             <p className="text-sm text-muted-foreground mb-2">Class Distribution</p>
-            <div className="flex flex-wrap gap-2">
-              {classDistribution.map((item, index) => (
-                <Badge 
-                  key={index}
-                  variant="outline" 
-                  className="px-3 py-1 border border-indigo-100 dark:border-indigo-900"
-                >
-                  <span className="mr-2 font-semibold">{item.name}:</span>
-                  <span>{item.value} Records</span>
-                </Badge>
-              ))}
-            </div>
+            {classDistribution.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {classDistribution.map((item, index) => (
+                  <Badge 
+                    key={index}
+                    variant="outline" 
+                    className="px-3 py-1 border border-indigo-100 dark:border-indigo-900"
+                  >
+                    <span className="mr-2 font-semibold">{item.name}:</span>
+                    <span>{item.value} Records</span>
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No class data available</p>
+            )}
           </div>
         </div>
       </div>
