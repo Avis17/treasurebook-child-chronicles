@@ -2,19 +2,18 @@
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import ProfileHeader from "@/components/dashboard/ProfileHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AcademicChart from "@/components/dashboard/AcademicChart";
-import SportsChart from "@/components/dashboard/SportsChart";
-import { SummaryCards } from "@/components/dashboard/SummaryCards";
-import ExtracurricularChart from "@/components/dashboard/ExtracurricularChart";
 import AppLayout from "@/components/layout/AppLayout";
-import OverviewCards from "@/components/dashboard/OverviewCards";
-import ActivitySummary from "@/components/dashboard/ActivitySummary";
-import MarksSummaryCard from "@/components/dashboard/MarksSummaryCard";
-import { LearningProgressCards } from "@/components/dashboard/LearningProgressCards";
-import { ChevronRight } from "lucide-react";
+
+// Dashboard section components
+import { ProfileCard } from "@/components/dashboard/ProfileCard";
+import { AcademicPerformanceSection } from "@/components/dashboard/AcademicPerformanceSection";
+import { SportsSection } from "@/components/dashboard/SportsSection";
+import { GoalsSection } from "@/components/dashboard/GoalsSection";
+import { CalendarSection } from "@/components/dashboard/CalendarSection";
+import { MilestonesSection } from "@/components/dashboard/MilestonesSection";
+import { JournalsSection } from "@/components/dashboard/JournalsSection";
+import { FeedbackSection } from "@/components/dashboard/FeedbackSection";
+import { ResourcesSection } from "@/components/dashboard/ResourcesSection";
 
 const Dashboard = () => {
   const { currentUser, loading } = useAuth();
@@ -44,78 +43,51 @@ const Dashboard = () => {
   return (
     <AppLayout title="Dashboard" hideHeader={true}>
       <div className="max-w-7xl mx-auto pb-16">
-        {/* Profile Header */}
-        <ProfileHeader />
-        
-        <div className="space-y-10">
-          {/* Overview Cards */}
-          <div className="mt-10 mb-10 px-6">
-            <OverviewCards />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4">
+          {/* Profile Card - 3 columns on large screens */}
+          <div className="lg:col-span-3">
+            <ProfileCard />
           </div>
           
-          {/* Performance Insights */}
-          <div className="px-6">
-            <Card className="shadow-lg dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold dark:text-white">Performance Insights</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="academic" className="w-full">
-                  <TabsList className="mb-8">
-                    <TabsTrigger value="academic">Academic</TabsTrigger>
-                    <TabsTrigger value="sports">Sports</TabsTrigger>
-                    <TabsTrigger value="extracurricular">Extracurricular</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="academic" className="h-[380px]">
-                    <div className="grid gap-4">
-                      <AcademicChart />
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="sports" className="h-[380px]">
-                    <div className="grid gap-4">
-                      <SportsChart />
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="extracurricular" className="h-[380px]">
-                    <div className="grid gap-4">
-                      <ExtracurricularChart />
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Academic Summary */}
-          <div className="px-6">
-            <Card className="shadow-lg dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardHeader className="flex flex-row items-center justify-between pb-4">
-                <CardTitle className="text-xl font-bold dark:text-white">Academic Summary</CardTitle>
-                <a href="/academic-records" className="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center">
-                  View all
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </a>
-              </CardHeader>
-              <CardContent className="pb-6">
-                <MarksSummaryCard />
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Learning Progress */}
-          <div className="px-6">
-            <Card className="shadow-lg dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-              <CardHeader className="flex flex-row items-center justify-between pb-4">
-                <CardTitle className="text-xl font-bold dark:text-white">Learning Progress</CardTitle>
-                <a href="/academic-records" className="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center">
-                  View details
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </a>
-              </CardHeader>
-              <CardContent className="pb-6">
-                <LearningProgressCards />
-              </CardContent>
-            </Card>
+          {/* Main Content - 9 columns on large screens */}
+          <div className="lg:col-span-9 space-y-6">
+            {/* First Row: Academic Performance and Goals */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="col-span-1">
+                <AcademicPerformanceSection />
+              </div>
+              <div className="col-span-1">
+                <GoalsSection />
+              </div>
+            </div>
+
+            {/* Second Row: Sports & Extracurriculars */}
+            <div>
+              <SportsSection />
+            </div>
+            
+            {/* Third Row: Calendar and Feedback */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="col-span-1">
+                <CalendarSection />
+              </div>
+              <div className="col-span-1">
+                <FeedbackSection />
+              </div>
+            </div>
+            
+            {/* Fourth Row: Milestones, Journals, and Resources */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="col-span-1">
+                <MilestonesSection />
+              </div>
+              <div className="col-span-1">
+                <JournalsSection />
+              </div>
+              <div className="col-span-1">
+                <ResourcesSection />
+              </div>
+            </div>
           </div>
         </div>
       </div>
