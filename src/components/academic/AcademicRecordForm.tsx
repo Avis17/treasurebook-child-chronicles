@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +51,30 @@ export const AcademicRecordForm = ({
     isPercentage: false,
   });
 
+  const [otherSubject, setOtherSubject] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("other");
+
+  const subjectList = [
+    "English",
+    "Mathematics",
+    "Science",
+    "Social Studies",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "History",
+    "Geography",
+    "Computer Science",
+    "Physical Education",
+    "Art",
+    "Music",
+    "Foreign Language",
+    "Economics",
+    "Business Studies",
+    "Environmental Science",
+    "Other"
+  ];
+
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -65,6 +88,13 @@ export const AcademicRecordForm = ({
         remarks: initialData.remarks || "",
         isPercentage: initialData.isPercentage || false,
       });
+      
+      if (subjectList.includes(initialData.subject)) {
+        setSelectedSubject(initialData.subject);
+      } else {
+        setSelectedSubject("other");
+        setOtherSubject(initialData.subject);
+      }
     }
   }, [initialData]);
 
@@ -74,7 +104,6 @@ export const AcademicRecordForm = ({
     }
   }, [isOpenProp]);
 
-  // Generate years from 2020 to current year + 5
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 2019 + 5 }, (_, i) => (2020 + i).toString());
 
@@ -91,7 +120,14 @@ export const AcademicRecordForm = ({
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormData({ ...formData, [name]: value });
+    if (name === "subject") {
+      setSelectedSubject(value);
+      if (value !== "other") {
+        setFormData({ ...formData, subject: value });
+      }
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleAddRecord = async () => {
@@ -114,16 +150,18 @@ export const AcademicRecordForm = ({
     }
     
     try {
+      const finalSubject = selectedSubject === "other" ? otherSubject : selectedSubject;
+      
       if (initialData && onRecordUpdated) {
-        // Handle update case
         await onRecordUpdated({
           ...initialData,
           ...formData,
+          subject: finalSubject,
         });
       } else {
-        // Handle create case
         const recordData = {
           ...formData,
+          subject: finalSubject,
           userId: auth.currentUser.uid,
         };
         
@@ -137,7 +175,6 @@ export const AcademicRecordForm = ({
             description: "Academic record added",
           });
           
-          // Reset form to defaults
           setFormData({
             year: new Date().getFullYear().toString(),
             term: "1st Term",
@@ -149,6 +186,8 @@ export const AcademicRecordForm = ({
             remarks: "",
             isPercentage: false,
           });
+          setSelectedSubject("other");
+          setOtherSubject("");
         } else {
           throw new Error("Failed to create record");
         }
@@ -229,7 +268,8 @@ export const AcademicRecordForm = ({
                 </SelectTrigger>
                 <SelectContent className="dark:bg-gray-700 max-h-[300px]">
                   <SelectItem value="Pre-KG">Pre-KG</SelectItem>
-                  <SelectItem value="KG">KG</SelectItem>
+                  <SelectItem value="LKG">LKG</SelectItem>
+                  <SelectItem value="UKG">UKG</SelectItem>
                   <SelectItem value="Grade 1">Grade 1</SelectItem>
                   <SelectItem value="Grade 2">Grade 2</SelectItem>
                   <SelectItem value="Grade 3">Grade 3</SelectItem>
@@ -271,15 +311,29 @@ export const AcademicRecordForm = ({
             
             <div className="space-y-2">
               <Label htmlFor="subject" className="dark:text-gray-300">Subject</Label>
-              <Input
-                id="subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleInputChange}
-                placeholder="Enter subject name"
-                className="dark:bg-gray-700 dark:text-white"
-                required
-              />
+              <Select value={selectedSubject} onValueChange={(value) => handleSelectChange("subject", value)}>
+                <SelectTrigger className="dark:bg-gray-700 dark:text-white">
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-700">
+                  {subjectList.map((subject) => (
+                    <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedSubject === "other" && (
+                <Input
+                  id="otherSubject"
+                  value={otherSubject}
+                  onChange={(e) => {
+                    setOtherSubject(e.target.value);
+                    setFormData({ ...formData, subject: e.target.value });
+                  }}
+                  placeholder="Enter subject name"
+                  className="mt-2 dark:bg-gray-700 dark:text-white"
+                  required
+                />
+              )}
             </div>
             
             <div className="flex gap-2 items-center">
