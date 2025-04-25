@@ -565,22 +565,67 @@ export const calculateGrowthScore = (
   journalEntries: JournalEntry[]
 ): number => {
   // Academic performance (40% weight)
-  const academicScore = calculateAverageScore(academicRecords.map(r => ({
-    subject: r.subject,
-    score: r.isPercentage ? r.score : (r.score / r.maxScore) * 100
-  })));
+  let academicScore = 0;
+  if (academicRecords.length > 0) {
+    const scores = academicRecords.map(r => ({
+      subject: r.subject,
+      score: r.isPercentage ? r.score : (r.score / r.maxScore) * 100
+    }));
+    
+    const totalScore = scores.reduce((sum, item) => sum + item.score, 0);
+    academicScore = scores.length > 0 ? (totalScore / scores.length) : 0;
+  }
 
   // Sports achievement (20% weight)
-  const sportsScore = calculateSportsScore(sportsRecords);
+  let sportsScore = 0;
+  if (sportsRecords.length > 0) {
+    const positionScores = sportsRecords.map(record => {
+      const position = record.position?.toLowerCase() || '';
+      if (position.includes('1st') || position.includes('gold')) return 100;
+      if (position.includes('2nd') || position.includes('silver')) return 80;
+      if (position.includes('3rd') || position.includes('bronze')) return 60;
+      if (position.includes('finalist')) return 40;
+      return 20; // participation or other
+    });
+    
+    const totalScore = positionScores.reduce((sum, score) => sum + score, 0);
+    sportsScore = positionScores.length > 0 ? (totalScore / positionScores.length) : 0;
+  }
 
   // Extracurricular performance (20% weight)
-  const extraScore = calculateExtracurricularScore(extraRecords);
+  let extraScore = 0;
+  if (extraRecords.length > 0) {
+    const achievementScores = extraRecords.map(record => {
+      const achievement = record.achievement?.toLowerCase() || '';
+      if (achievement.includes('1st') || achievement.includes('gold')) return 100;
+      if (achievement.includes('2nd') || achievement.includes('silver')) return 80;
+      if (achievement.includes('3rd') || achievement.includes('bronze')) return 60;
+      return 40; // participation or other
+    });
+    
+    const totalScore = achievementScores.reduce((sum, score) => sum + score, 0);
+    extraScore = achievementScores.length > 0 ? (totalScore / achievementScores.length) : 0;
+  }
 
   // Goals & Milestones progress (10% weight)
-  const goalsScore = calculateGoalsScore(goals, milestones);
+  let goalsScore = 0;
+  const totalGoals = goals.length;
+  if (totalGoals > 0) {
+    const completedGoals = goals.filter(goal => goal.status === 'Completed').length;
+    goalsScore = (completedGoals / totalGoals) * 100;
+  }
+  
+  // Add milestone bonus
+  if (milestones.length > 0) {
+    goalsScore += Math.min(milestones.length * 5, 20); // Add 5 points per milestone up to 20 points
+  }
 
   // Journal engagement (10% weight)
-  const journalScore = calculateJournalScore(journalEntries);
+  let journalScore = 0;
+  if (journalEntries.length > 0) {
+    // Simple scoring based on number of entries
+    journalScore = Math.min(journalEntries.length * 10, 100); // 10 points per entry up to 100
+  }
 
   const totalScore = (academicScore * 0.4) +
     (sportsScore * 0.2) +
@@ -651,7 +696,8 @@ export const identifyWeakAreas = (
   // Identify weak extracurricular areas
   const extraPerformance = new Map<string, number>();
   extraRecords.forEach(record => {
-    const activity = record.activity;
+    // Use activityName which is what we have in the interface
+    const activity = record.activityName || '';
     if (!activity) return;
     
     let score = 0;

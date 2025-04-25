@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,6 +55,34 @@ const formSchema = z.object({
   achievement: z.string().optional(),
 });
 
+// Define sport type options
+const sportTypeOptions = [
+  "Football",
+  "Basketball",
+  "Tennis",
+  "Swimming",
+  "Athletics",
+  "Martial Arts",
+  "Hockey",
+  "Cricket",
+  "Badminton",
+  "Table Tennis",
+  "Volleyball",
+  "Other"
+];
+
+// Define position options
+const positionOptions = [
+  "1st Position / Gold",
+  "2nd Position / Silver",
+  "3rd Position / Bronze",
+  "Finalist",
+  "Semi-finalist",
+  "Quarter-finalist",
+  "Participation",
+  "Other"
+];
+
 interface SportsRecordFormProps {
   isOpen: boolean;
   onClose: () => void;
@@ -89,12 +118,17 @@ export const SportsRecordForm = ({ isOpen, onClose, onSubmit, initialData }: Spo
   }, [initialData]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    const finalEventType = values.eventType === "Other" ? customSportType : values.eventType;
-    onSubmit({
-      ...values,
-      eventType: finalEventType,
-      sportName: finalEventType
-    });
+    const finalValues = { ...values };
+    
+    // If "Other" is selected as event type, use the custom sport type value
+    if (values.eventType === "Other" && customSportType) {
+      finalValues.sportName = customSportType;
+      finalValues.eventType = customSportType; // Also update eventType
+    } else {
+      finalValues.sportName = values.eventType;
+    }
+    
+    onSubmit(finalValues);
   };
 
   return (
@@ -110,19 +144,6 @@ export const SportsRecordForm = ({ isOpen, onClose, onSubmit, initialData }: Spo
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="sportName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sport Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Sport's name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="eventName"
               render={({ field }) => (
                 <FormItem>
@@ -136,17 +157,76 @@ export const SportsRecordForm = ({ isOpen, onClose, onSubmit, initialData }: Spo
             />
             <FormField
               control={form.control}
-              name="position"
+              name="eventType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Position</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Position" {...field} />
-                  </FormControl>
+                  <FormLabel>Sport Type</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setShowCustomSport(value === "Other");
+                    }}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select sport type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {sportTypeOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {showCustomSport && (
+              <FormItem>
+                <FormLabel>Custom Sport Type</FormLabel>
+                <FormControl>
+                  <Input
+                    value={customSportType}
+                    onChange={(e) => setCustomSportType(e.target.value)}
+                    placeholder="Enter sport type"
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+
+            <FormField
+              control={form.control}
+              name="position"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Position/Result</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select position" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {positionOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <FormField
               control={form.control}
               name="eventDate"
@@ -188,60 +268,6 @@ export const SportsRecordForm = ({ isOpen, onClose, onSubmit, initialData }: Spo
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="eventType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Event Type</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      setShowCustomSport(value === "Other");
-                    }}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select event type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Football">Football</SelectItem>
-                      <SelectItem value="Basketball">Basketball</SelectItem>
-                      <SelectItem value="Tennis">Tennis</SelectItem>
-                      <SelectItem value="Swimming">Swimming</SelectItem>
-                      <SelectItem value="Athletics">Athletics</SelectItem>
-                      <SelectItem value="Martial Arts">Martial Arts</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {showCustomSport && (
-              <FormField
-                control={form.control}
-                name="customSportType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Custom Sport Type</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={customSportType}
-                        onChange={(e) => setCustomSportType(e.target.value)}
-                        placeholder="Enter sport type"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
 
             <FormField
               control={form.control}
