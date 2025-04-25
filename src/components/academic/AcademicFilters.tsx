@@ -2,19 +2,19 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { 
-  Dialog, 
+import {
+  Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter 
+  DialogFooter
 } from "@/components/ui/dialog";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
 import { Filter } from "lucide-react";
 
@@ -55,7 +55,7 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
       class: "",
       examType: "",
     };
-    
+
     setFilterForm(emptyFilters);
     onApplyFilters(emptyFilters);
     setIsFilterDialogOpen(false);
@@ -67,11 +67,11 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
 
   return (
     <>
-      <Button 
+      <Button
         variant={hasActiveFilters ? "default" : "outline"}
         onClick={() => setIsFilterDialogOpen(true)}
       >
-        <Filter className="mr-2 h-4 w-4" /> 
+        <Filter className="mr-2 h-4 w-4" />
         {hasActiveFilters ? "Filtered" : "Filter"}
       </Button>
 
@@ -83,8 +83,8 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="filter-year" className="dark:text-gray-300">Year</Label>
-              <Select 
-                value={filterForm.year} 
+              <Select
+                value={filterForm.year}
                 onValueChange={(value) => handleFilterChange("year", value)}
               >
                 <SelectTrigger className="dark:bg-gray-700 dark:text-white">
@@ -98,11 +98,11 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="filter-term" className="dark:text-gray-300">Term</Label>
-              <Select 
-                value={filterForm.term} 
+              <Select
+                value={filterForm.term}
                 onValueChange={(value) => handleFilterChange("term", value)}
               >
                 <SelectTrigger className="dark:bg-gray-700 dark:text-white">
@@ -119,11 +119,11 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="filter-class" className="dark:text-gray-300">Class</Label>
-              <Select 
-                value={filterForm.class} 
+              <Select
+                value={filterForm.class}
                 onValueChange={(value) => handleFilterChange("class", value)}
               >
                 <SelectTrigger className="dark:bg-gray-700 dark:text-white">
@@ -132,7 +132,8 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
                 <SelectContent className="dark:bg-gray-700">
                   <SelectItem value="all">All Classes</SelectItem>
                   <SelectItem value="Pre-KG">Pre-KG</SelectItem>
-                  <SelectItem value="KG">KG</SelectItem>
+                  <SelectItem value="LKG">LKG</SelectItem>
+                  <SelectItem value="UKG">UKG</SelectItem>
                   <SelectItem value="Grade 1">Grade 1</SelectItem>
                   <SelectItem value="Grade 2">Grade 2</SelectItem>
                   <SelectItem value="Grade 3">Grade 3</SelectItem>
@@ -152,11 +153,11 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="filter-examType" className="dark:text-gray-300">Exam Type</Label>
-              <Select 
-                value={filterForm.examType} 
+              <Select
+                value={filterForm.examType}
                 onValueChange={(value) => handleFilterChange("examType", value)}
               >
                 <SelectTrigger className="dark:bg-gray-700 dark:text-white">
@@ -177,8 +178,8 @@ export const AcademicFilters = ({ onApplyFilters, hasActiveFilters }: AcademicFi
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={clearFilters}
               className="dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
             >
