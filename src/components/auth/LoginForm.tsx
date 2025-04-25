@@ -42,8 +42,17 @@ const LoginForm = () => {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl">Login to TreasureBook</CardTitle>
-        <CardDescription>Enter your credentials to access your child's journey</CardDescription>
+        <div className="flex flex-col items-center space-y-2 mb-4">
+          <img 
+            src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png"
+            alt="TreasureBook Logo"
+            className="h-20 w-auto"
+          />
+          <CardTitle className="text-2xl">Welcome Back</CardTitle>
+          <CardDescription>
+            Enter your credentials to access your child's journey
+          </CardDescription>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleLogin} className="space-y-4">

@@ -74,6 +74,11 @@ const VerificationPending = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center mb-8">
+          <img 
+            src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png"
+            alt="TreasureBook Logo"
+            className="h-24 w-auto mx-auto mb-4"
+          />
           <h1 className="text-4xl font-bold text-treasure-blue">TreasureBook</h1>
           <p className="mt-2 text-gray-600">Your child's journey, beautifully documented</p>
         </div>

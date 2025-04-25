@@ -69,8 +69,15 @@ const RegisterForm = () => {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl">Create an Account</CardTitle>
-        <CardDescription>Start documenting your child's journey today</CardDescription>
+        <div className="flex flex-col items-center space-y-2 mb-4">
+          <img 
+            src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png"
+            alt="TreasureBook Logo"
+            className="h-20 w-auto"
+          />
+          <CardTitle className="text-2xl">Create an Account</CardTitle>
+          <CardDescription>Start documenting your child's journey today</CardDescription>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleRegister} className="space-y-4">
