@@ -288,9 +288,27 @@ export const calculateTrend = (records: AcademicRecord[]): "Improving" | "Declin
   
   const sortedRecords = [...validRecords].sort((a, b) => {
     // Handle different date formats safely
-    const dateA = a.examDate.toDate ? a.examDate.toDate() : new Date(a.examDate);
-    const dateB = b.examDate.toDate ? b.examDate.toDate() : new Date(b.examDate);
-    return dateA.getTime() - dateB.getTime();
+    const getDate = (record: any) => {
+      if (!record.examDate) return new Date(0);
+      
+      try {
+        if (record.examDate.toDate && typeof record.examDate.toDate === 'function') {
+          return record.examDate.toDate();
+        }
+        
+        if (record.examDate instanceof Date) {
+          return record.examDate;
+        }
+        
+        // Handle string or timestamp
+        return new Date(record.examDate);
+      } catch (error) {
+        console.error("Failed to parse date:", error);
+        return new Date(0);
+      }
+    };
+    
+    return getDate(a).getTime() - getDate(b).getTime();
   });
   
   const recentScores = sortedRecords.slice(-3).map(r => (r.marks / r.totalMarks) * 100);
@@ -308,21 +326,49 @@ export const getLatestExamGrade = (records: AcademicRecord[]): { grade: string, 
   if (records.length === 0) return { grade: "N/A", subject: "N/A" };
   
   // Filter out records with missing examDate first
-  const validRecords = records.filter(record => record.examDate);
+  const validRecords = records.filter(record => record.examDate || record.grade);
   
   if (validRecords.length === 0) return { grade: "N/A", subject: "N/A" };
   
-  const sortedRecords = [...validRecords].sort((a, b) => {
-    // Handle different date formats safely
-    const dateA = a.examDate.toDate ? a.examDate.toDate() : new Date(a.examDate);
-    const dateB = b.examDate.toDate ? b.examDate.toDate() : new Date(b.examDate);
-    return dateB.getTime() - dateA.getTime();
-  });
-  
-  return { 
-    grade: sortedRecords[0].grade,
-    subject: sortedRecords[0].subject
-  };
+  // Try to sort by exam date if available
+  try {
+    const sortedRecords = [...validRecords].sort((a, b) => {
+      const getDate = (record: any) => {
+        if (!record.examDate) return new Date(0);
+        
+        try {
+          if (record.examDate.toDate && typeof record.examDate.toDate === 'function') {
+            return record.examDate.toDate();
+          }
+          
+          if (record.examDate instanceof Date) {
+            return record.examDate;
+          }
+          
+          // Handle string or timestamp
+          return new Date(record.examDate);
+        } catch (error) {
+          console.error("Failed to parse date:", error);
+          return new Date(0);
+        }
+      };
+      
+      return getDate(b).getTime() - getDate(a).getTime();
+    });
+    
+    return { 
+      grade: sortedRecords[0].grade || 'N/A',
+      subject: sortedRecords[0].subject || 'N/A'
+    };
+  } catch (error) {
+    console.error("Error sorting records by date:", error);
+    
+    // Fallback to just return the first record's grade
+    return { 
+      grade: validRecords[0].grade || 'N/A',
+      subject: validRecords[0].subject || 'N/A'
+    };
+  }
 };
 
 export const formatDate = (date: any): string => {

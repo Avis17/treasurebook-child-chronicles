@@ -4,6 +4,7 @@ import { DashboardCard } from "./DashboardCard";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { useJournalEntries } from "@/lib/dashboard-service";
 import { useAuth } from "@/contexts/AuthContext";
+import { Book } from "lucide-react";
 
 export const JournalsSection = () => {
   const { currentUser } = useAuth();
@@ -67,11 +68,19 @@ export const JournalsSection = () => {
   }
 
   const hasJournals = journals && journals.length > 0;
-  
-  console.log("Journal data:", journals);
 
   return (
-    <DashboardCard title="Journals">
+    <DashboardCard 
+      title="Journals"
+      action={
+        <div className="flex items-center text-sm">
+          <Book className="mr-1 h-4 w-4 text-indigo-500" />
+          <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+            {journals.length} Entries
+          </span>
+        </div>
+      }
+    >
       {hasJournals ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-1">
@@ -87,6 +96,8 @@ export const JournalsSection = () => {
                       outerRadius={50}
                       paddingAngle={2}
                       dataKey="value"
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      labelLine={false}
                     >
                       {moodData.map((entry, index) => (
                         <Cell 
@@ -129,10 +140,10 @@ export const JournalsSection = () => {
               {journals.slice(0, 2).map((journal) => (
                 <div 
                   key={journal.id} 
-                  className="p-2 rounded-lg bg-muted/40"
+                  className="p-3 rounded-lg bg-muted/40 border border-muted"
                 >
                   <p className="text-sm font-medium">{journal.title || "Untitled Entry"}</p>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-xs text-muted-foreground truncate mt-1">
                     {journal.content ? 
                       (journal.content.length > 60 ? 
                         `${journal.content.substring(0, 60)}...` : 
