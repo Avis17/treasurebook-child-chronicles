@@ -10,17 +10,6 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { format, isSameDay, parseISO, startOfDay } from "date-fns";
 
-// Define type for Day component props
-interface DayProps {
-  date: Date;
-  displayValue?: string;
-  isOutside?: boolean;
-  isSelected?: boolean;
-  isToday?: boolean;
-  disabled?: boolean;
-  className?: string;
-}
-
 export const CalendarSection = () => {
   const { currentUser } = useAuth();
   const { data: calendarEvents, loading: calendarLoading } = useCalendarEvents(currentUser?.uid);
@@ -166,14 +155,6 @@ export const CalendarSection = () => {
     return categoryConfig[normalizedCategory] || categoryConfig.default;
   };
 
-  // Get dates with events for modifiers - ensuring UTC consistency
-  const eventDates = React.useMemo(() => {
-    return Object.keys(eventsByDate).map(dateStr => {
-      // Parse the ISO date string without timezone adjustment
-      return new Date(dateStr);
-    });
-  }, [eventsByDate]);
-
   // Function to check if a date has events
   const hasEvent = React.useCallback(
     (day: Date) => {
@@ -212,23 +193,10 @@ export const CalendarSection = () => {
             onMonthChange={handleMonthChange}
             className="rounded-md border pointer-events-auto"
             modifiers={{
-              hasEvent: hasEvent,
+              hasEvent: (day) => hasEvent(day),
             }}
             modifiersClassNames={{
               hasEvent: "font-semibold text-primary bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 rounded-md",
-            }}
-            components={{
-              Day: ({ date: dayDate, ...props }: DayProps) => {
-                const isEventDay = hasEvent(dayDate);
-                return (
-                  <button
-                    {...props}
-                    className={`${props.className || ''} ${isEventDay ? 'font-semibold text-primary bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 rounded-md' : ''}`}
-                  >
-                    {props.displayValue}
-                  </button>
-                );
-              },
             }}
           />
         </div>
