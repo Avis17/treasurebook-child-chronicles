@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import {
   AreaChart,
@@ -10,12 +11,15 @@ import {
   BarChart,
   Bar,
   Legend,
-  Cell
+  Cell,
+  LineChart,
+  Line,
+  ReferenceLine
 } from "recharts";
 import { DashboardCard } from "./DashboardCard";
 import { useAcademicRecords, AcademicRecord, calculateTrend, getLatestExamGrade } from "@/lib/dashboard-service";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronRight, BarChart2, TrendingUp, TrendingDown, Minus, FileText } from "lucide-react";
+import { ChevronRight, BarChart2, TrendingUp, TrendingDown, Minus, FileText, LineChart as LineChartIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { 
   Select,
@@ -25,6 +29,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const AcademicPerformanceSection = () => {
   const { currentUser } = useAuth();
@@ -34,24 +39,29 @@ export const AcademicPerformanceSection = () => {
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
   const [selectedTerm, setSelectedTerm] = useState<string>("all");
   const [selectedSubject, setSelectedSubject] = useState<string>("all");
+  const [selectedYear, setSelectedYear] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"chart" | "table">("chart");
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
   
   // Extract unique filters from data
   const filters = useMemo(() => {
     const grades = new Set<string>();
     const terms = new Set<string>();
     const subjects = new Set<string>();
+    const years = new Set<string>();
     
     academicRecords.forEach(record => {
       if (record.class) grades.add(record.class);
       if (record.term) terms.add(record.term);
       if (record.subject) subjects.add(record.subject);
+      if (record.year) years.add(record.year);
     });
     
     return {
       grades: Array.from(grades).sort(),
       terms: Array.from(terms).sort(),
       subjects: Array.from(subjects).sort(),
+      years: Array.from(years).sort((a, b) => parseInt(b) - parseInt(a)),
     };
   }, [academicRecords]);
   
@@ -61,11 +71,12 @@ export const AcademicPerformanceSection = () => {
       const gradeMatch = selectedGrade === "all" || record.class === selectedGrade;
       const termMatch = selectedTerm === "all" || record.term === selectedTerm;
       const subjectMatch = selectedSubject === "all" || record.subject === selectedSubject;
-      return gradeMatch && termMatch && subjectMatch;
+      const yearMatch = selectedYear === "all" || record.year === selectedYear;
+      return gradeMatch && termMatch && subjectMatch && yearMatch;
     });
-  }, [academicRecords, selectedGrade, selectedTerm, selectedSubject]);
+  }, [academicRecords, selectedGrade, selectedTerm, selectedSubject, selectedYear]);
   
-  // Process data for charts
+  // Process data for bar/line charts
   const chartData = useMemo(() => {
     try {
       const subjectData: Record<string, { marks: number, totalMarks: number, count: number }> = {};
@@ -104,6 +115,90 @@ export const AcademicPerformanceSection = () => {
       return [];
     }
   }, [filteredRecords]);
+  
+  // Process data for term comparison line chart
+  const termComparisonData = useMemo(() => {
+    try {
+      if (selectedSubject === "all") {
+        return [];
+      }
+      
+      // Group data by terms for the selected subject
+      interface TermRecord {
+        term: string;
+        percentage: number;
+        year: string;
+        count: number;
+      }
+      
+      const termData = new Map<string, TermRecord>();
+      
+      academicRecords.forEach(record => {
+        if (record.subject?.toLowerCase() !== selectedSubject.toLowerCase() && selectedSubject !== "all") {
+          return;
+        }
+        
+        if (!record.term || !record.year) {
+          return;
+        }
+        
+        const termKey = `${record.term}-${record.year}`;
+        
+        let calculatedPercentage = 0;
+        if (record.isPercentage) {
+          calculatedPercentage = record.score;
+        } else {
+          calculatedPercentage = (record.score / record.maxScore) * 100;
+        }
+        
+        if (!termData.has(termKey)) {
+          termData.set(termKey, { 
+            term: record.term, 
+            year: record.year,
+            percentage: calculatedPercentage, 
+            count: 1 
+          });
+        } else {
+          const existing = termData.get(termKey)!;
+          existing.percentage += calculatedPercentage;
+          existing.count += 1;
+        }
+      });
+      
+      // Calculate averages and format for chart
+      const result: any[] = [];
+      termData.forEach((value, key) => {
+        result.push({
+          key,
+          term: value.term,
+          year: value.year,
+          label: `${value.term} (${value.year})`,
+          percentage: Math.round(value.percentage / value.count),
+        });
+      });
+      
+      // Sort by year and term
+      return result.sort((a, b) => {
+        if (a.year !== b.year) {
+          return parseInt(a.year) - parseInt(b.year);
+        }
+        
+        const termOrder: Record<string, number> = {
+          "1st Term": 1,
+          "2nd Term": 2,
+          "3rd Term": 3,
+          "4th Term": 4,
+          "Semester 1": 1,
+          "Semester 2": 2
+        };
+        
+        return (termOrder[a.term] || 99) - (termOrder[b.term] || 99);
+      });
+    } catch (error) {
+      console.error("Error processing term comparison data:", error);
+      return [];
+    }
+  }, [academicRecords, selectedSubject]);
   
   // Safely calculate trend with error handling
   const trend = useMemo(() => {
@@ -189,6 +284,19 @@ export const AcademicPerformanceSection = () => {
     return 'bg-gradient-to-br from-red-500 to-rose-600';
   };
 
+  const getAvgScore = () => {
+    if (!filteredRecords.length) return 0;
+    let total = 0;
+    filteredRecords.forEach(record => {
+      if (record.isPercentage) {
+        total += record.score;
+      } else {
+        total += (record.score / record.maxScore) * 100;
+      }
+    });
+    return Math.round(total / filteredRecords.length);
+  };
+
   return (
     <DashboardCard 
       title="Academic Performance" 
@@ -252,7 +360,19 @@ export const AcademicPerformanceSection = () => {
             </div>
           </div>
           
-          <div className="flex justify-end mb-2">
+          <div className="flex justify-between mb-2">
+            <Select value={selectedYear} onValueChange={setSelectedYear} className="w-32">
+              <SelectTrigger className="bg-white dark:bg-gray-950 h-8">
+                <SelectValue placeholder="All Years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {filters.years.map(year => (
+                  <SelectItem key={year} value={year}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
             <div className="inline-flex rounded-md shadow-sm" role="group">
               <button
                 type="button"
@@ -285,54 +405,190 @@ export const AcademicPerformanceSection = () => {
             <div className={`${viewMode === "chart" ? "lg:col-span-2" : "lg:col-span-3"}`}>
               {viewMode === "chart" ? (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">Subject Performance</p>
-                  <div className="h-[250px]">
-                    {chartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={chartData}
-                          margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                          <XAxis 
-                            dataKey="subject" 
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            angle={-45}
-                            textAnchor="end"
-                          />
-                          <YAxis 
-                            domain={[0, 100]}
-                            tick={{ fontSize: 12 }}
-                            tickLine={false}
-                            tickFormatter={(value) => `${value}%`}
-                          />
-                          <Tooltip 
-                            formatter={(value) => [`${value}%`, 'Average Score']}
-                            contentStyle={{
-                              borderRadius: '8px',
-                              border: '1px solid rgba(0,0,0,0.1)',
-                              boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-                            }}
-                          />
-                          <Legend />
-                          <Bar 
-                            dataKey="percentage" 
-                            name="Score %" 
-                            radius={[4, 4, 0, 0]}
+                  <Tabs defaultValue="subjects">
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="subjects">Subject Performance</TabsTrigger>
+                      <TabsTrigger value="terms">Term Comparison</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="subjects" className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm text-muted-foreground">Subject Performance</p>
+                        <div className="inline-flex rounded-md shadow-sm" role="group">
+                          <button
+                            type="button"
+                            onClick={() => setChartType("bar")}
+                            className={`px-3 py-1 text-xs font-medium rounded-l-md ${
+                              chartType === "bar"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-white dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600"
+                            }`}
                           >
-                            {chartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-full flex items-center justify-center">
-                        <p className="text-muted-foreground">No subject data available for the selected filters</p>
+                            <BarChart2 className="h-3 w-3 inline mr-1" />
+                            Bar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setChartType("line")}
+                            className={`px-3 py-1 text-xs font-medium rounded-r-md ${
+                              chartType === "line"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-white dark:bg-gray-700 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-600"
+                            }`}
+                          >
+                            <LineChartIcon className="h-3 w-3 inline mr-1" />
+                            Line
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                      <div className="h-[250px]">
+                        {chartData.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            {chartType === "bar" ? (
+                              <BarChart
+                                data={chartData}
+                                margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                                <XAxis 
+                                  dataKey="subject" 
+                                  tick={{ fontSize: 12 }}
+                                  tickLine={false}
+                                  angle={-45}
+                                  textAnchor="end"
+                                />
+                                <YAxis 
+                                  domain={[0, 100]}
+                                  tick={{ fontSize: 12 }}
+                                  tickLine={false}
+                                  tickFormatter={(value) => `${value}%`}
+                                />
+                                <Tooltip 
+                                  formatter={(value) => [`${value}%`, 'Average Score']}
+                                  contentStyle={{
+                                    borderRadius: '8px',
+                                    border: '1px solid rgba(0,0,0,0.1)',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                                  }}
+                                />
+                                <Legend />
+                                <ReferenceLine y={getAvgScore()} stroke="#ff7300" strokeDasharray="3 3" 
+                                  label={{ position: 'insideTopRight', value: `Avg: ${getAvgScore()}%`, fill: '#ff7300', fontSize: 12 }} />
+                                <Bar 
+                                  dataKey="percentage" 
+                                  name="Score %" 
+                                  radius={[4, 4, 0, 0]}
+                                >
+                                  {chartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            ) : (
+                              <LineChart
+                                data={chartData}
+                                margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                                <XAxis 
+                                  dataKey="subject" 
+                                  tick={{ fontSize: 12 }}
+                                  tickLine={false}
+                                  angle={-45}
+                                  textAnchor="end"
+                                />
+                                <YAxis 
+                                  domain={[0, 100]}
+                                  tick={{ fontSize: 12 }}
+                                  tickLine={false}
+                                  tickFormatter={(value) => `${value}%`}
+                                />
+                                <Tooltip 
+                                  formatter={(value) => [`${value}%`, 'Average Score']}
+                                  contentStyle={{
+                                    borderRadius: '8px',
+                                    border: '1px solid rgba(0,0,0,0.1)',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                                  }}
+                                />
+                                <Legend />
+                                <ReferenceLine y={getAvgScore()} stroke="#ff7300" strokeDasharray="3 3" 
+                                  label={{ position: 'insideTopRight', value: `Avg: ${getAvgScore()}%`, fill: '#ff7300', fontSize: 12 }} />
+                                <Line 
+                                  type="monotone"
+                                  dataKey="percentage" 
+                                  stroke="#8884d8" 
+                                  strokeWidth={2}
+                                  name="Score %"
+                                  dot={{ stroke: '#8884d8', strokeWidth: 2, fill: '#fff', r: 4 }}
+                                  activeDot={{ r: 6 }}
+                                />
+                              </LineChart>
+                            )}
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-full flex items-center justify-center">
+                            <p className="text-muted-foreground">No subject data available for the selected filters</p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="terms">
+                      <p className="text-sm text-muted-foreground mb-2">Term Progress Comparison</p>
+                      <div className="h-[250px]">
+                        {termComparisonData.length > 1 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart
+                              data={termComparisonData}
+                              margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                              <XAxis 
+                                dataKey="label" 
+                                tick={{ fontSize: 12 }}
+                                tickLine={false}
+                                angle={-45}
+                                textAnchor="end"
+                              />
+                              <YAxis 
+                                domain={[0, 100]}
+                                tick={{ fontSize: 12 }}
+                                tickLine={false}
+                                tickFormatter={(value) => `${value}%`}
+                              />
+                              <Tooltip 
+                                formatter={(value) => [`${value}%`, 'Score']}
+                                contentStyle={{
+                                  borderRadius: '8px',
+                                  border: '1px solid rgba(0,0,0,0.1)',
+                                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                                }}
+                              />
+                              <Legend />
+                              <Line 
+                                type="monotone"
+                                dataKey="percentage" 
+                                stroke="#4f46e5" 
+                                strokeWidth={2}
+                                name="Term Score"
+                                dot={{ stroke: '#4f46e5', strokeWidth: 2, fill: '#fff', r: 4 }}
+                                activeDot={{ r: 6 }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : selectedSubject === "all" ? (
+                          <div className="h-full flex items-center justify-center">
+                            <p className="text-muted-foreground">Please select a specific subject to view term progress</p>
+                          </div>
+                        ) : (
+                          <div className="h-full flex items-center justify-center">
+                            <p className="text-muted-foreground">Not enough data for term comparison. Add more term records.</p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               ) : (
                 <div className="overflow-x-auto">

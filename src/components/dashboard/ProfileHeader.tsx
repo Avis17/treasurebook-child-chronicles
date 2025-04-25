@@ -28,16 +28,28 @@ const ProfileHeader = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const calculateAge = (birthdate: string): string => {
-    if (!birthdate) return '';
-    const today = new Date();
-    const birthDate = new Date(birthdate);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+  const calculateAge = (birthdate: string): string | null => {
+    if (!birthdate) return null;
+    
+    try {
+      const today = new Date();
+      const birthDate = new Date(birthdate);
+      
+      // Check if date is valid
+      if (isNaN(birthDate.getTime())) return null;
+      
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      return age.toString();
+    } catch (error) {
+      console.error("Error calculating age:", error);
+      return null;
     }
-    return age.toString();
   };
 
   useEffect(() => {
@@ -52,7 +64,7 @@ const ProfileHeader = () => {
           
         if (profileDoc.exists()) {
           const profileData = profileDoc.data();
-          const calculatedAge = profileData.birthdate ? calculateAge(profileData.birthdate) : profileData.age || "";
+          const calculatedAge = profileData.birthdate ? calculateAge(profileData.birthdate) : null;
           
           setProfile({
             displayName: profileData.childName || user.displayName || "Student",
@@ -61,7 +73,7 @@ const ProfileHeader = () => {
             role: "Student",
             grade: profileData.currentClass || "Grade 8",
             birthdate: profileData.birthdate || "",
-            age: calculatedAge,
+            age: calculatedAge || profileData.age || "",
             schoolName: profileData.schoolName || "",
           });
         } else {
@@ -71,7 +83,7 @@ const ProfileHeader = () => {
           
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            const calculatedAge = userData.birthdate ? calculateAge(userData.birthdate) : userData.age || "";
+            const calculatedAge = userData.birthdate ? calculateAge(userData.birthdate) : null;
             
             setProfile({
               displayName: userData.displayName || user.displayName || "Student",
@@ -80,7 +92,7 @@ const ProfileHeader = () => {
               role: userData.role || "Student",
               grade: userData.grade || "Grade 8",
               birthdate: userData.birthdate || "",
-              age: calculatedAge,
+              age: calculatedAge || userData.age || "",
               schoolName: userData.schoolName || userData.school || "",
             });
           } else {

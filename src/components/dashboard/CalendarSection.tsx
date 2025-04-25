@@ -68,8 +68,10 @@ export const CalendarSection = () => {
 
   // Process events by date
   const eventsByDate = React.useMemo(() => {
-    return events.reduce((acc: Record<string, typeof events>, event) => {
-      if (!event.date) return acc;
+    const eventMap: Record<string, {events: any[], categories: Set<string>}> = {};
+    
+    events.forEach(event => {
+      if (!event.date) return;
       
       let eventDate;
       try {
@@ -82,13 +84,24 @@ export const CalendarSection = () => {
         }
         
         const dateKey = eventDate.toISOString().split("T")[0];
-        if (!acc[dateKey]) acc[dateKey] = [];
-        acc[dateKey].push(event);
+        
+        if (!eventMap[dateKey]) {
+          eventMap[dateKey] = {
+            events: [],
+            categories: new Set()
+          };
+        }
+        
+        eventMap[dateKey].events.push(event);
+        if (event.category) {
+          eventMap[dateKey].categories.add(event.category.toLowerCase());
+        }
       } catch (e) {
         console.error("Error processing event date:", e, event);
       }
-      return acc;
-    }, {});
+    });
+    
+    return eventMap;
   }, [events]);
 
   // Handle month change in calendar
@@ -100,38 +113,44 @@ export const CalendarSection = () => {
   const selectedDayEvents = React.useMemo(() => {
     if (!date) return [];
     const dateKey = date.toISOString().split("T")[0];
-    return eventsByDate[dateKey] || [];
+    return eventsByDate[dateKey]?.events || [];
   }, [date, eventsByDate]);
 
   // Event category icons and colors
   const categoryConfig: Record<string, {
     icon: React.ReactNode,
     color: string, 
-    bgColor: string
+    bgColor: string,
+    dotColor: string
   }> = {
     exam: { 
       icon: <BookOpen className="h-4 w-4" />, 
       color: "bg-red-500",
+      dotColor: "bg-red-500",
       bgColor: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
     },
     assignment: { 
       icon: <Clock className="h-4 w-4" />, 
       color: "bg-blue-500",
+      dotColor: "bg-blue-500",
       bgColor: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
     },
     sports: { 
       icon: <Trophy className="h-4 w-4" />, 
       color: "bg-green-500",
+      dotColor: "bg-green-500",
       bgColor: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
     },
     music: { 
       icon: <Music className="h-4 w-4" />, 
-      color: "bg-amber-500", 
+      color: "bg-amber-500",
+      dotColor: "bg-amber-500", 
       bgColor: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
     },
     default: { 
       icon: <CalendarIcon className="h-4 w-4" />, 
       color: "bg-purple-500",
+      dotColor: "bg-purple-500",
       bgColor: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
     }
   };
@@ -141,10 +160,114 @@ export const CalendarSection = () => {
     return categoryConfig[normalizedCategory] || categoryConfig.default;
   };
 
-  // Highlight dates with events
-  const highlightedDates = React.useMemo(() => {
-    return Object.keys(eventsByDate).map(dateStr => new Date(dateStr));
+  // Prepare data for highlighting dates with events
+  const eventDotsByDate = React.useMemo(() => {
+    const modifiers: Record<string, Date[]> = {};
+    
+    // Create a modifier for each category and an "all" category
+    Object.keys(categoryConfig).forEach(category => {
+      modifiers[category] = [];
+    });
+    modifiers.all = [];
+    
+    // Populate the modifiers
+    Object.entries(eventsByDate).forEach(([dateStr, data]) => {
+      const date = new Date(dateStr);
+      modifiers.all.push(date);
+      
+      data.categories.forEach(category => {
+        if (modifiers[category]) {
+          modifiers[category].push(date);
+        }
+      });
+      
+      // If no specific category, add to default
+      if (data.categories.size === 0) {
+        modifiers.default.push(date);
+      }
+    });
+    
+    return modifiers;
   }, [eventsByDate]);
+
+  // Generate dynamic CSS for the calendar day styling
+  const getCalendarStyles = () => {
+    // Base CSS for the highlighted days
+    const baseCss = `
+      .highlighted-day {
+        font-weight: bold;
+        position: relative;
+        z-index: 1;
+      }
+      
+      .highlighted-day::after {
+        content: '';
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 2px;
+      }
+    `;
+    
+    // Individual category dot styles
+    let categoryCss = '';
+    Object.entries(categoryConfig).forEach(([category, config], index) => {
+      categoryCss += `
+        .highlighted-${category}::after {
+          content: '';
+          position: absolute;
+          bottom: 4px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background-color: var(--dot-color-${category});
+        }
+      `;
+    });
+    
+    // Multiple event dot styles
+    const multiDotCss = `
+      .multi-event::after {
+        content: '';
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 12px;
+        height: 3px;
+        border-radius: 4px;
+        background-color: var(--dot-color-multi);
+      }
+    `;
+    
+    return `<style>${baseCss}${categoryCss}${multiDotCss}</style>`;
+  };
+
+  // Custom renderer for calendar days
+  const getDayClassName = (date: Date): string => {
+    const dateStr = date.toISOString().split('T')[0];
+    const dateEvents = eventsByDate[dateStr];
+    
+    if (!dateEvents) return '';
+    
+    // If there are multiple categories or multiple events
+    if (dateEvents.categories.size > 1 || dateEvents.events.length > 1) {
+      return 'multi-event highlighted-day';
+    }
+    
+    // If there's just one category
+    if (dateEvents.categories.size === 1) {
+      const category = Array.from(dateEvents.categories)[0];
+      return `highlighted-${category} highlighted-day`;
+    }
+    
+    // Default case
+    return 'highlighted-default highlighted-day';
+  };
 
   if (loading || calendarLoading) {
     return (
@@ -167,15 +290,104 @@ export const CalendarSection = () => {
       gradient
     >
       <div className="flex flex-col space-y-4">
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            :root {
+              --dot-color-exam: #ef4444;
+              --dot-color-assignment: #3b82f6;
+              --dot-color-sports: #22c55e;
+              --dot-color-music: #f59e0b;
+              --dot-color-default: #8b5cf6;
+              --dot-color-multi: #6366f1;
+            }
+            
+            .highlighted-day {
+              font-weight: bold;
+            }
+            
+            .multi-event::after {
+              content: '';
+              position: absolute;
+              bottom: 4px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 12px;
+              height: 3px;
+              border-radius: 4px;
+              background-color: var(--dot-color-multi);
+            }
+            
+            .highlighted-exam::after {
+              content: '';
+              position: absolute;
+              bottom: 4px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background-color: var(--dot-color-exam);
+            }
+            
+            .highlighted-assignment::after {
+              content: '';
+              position: absolute;
+              bottom: 4px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background-color: var(--dot-color-assignment);
+            }
+            
+            .highlighted-sports::after {
+              content: '';
+              position: absolute;
+              bottom: 4px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background-color: var(--dot-color-sports);
+            }
+            
+            .highlighted-music::after {
+              content: '';
+              position: absolute;
+              bottom: 4px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background-color: var(--dot-color-music);
+            }
+            
+            .highlighted-default::after {
+              content: '';
+              position: absolute;
+              bottom: 4px;
+              left: 50%;
+              transform: translateX(-50%);
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+              background-color: var(--dot-color-default);
+            }
+          `
+        }} />
+        
         <div>
           <Calendar
             mode="single"
             selected={date}
             onSelect={setDate}
             onMonthChange={handleMonthChange}
-            className="rounded-md border"
+            className="rounded-md border pointer-events-auto"
             modifiers={{
-              highlighted: highlightedDates
+              highlighted: Object.values(eventDotsByDate).flat()
             }}
             modifiersStyles={{
               highlighted: { 
@@ -184,13 +396,19 @@ export const CalendarSection = () => {
                 borderRadius: '100%'
               }
             }}
+            components={{
+              Day: ({ day, ...props }) => {
+                const className = getDayClassName(day);
+                return <button {...props} className={`${props.className} ${className}`} />;
+              }
+            }}
           />
         </div>
         
         <div className="flex flex-wrap gap-2 justify-center">
           {Object.entries(categoryConfig).slice(0, -1).map(([category, config]) => (
             <div key={category} className="flex items-center text-xs">
-              <div className={`w-3 h-3 rounded-full ${config.color} mr-1`}></div>
+              <div className={`w-3 h-3 rounded-full ${config.dotColor} mr-1`}></div>
               <span className="capitalize">{category}</span>
             </div>
           ))}

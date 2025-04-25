@@ -46,18 +46,28 @@ export const ProfileCard = () => {
     fetchProfileData();
   }, [currentUser]);
   
-  const calculateAge = (birthdate: string) => {
-    if (!birthdate) return "";
-    const today = new Date();
-    const birthDate = new Date(birthdate);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
+  const calculateAge = (birthdate: string | null | undefined) => {
+    if (!birthdate) return null;
     
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
+    try {
+      const today = new Date();
+      const birthDate = new Date(birthdate);
+      
+      // Check if date is valid
+      if (isNaN(birthDate.getTime())) return null;
+      
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      return age;
+    } catch (error) {
+      console.error("Error calculating age:", error);
+      return null;
     }
-    
-    return age.toString();
   };
   
   // Use optional chaining and nullish coalescing for safer property access
@@ -74,9 +84,11 @@ export const ProfileCard = () => {
   const school = profileData?.schoolName || 
                  profileData?.school || 
                  "School --";
-                
-  const age = profileData?.birthdate ? 
-              calculateAge(profileData.birthdate) : 
+  
+  // Always calculate age from birthdate if available
+  const calculatedAge = calculateAge(profileData?.birthdate);
+  const age = calculatedAge !== null ? 
+              calculatedAge.toString() : 
               profileData?.age || 
               "--";
   

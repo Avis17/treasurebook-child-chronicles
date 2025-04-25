@@ -53,7 +53,8 @@ export const AcademicRecordForm = ({
   });
 
   const [otherSubject, setOtherSubject] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("other");
+  const [selectedSubject, setSelectedSubject] = useState("Other");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const subjectList = [
     "English",
@@ -154,6 +155,7 @@ export const AcademicRecordForm = ({
     }
     
     try {
+      setIsSubmitting(true);
       const finalSubject = selectedSubject === "Other" ? otherSubject : selectedSubject;
       
       if (initialData && onRecordUpdated) {
@@ -161,6 +163,11 @@ export const AcademicRecordForm = ({
           ...initialData,
           ...formData,
           subject: finalSubject,
+        });
+        
+        toast({
+          title: "Success",
+          description: "Academic record updated",
         });
       } else {
         const recordData = {
@@ -205,6 +212,8 @@ export const AcademicRecordForm = ({
         description: "Failed to save academic record",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -227,7 +236,7 @@ export const AcademicRecordForm = ({
         </Button>
       )}
       
-      <Dialog open={isAddDialogOpen} onOpenChange={handleCloseDialog}>
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="dark:bg-gray-800">
           <DialogHeader>
             <DialogTitle className="dark:text-white">{dialogTitle}</DialogTitle>
@@ -407,9 +416,14 @@ export const AcademicRecordForm = ({
             </Button>
             <Button 
               onClick={handleAddRecord} 
-              disabled={(selectedSubject === "Other" && !otherSubject) || (!formData.subject && selectedSubject !== "Other")}
+              disabled={(selectedSubject === "Other" && !otherSubject) || (!formData.subject && selectedSubject !== "Other") || isSubmitting}
             >
-              {submitButtonText}
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></span>
+                  Processing...
+                </>
+              ) : submitButtonText}
             </Button>
           </DialogFooter>
         </DialogContent>
