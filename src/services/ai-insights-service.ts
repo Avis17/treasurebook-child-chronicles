@@ -73,71 +73,118 @@ const collectUserData = async (userId: string) => {
   try {
     console.log("Collecting data for user:", userId);
     
-    // Get academic records
-    const academicQuery = query(
-      collection(db, "academicRecords"),
-      where("userId", "==", userId),
-      orderBy("examDate", "desc")
-    );
-    const academicDocs = await getDocs(academicQuery);
-    const academicRecords = academicDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Get academic records - without order by to avoid index requirement
+    let academicRecords = [];
+    try {
+      const academicQuery = query(
+        collection(db, "academicRecords"),
+        where("userId", "==", userId)
+      );
+      const academicDocs = await getDocs(academicQuery);
+      academicRecords = academicDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      // Sort client-side instead of using orderBy
+      academicRecords.sort((a, b) => {
+        if (!a.examDate || !b.examDate) return 0;
+        
+        const dateA = a.examDate.toDate ? a.examDate.toDate() : new Date(a.examDate);
+        const dateB = b.examDate.toDate ? b.examDate.toDate() : new Date(b.examDate);
+        
+        return dateB.getTime() - dateA.getTime(); // descending order
+      });
+    } catch (error) {
+      console.warn("Error fetching academic records:", error);
+    }
     
     // Get sports records
-    const sportsQuery = query(
-      collection(db, "sportsRecords"),
-      where("userId", "==", userId)
-    );
-    const sportsDocs = await getDocs(sportsQuery);
-    const sportsRecords = sportsDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let sportsRecords = [];
+    try {
+      const sportsQuery = query(
+        collection(db, "sportsRecords"),
+        where("userId", "==", userId)
+      );
+      const sportsDocs = await getDocs(sportsQuery);
+      sportsRecords = sportsDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("Error fetching sports records:", error);
+    }
     
     // Get extracurricular records
-    const extracurricularQuery = query(
-      collection(db, "extracurricularRecords"),
-      where("userId", "==", userId)
-    );
-    const extracurricularDocs = await getDocs(extracurricularQuery);
-    const extracurricularRecords = extracurricularDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let extracurricularRecords = [];
+    try {
+      const extracurricularQuery = query(
+        collection(db, "extracurricularRecords"),
+        where("userId", "==", userId)
+      );
+      const extracurricularDocs = await getDocs(extracurricularQuery);
+      extracurricularRecords = extracurricularDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("Error fetching extracurricular records:", error);
+    }
     
     // Get journal entries (check both possible collections)
     const journalEntries = [];
     
-    const journalQuery1 = query(
-      collection(db, "journalEntries"),
-      where("userId", "==", userId)
-    );
-    const journalDocs1 = await getDocs(journalQuery1);
-    journalEntries.push(...journalDocs1.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    try {
+      const journalQuery1 = query(
+        collection(db, "journalEntries"),
+        where("userId", "==", userId)
+      );
+      const journalDocs1 = await getDocs(journalQuery1);
+      journalEntries.push(...journalDocs1.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (error) {
+      console.warn("Error fetching from journalEntries collection:", error);
+    }
     
-    const journalQuery2 = query(
-      collection(db, "journal"),
-      where("userId", "==", userId)
-    );
-    const journalDocs2 = await getDocs(journalQuery2);
-    journalEntries.push(...journalDocs2.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    try {
+      const journalQuery2 = query(
+        collection(db, "journal"),
+        where("userId", "==", userId)
+      );
+      const journalDocs2 = await getDocs(journalQuery2);
+      journalEntries.push(...journalDocs2.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (error) {
+      console.warn("Error fetching from journal collection:", error);
+    }
     
     // Get goals
-    const goalsQuery = query(
-      collection(db, "goals"),
-      where("userId", "==", userId)
-    );
-    const goalsDocs = await getDocs(goalsQuery);
-    const goals = goalsDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let goals = [];
+    try {
+      const goalsQuery = query(
+        collection(db, "goals"),
+        where("userId", "==", userId)
+      );
+      const goalsDocs = await getDocs(goalsQuery);
+      goals = goalsDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("Error fetching goals:", error);
+    }
     
     // Get milestones
-    const milestonesQuery = query(
-      collection(db, "milestones"),
-      where("userId", "==", userId)
-    );
-    const milestonesDocs = await getDocs(milestonesQuery);
-    const milestones = milestonesDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let milestones = [];
+    try {
+      const milestonesQuery = query(
+        collection(db, "milestones"),
+        where("userId", "==", userId)
+      );
+      const milestonesDocs = await getDocs(milestonesQuery);
+      milestones = milestonesDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("Error fetching milestones:", error);
+    }
     
     // Get feedback
-    const feedbackQuery = query(
-      collection(db, "feedback"),
-      where("userId", "==", userId)
-    );
-    const feedbackDocs = await getDocs(feedbackQuery);
-    const feedback = feedbackDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let feedback = [];
+    try {
+      const feedbackQuery = query(
+        collection(db, "feedback"),
+        where("userId", "==", userId)
+      );
+      const feedbackDocs = await getDocs(feedbackQuery);
+      feedback = feedbackDocs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (error) {
+      console.warn("Error fetching feedback:", error);
+    }
     
     // Get user profile data
     let name = "Student";
@@ -153,7 +200,7 @@ const collectUserData = async (userId: string) => {
         className = userData.class || userData.grade || "";
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      console.warn("Error fetching user data:", error);
     }
     
     // Also check profiles collection
@@ -172,7 +219,7 @@ const collectUserData = async (userId: string) => {
         }
       }
     } catch (error) {
-      console.error("Error fetching profile data:", error);
+      console.warn("Error fetching profile data:", error);
     }
     
     return {
