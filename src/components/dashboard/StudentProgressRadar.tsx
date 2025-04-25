@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Radar } from 'lucide-react';
@@ -14,8 +15,9 @@ const StudentProgressRadar = () => {
   const radarData = useMemo(() => {
     // Calculate academic performance (average percentage)
     const academicScore = academicRecords.reduce((acc, record) => {
-      const score = record.isPercentage ? record.score : (record.score / record.maxScore) * 100;
-      return acc + score;
+      // Calculate percentage based on isPercentage flag
+      const calculatedPercentage = record.isPercentage ? record.score : (record.score / record.maxScore) * 100;
+      return acc + calculatedPercentage;
     }, 0) / (academicRecords.length || 1);
 
     // Calculate sports performance (based on positions)

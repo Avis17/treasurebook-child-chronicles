@@ -16,11 +16,16 @@ interface AcademicRecord {
   createdAt: any;
 }
 
+// Extended interface for processed records with calculated percentage
+interface ProcessedRecord extends AcademicRecord {
+  calculatedPercentage: number;
+}
+
 const MarksSummaryCard = () => {
   const [loading, setLoading] = useState(true);
-  const [highestRecord, setHighestRecord] = useState<AcademicRecord | null>(null);
-  const [lowestRecord, setLowestRecord] = useState<AcademicRecord | null>(null);
-  const [recentRecords, setRecentRecords] = useState<AcademicRecord[]>([]);
+  const [highestRecord, setHighestRecord] = useState<ProcessedRecord | null>(null);
+  const [lowestRecord, setLowestRecord] = useState<ProcessedRecord | null>(null);
+  const [recentRecords, setRecentRecords] = useState<ProcessedRecord[]>([]);
 
   useEffect(() => {
     const fetchAcademicData = async () => {
@@ -44,7 +49,7 @@ const MarksSummaryCard = () => {
         console.log("Records found:", querySnapshot.size);
         
         // Process the data
-        const academicRecords: AcademicRecord[] = [];
+        const academicRecords: ProcessedRecord[] = [];
         
         querySnapshot.forEach((doc) => {
           const record = doc.data();
@@ -52,13 +57,13 @@ const MarksSummaryCard = () => {
           
           const score = parseFloat(record.score?.toString() || '0');
           const maxScore = parseFloat(record.maxScore?.toString() || '100');
-          let percentage: number;
+          let calculatedPercentage: number;
           
           // Calculate percentage based on isPercentage flag
           if (record.isPercentage) {
-            percentage = score;
+            calculatedPercentage = score;
           } else {
-            percentage = (score / maxScore) * 100;
+            calculatedPercentage = (score / maxScore) * 100;
           }
           
           academicRecords.push({
@@ -66,7 +71,7 @@ const MarksSummaryCard = () => {
             subject: record.subject || 'Unknown',
             score: score,
             maxScore: maxScore,
-            percentage,
+            calculatedPercentage,
             isPercentage: record.isPercentage || false,
             grade: record.grade || 'N/A',
             createdAt: record.createdAt
@@ -76,8 +81,8 @@ const MarksSummaryCard = () => {
         console.log("Processed academic data:", academicRecords);
         
         if (academicRecords.length > 0) {
-          // Sort by percentage (highest to lowest)
-          const sortedByPercentage = [...academicRecords].sort((a, b) => b.percentage - a.percentage);
+          // Sort by calculatedPercentage (highest to lowest)
+          const sortedByPercentage = [...academicRecords].sort((a, b) => b.calculatedPercentage - a.calculatedPercentage);
           setHighestRecord(sortedByPercentage[0]);
           setLowestRecord(sortedByPercentage[sortedByPercentage.length - 1]);
           
@@ -149,8 +154,8 @@ const MarksSummaryCard = () => {
                 <h4 className="font-medium text-sm">Highest Score: {highestRecord.subject}</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {highestRecord.isPercentage 
-                    ? `${Math.round(highestRecord.percentage)}%` 
-                    : `${highestRecord.score}/${highestRecord.maxScore} (${Math.round(highestRecord.percentage)}%)`}
+                    ? `${Math.round(highestRecord.calculatedPercentage)}%` 
+                    : `${highestRecord.score}/${highestRecord.maxScore} (${Math.round(highestRecord.calculatedPercentage)}%)`}
                   {highestRecord.grade ? ` - Grade: ${highestRecord.grade}` : ''}
                 </p>
               </div>
@@ -162,8 +167,8 @@ const MarksSummaryCard = () => {
                 <h4 className="font-medium text-sm">Lowest Score: {lowestRecord.subject}</h4>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {lowestRecord.isPercentage 
-                    ? `${Math.round(lowestRecord.percentage)}%` 
-                    : `${lowestRecord.score}/${lowestRecord.maxScore} (${Math.round(lowestRecord.percentage)}%)`}
+                    ? `${Math.round(lowestRecord.calculatedPercentage)}%` 
+                    : `${lowestRecord.score}/${lowestRecord.maxScore} (${Math.round(lowestRecord.calculatedPercentage)}%)`}
                   {lowestRecord.grade ? ` - Grade: ${lowestRecord.grade}` : ''}
                 </p>
               </div>
@@ -181,7 +186,7 @@ const MarksSummaryCard = () => {
                             <span className="font-medium">{record.subject}</span>
                             <span className="font-medium">
                               {record.isPercentage 
-                                ? `${Math.round(record.percentage)}%` 
+                                ? `${Math.round(record.calculatedPercentage)}%` 
                                 : `${record.score}/${record.maxScore}`}
                             </span>
                           </div>

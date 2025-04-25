@@ -18,6 +18,11 @@ interface AcademicRecord {
   year?: string;
 }
 
+// Extend the interface for chart data
+interface ChartRecord extends AcademicRecord {
+  calculatedPercentage: number;
+}
+
 const AcademicChart = () => {
   const [chartData, setChartData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +49,7 @@ const AcademicChart = () => {
         console.log("Records found:", querySnapshot.size);
         
         // Process the data
-        const academicData: AcademicRecord[] = [];
+        const academicData: ChartRecord[] = [];
         
         querySnapshot.forEach((doc) => {
           const record = doc.data();
@@ -54,7 +59,7 @@ const AcademicChart = () => {
           const maxScore = parseFloat(record.maxScore?.toString() || '100');
           
           // Calculate percentage based on isPercentage flag
-          const percentage = record.isPercentage ? score : (score / maxScore) * 100;
+          const calculatedPercentage = record.isPercentage ? score : (score / maxScore) * 100;
           
           academicData.push({
             id: doc.id,
@@ -62,7 +67,7 @@ const AcademicChart = () => {
             score: score,
             maxScore: maxScore,
             isPercentage: record.isPercentage || false,
-            percentage: Math.round(percentage),
+            calculatedPercentage: Math.round(calculatedPercentage),
             grade: record.grade || 'N/A',
             class: record.class || '',
             term: record.term || '',
@@ -89,11 +94,11 @@ const AcademicChart = () => {
           }
           
           subjectData[subject].count += 1;
-          subjectData[subject].totalPercentage += record.percentage;
+          subjectData[subject].totalPercentage += record.calculatedPercentage;
           subjectData[subject].scores.push({
             score: record.score,
             maxScore: record.maxScore,
-            percentage: record.percentage
+            calculatedPercentage: record.calculatedPercentage
           });
         });
         
