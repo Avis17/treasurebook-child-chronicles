@@ -14,6 +14,7 @@ import { MilestonesSection } from "@/components/dashboard/MilestonesSection";
 import { JournalsSection } from "@/components/dashboard/JournalsSection";
 import { FeedbackSection } from "@/components/dashboard/FeedbackSection";
 import { ResourcesSection } from "@/components/dashboard/ResourcesSection";
+import ProfileHeader from "@/components/dashboard/ProfileHeader";
 
 const Dashboard = () => {
   const { currentUser, loading } = useAuth();
@@ -43,49 +44,36 @@ const Dashboard = () => {
   return (
     <AppLayout title="Dashboard" hideHeader={true}>
       <div className="max-w-7xl mx-auto pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4">
-          {/* Profile Card - 3 columns on large screens */}
-          <div className="lg:col-span-3">
-            <ProfileCard />
-          </div>
+        <div className="px-4 space-y-6">
+          {/* Profile Header - Full Width */}
+          <ProfileHeader />
           
-          {/* Main Content - 9 columns on large screens */}
-          <div className="lg:col-span-9 space-y-6">
-            {/* First Row: Academic Performance and Goals */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="col-span-1">
-                <AcademicPerformanceSection />
-              </div>
-              <div className="col-span-1">
-                <GoalsSection />
-              </div>
-            </div>
-
-            {/* Second Row: Sports & Extracurriculars */}
-            <div>
-              <SportsSection />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Profile Card - 3 columns on large screens */}
+            <div className="lg:col-span-3 space-y-6">
+              <ProfileCard />
+              <GoalsSection />
+              <ResourcesSection />
             </div>
             
-            {/* Third Row: Calendar and Feedback */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="col-span-1">
+            {/* Main Content - 9 columns on large screens */}
+            <div className="lg:col-span-9 space-y-6">
+              {/* First Row: Academic Performance */}
+              <AcademicPerformanceSection />
+              
+              {/* Second Row: Sports & Extracurriculars */}
+              <SportsSection />
+              
+              {/* Third Row: Calendar and Feedback in 2 columns */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <CalendarSection />
-              </div>
-              <div className="col-span-1">
                 <FeedbackSection />
               </div>
-            </div>
-            
-            {/* Fourth Row: Milestones, Journals, and Resources */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div className="col-span-1">
+              
+              {/* Fourth Row: Milestones and Journals in 2 columns */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <MilestonesSection />
-              </div>
-              <div className="col-span-1">
                 <JournalsSection />
-              </div>
-              <div className="col-span-1">
-                <ResourcesSection />
               </div>
             </div>
           </div>

@@ -21,20 +21,20 @@ export function DashboardCard({
 }: DashboardCardProps) {
   return (
     <Card 
-      className={`overflow-hidden ${gradient ? 'bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950' : 'bg-background'} shadow-sm border rounded-xl hover:shadow-md transition-shadow duration-300 ${className}`}
+      className={`overflow-hidden ${gradient ? 'bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950' : 'bg-background'} shadow-sm hover:shadow-md transition-shadow duration-300 border rounded-xl ${className}`}
       {...props}
     >
       {(title || action) && (
-        <div className="flex items-center justify-between border-b p-4">
+        <div className="flex items-center justify-between border-b p-5">
           {title && (
-            <h3 className="font-semibold text-lg text-foreground flex items-center">
+            <h3 className="font-semibold text-lg text-foreground flex items-center gap-2">
               {title}
             </h3>
           )}
           {action && <div>{action}</div>}
         </div>
       )}
-      <div className="p-4">{children}</div>
+      <div className="p-5">{children}</div>
     </Card>
   );
 }

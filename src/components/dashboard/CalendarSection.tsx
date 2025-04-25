@@ -94,7 +94,6 @@ export const CalendarSection = () => {
     );
   }
 
-  // This is the part causing the error - we need to fix the title prop
   return (
     <DashboardCard 
       title={

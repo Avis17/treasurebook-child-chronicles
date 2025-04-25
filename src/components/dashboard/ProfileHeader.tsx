@@ -6,7 +6,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Edit } from "lucide-react";
+import { Edit, Calendar, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProfileImagePreview from "./ProfileImagePreview";
 
@@ -18,6 +18,9 @@ interface UserProfile {
   grade: string;
   birthdate?: string;
   age?: string;
+  schoolName?: string;
+  childName?: string;
+  currentClass?: string;
 }
 
 const ProfileHeader = () => {
@@ -59,6 +62,7 @@ const ProfileHeader = () => {
             grade: profileData.currentClass || "Grade 8",
             birthdate: profileData.birthdate || "",
             age: calculatedAge,
+            schoolName: profileData.schoolName || "",
           });
         } else {
           // Fall back to users collection if no profile document
@@ -77,6 +81,7 @@ const ProfileHeader = () => {
               grade: userData.grade || "Grade 8",
               birthdate: userData.birthdate || "",
               age: calculatedAge,
+              schoolName: userData.schoolName || userData.school || "",
             });
           } else {
             setProfile({
@@ -123,7 +128,7 @@ const ProfileHeader = () => {
 
   if (loading) {
     return (
-      <Card className="bg-background/60 backdrop-blur-sm">
+      <Card className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-900/60 dark:to-gray-950/60 backdrop-blur-sm shadow-md border border-gray-200 dark:border-gray-800 rounded-xl">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-muted animate-pulse" />
@@ -137,8 +142,11 @@ const ProfileHeader = () => {
     );
   }
 
+  const schoolText = profile?.schoolName ? profile.schoolName : "School not specified";
+  const gradeText = profile?.grade || profile?.currentClass || "Grade not specified";
+
   return (
-    <Card className="bg-background/60 backdrop-blur-sm">
+    <Card className="bg-gradient-to-r from-white to-gray-50 dark:from-gray-900/60 dark:to-gray-950/60 backdrop-blur-sm shadow-md border border-gray-200 dark:border-gray-800 rounded-xl">
       <CardContent className="p-6">
         <div className="flex flex-col md:flex-row items-center gap-4">
           <div className="relative w-20 h-20 group">
@@ -151,7 +159,7 @@ const ProfileHeader = () => {
               />
             ) : (
               <Avatar className="w-20 h-20">
-                <AvatarFallback className="text-2xl">
+                <AvatarFallback className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white text-2xl">
                   {getInitial(profile?.displayName)}
                 </AvatarFallback>
               </Avatar>
@@ -161,15 +169,25 @@ const ProfileHeader = () => {
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:justify-between">
               <div>
                 <h2 className="text-2xl font-semibold">{profile?.displayName}</h2>
-                <p className="text-muted-foreground">
-                  {profile?.role} · {profile?.grade}{profile?.age ? ` · ${profile.age} years old` : ''}
-                </p>
+                <div className="flex flex-wrap items-center gap-2 mt-1 justify-center md:justify-start">
+                  <span className="flex items-center text-muted-foreground">
+                    <BookOpen className="h-4 w-4 mr-1" />
+                    {gradeText}
+                  </span>
+                  {profile?.age && (
+                    <span className="flex items-center text-muted-foreground">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      {profile.age} years old
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground mt-1">{profile?.email}</p>
+                <p className="text-sm font-medium mt-1">{schoolText}</p>
               </div>
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="md:self-start flex items-center gap-1"
+                className="md:self-start flex items-center gap-1 mt-2 md:mt-0"
                 onClick={handleEditProfile}
               >
                 <Edit className="h-4 w-4" />
