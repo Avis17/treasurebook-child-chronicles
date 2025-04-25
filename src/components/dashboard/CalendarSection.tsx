@@ -377,7 +377,11 @@ export const CalendarSection = () => {
               }
             }}
             components={{
-              Day: ({ date: dayDate, displayMonth, ...props }) => {
+              Day: ({ date: dayDate, displayMonth, ...props }: { 
+                date: Date, 
+                displayMonth: Date, 
+                className?: string 
+              }) => {
                 const className = getDayClassName(dayDate);
                 return <button 
                   {...props} 
