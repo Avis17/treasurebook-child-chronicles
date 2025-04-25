@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Clock, Calendar as CalendarIcon, BookOpen, Trophy, Music } from "lucide-react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { format, isSameDay } from "date-fns";
 
 export const CalendarSection = () => {
   const { currentUser } = useAuth();
@@ -24,7 +25,7 @@ export const CalendarSection = () => {
     
     setLoading(true);
     
-    setEvents(calendarEvents);
+    setEvents(calendarEvents || []);
 
     const q = query(
       collection(db, "events"),
@@ -40,7 +41,7 @@ export const CalendarSection = () => {
         });
         
         setEvents(prev => {
-          const combined = [...prev];
+          const combined = [...(prev || [])];
           items.forEach(item => {
             if (!combined.some(existing => existing.id === item.id)) {
               combined.push(item);
@@ -152,102 +153,10 @@ export const CalendarSection = () => {
     return categoryConfig[normalizedCategory] || categoryConfig.default;
   };
 
-  const eventDotsByDate = React.useMemo(() => {
-    const modifiers: Record<string, Date[]> = {};
-    
-    Object.keys(categoryConfig).forEach(category => {
-      modifiers[category] = [];
-    });
-    modifiers.all = [];
-    
-    Object.entries(eventsByDate).forEach(([dateStr, data]) => {
-      const date = new Date(dateStr);
-      modifiers.all.push(date);
-      
-      data.categories.forEach(category => {
-        if (modifiers[category]) {
-          modifiers[category].push(date);
-        }
-      });
-      
-      if (data.categories.size === 0) {
-        modifiers.default.push(date);
-      }
-    });
-    
-    return modifiers;
+  // Get dates with events for modifiers
+  const eventDates = React.useMemo(() => {
+    return Object.keys(eventsByDate).map(dateStr => new Date(dateStr));
   }, [eventsByDate]);
-
-  const getCalendarStyles = () => {
-    const baseCss = `
-      .highlighted-day {
-        font-weight: bold;
-        position: relative;
-        z-index: 1;
-      }
-      
-      .highlighted-day::after {
-        content: '';
-        position: absolute;
-        bottom: 4px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 2px;
-      }
-    `;
-    
-    let categoryCss = '';
-    Object.entries(categoryConfig).forEach(([category, config], index) => {
-      categoryCss += `
-        .highlighted-${category}::after {
-          content: '';
-          position: absolute;
-          bottom: 4px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background-color: var(--dot-color-${category});
-        }
-      `;
-    });
-    
-    const multiDotCss = `
-      .multi-event::after {
-        content: '';
-        position: absolute;
-        bottom: 4px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 12px;
-        height: 3px;
-        border-radius: 4px;
-        background-color: var(--dot-color-multi);
-      }
-    `;
-    
-    return `<style>${baseCss}${categoryCss}${multiDotCss}</style>`;
-  };
-
-  const getDayClassName = (date: Date): string => {
-    const dateStr = date.toISOString().split('T')[0];
-    const dateEvents = eventsByDate[dateStr];
-    
-    if (!dateEvents) return '';
-    
-    if (dateEvents.categories.size > 1 || dateEvents.events.length > 1) {
-      return 'multi-event highlighted-day';
-    }
-    
-    if (dateEvents.categories.size === 1) {
-      const category = Array.from(dateEvents.categories)[0];
-      return `highlighted-${category} highlighted-day`;
-    }
-    
-    return 'highlighted-default highlighted-day';
-  };
 
   if (loading || calendarLoading) {
     return (
@@ -270,95 +179,6 @@ export const CalendarSection = () => {
       gradient
     >
       <div className="flex flex-col space-y-4">
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            :root {
-              --dot-color-exam: #ef4444;
-              --dot-color-assignment: #3b82f6;
-              --dot-color-sports: #22c55e;
-              --dot-color-music: #f59e0b;
-              --dot-color-default: #8b5cf6;
-              --dot-color-multi: #6366f1;
-            }
-            
-            .highlighted-day {
-              font-weight: bold;
-            }
-            
-            .multi-event::after {
-              content: '';
-              position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 12px;
-              height: 3px;
-              border-radius: 4px;
-              background-color: var(--dot-color-multi);
-            }
-            
-            .highlighted-exam::after {
-              content: '';
-              position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 6px;
-              height: 6px;
-              border-radius: 50%;
-              background-color: var(--dot-color-exam);
-            }
-            
-            .highlighted-assignment::after {
-              content: '';
-              position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 6px;
-              height: 6px;
-              border-radius: 50%;
-              background-color: var(--dot-color-assignment);
-            }
-            
-            .highlighted-sports::after {
-              content: '';
-              position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 6px;
-              height: 6px;
-              border-radius: 50%;
-              background-color: var(--dot-color-sports);
-            }
-            
-            .highlighted-music::after {
-              content: '';
-              position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 6px;
-              height: 6px;
-              border-radius: 50%;
-              background-color: var(--dot-color-music);
-            }
-            
-            .highlighted-default::after {
-              content: '';
-              position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 6px;
-              height: 6px;
-              border-radius: 50%;
-              background-color: var(--dot-color-default);
-            }
-          `
-        }} />
-        
         <div>
           <Calendar
             mode="single"
@@ -367,27 +187,10 @@ export const CalendarSection = () => {
             onMonthChange={handleMonthChange}
             className="rounded-md border pointer-events-auto"
             modifiers={{
-              highlighted: Object.values(eventDotsByDate).flat()
+              hasEvent: eventDates,
             }}
-            modifiersStyles={{
-              highlighted: { 
-                fontWeight: 'bold',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                borderRadius: '100%'
-              }
-            }}
-            components={{
-              Day: (props: any) => {
-                // Extract date and use correct prop name
-                const dayDate = props.date;
-                const dayClassName = getDayClassName(dayDate);
-                return (
-                  <button 
-                    {...props} 
-                    className={`${props.className || ''} ${dayClassName}`} 
-                  />
-                );
-              }
+            modifiersClassNames={{
+              hasEvent: "font-semibold text-primary bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 rounded-md",
             }}
           />
         </div>
