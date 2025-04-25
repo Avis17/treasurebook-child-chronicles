@@ -113,6 +113,14 @@ const ProfileHeader = () => {
     navigate("/profile");
   };
 
+  // Helper function to safely get initial
+  const getInitial = (name: string | undefined | null): string => {
+    if (!name || typeof name !== 'string' || name.length === 0) {
+      return "U";
+    }
+    return name.charAt(0).toUpperCase();
+  };
+
   if (loading) {
     return (
       <Card className="bg-background/60 backdrop-blur-sm">
@@ -144,7 +152,7 @@ const ProfileHeader = () => {
             ) : (
               <Avatar className="w-20 h-20">
                 <AvatarFallback className="text-2xl">
-                  {profile?.displayName?.charAt(0) || "U"}
+                  {getInitial(profile?.displayName)}
                 </AvatarFallback>
               </Avatar>
             )}

@@ -9,7 +9,17 @@ import { Badge } from "@/components/ui/badge";
 export const ProfileCard = () => {
   const { currentUser } = useAuth();
   
-  if (!currentUser) return null;
+  // Add early return with console log for debugging
+  if (!currentUser) {
+    console.log("ProfileCard: No current user");
+    return null;
+  }
+
+  console.log("ProfileCard: Current user data", {
+    displayName: currentUser.displayName,
+    email: currentUser.email,
+    photoURL: currentUser.photoURL
+  });
   
   // Use optional chaining and nullish coalescing for safer property access
   const displayName = currentUser.displayName || currentUser.email?.split('@')[0] || "User";
@@ -20,8 +30,10 @@ export const ProfileCard = () => {
   // Safely get the first character for the avatar fallback
   const getInitial = () => {
     if (!displayName || typeof displayName !== 'string' || displayName.length === 0) {
+      console.log("ProfileCard: Using fallback initial");
       return "U";
     }
+    console.log("ProfileCard: Using initial from displayName", displayName.charAt(0));
     return displayName.charAt(0).toUpperCase();
   };
 
