@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
@@ -59,11 +59,15 @@ import {
   ArrowUpRight,
   BarChart as BarChartIcon,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Check,
+  Info,
+  Bookmark,
+  Clock
 } from "lucide-react";
 
 // Import our data service
-import { fetchInsightData, regenerateInsights, AIInsightData } from "@/services/ai-insights-service";
+import { fetchInsightData, regenerateInsights, addGoalFromActionPlan, AIInsightData } from "@/services/ai-insights-service";
 
 const cardColors = {
   academic: "from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900",
@@ -86,6 +90,7 @@ const cardIconColors = {
 };
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ff7c43', '#f95d6a'];
+const EXTENDED_COLORS = [...COLORS, '#6929c4', '#1192e8', '#005d5d', '#9f1853', '#fa4d56', '#570408', '#198038', '#002d9c'];
 
 const AIInsights = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +98,7 @@ const AIInsights = () => {
   const [error, setError] = useState<string | null>(null);
   const [insightData, setInsightData] = useState<AIInsightData | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [addingGoal, setAddingGoal] = useState<string | null>(null); // Track which goal is being added
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
@@ -160,6 +166,68 @@ const AIInsights = () => {
       setIsRegenerating(false);
     }
   };
+  
+  const handleAddGoal = async (action: string, timeframe: "Short-term" | "Medium-term" | "Long-term") => {
+    if (!userId || !insightData) return;
+    
+    try {
+      setAddingGoal(action);
+      
+      // Map timeframe to actual time period
+      const timeframeMapped = timeframe === "Short-term" ? "Short-term" : 
+                            timeframe === "Medium-term" ? "Medium-term" : "Long-term";
+      
+      // Create a descriptive title
+      const title = action.split('.')[0]; // Use first sentence as title
+      
+      await addGoalFromActionPlan(userId, title, action, timeframeMapped);
+      
+      toast({
+        title: "Goal Added",
+        description: `Successfully added "${title}" to your goals`,
+      });
+      
+    } catch (error) {
+      console.error("Error adding goal:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add goal to your list"
+      });
+    } finally {
+      setAddingGoal(null);
+    }
+  };
+  
+  const handleAddAllGoals = async (timeframe: "Short-term" | "Medium-term" | "Long-term") => {
+    if (!userId || !insightData) return;
+    
+    try {
+      setAddingGoal(`Adding all ${timeframe} goals`);
+      
+      const goals = insightData.actionPlan[timeframe.toLowerCase().replace('-', '') as 'shortTerm' | 'mediumTerm' | 'longTerm'];
+      
+      // Add each goal sequentially
+      for (const goal of goals) {
+        await addGoalFromActionPlan(userId, goal.split('.')[0], goal, timeframe);
+      }
+      
+      toast({
+        title: "Goals Added",
+        description: `Successfully added ${goals.length} ${timeframe} goals`,
+      });
+      
+    } catch (error) {
+      console.error("Error adding goals:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add some goals to your list"
+      });
+    } finally {
+      setAddingGoal(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -216,30 +284,30 @@ const AIInsights = () => {
   const radarData = [
     {
       subject: 'Academics',
-      A: insightData.academic.averageScore,
+      value: insightData.academic.averageScore,
       fullMark: 100,
     },
     {
       subject: 'Sports',
-      A: insightData.physical.topSport !== "N/A" ? 
+      value: insightData.physical.topSports.length > 0 ? 
           (insightData.physical.achievements.length > 0 ? 80 : 65) : 40,
       fullMark: 100,
     },
     {
       subject: 'Arts',
-      A: insightData.talent.topActivity !== "N/A" ? 
+      value: insightData.talent.topActivities.length > 0 ? 
           (insightData.talent.achievements.length > 0 ? 85 : 70) : 45,
       fullMark: 100,
     },
     {
       subject: 'Social',
-      A: insightData.emotional.moodHistory.some(m => 
+      value: insightData.emotional.moodHistory.some(m => 
          ["Happy", "Excited", "Joyful"].includes(m.mood)) ? 75 : 60,
       fullMark: 100,
     },
     {
       subject: 'Goals',
-      A: insightData.goals.completed > 0 ? 
+      value: insightData.goals.completed > 0 ? 
           (insightData.goals.completed / (insightData.goals.completed + insightData.goals.pending.length)) * 100 : 50,
       fullMark: 100,
     },
@@ -251,16 +319,53 @@ const AIInsights = () => {
     value: count
   }));
 
-  // Data for subject mastery chart
+  // Data for subject mastery chart - consolidated across all terms/standards
   const subjectData = insightData.academic.subjectScores.map(item => ({
     name: item.subject,
     score: item.score
   }));
 
+  // Enhanced mood data with more meaningful categories
+  const enhancedMoodData = insightData.emotional.moodHistory.map(item => {
+    // Group similar moods
+    let category = item.mood;
+    if (["Happy", "Excited", "Joyful", "Cheerful", "Elated"].some(m => item.mood.includes(m))) {
+      category = "Positive";
+    } else if (["Sad", "Down", "Disappointed", "Upset"].some(m => item.mood.includes(m))) {
+      category = "Negative";
+    } else if (["Tired", "Stressed", "Anxious", "Worried"].some(m => item.mood.includes(m))) {
+      category = "Stressed";
+    } else if (["Calm", "Peaceful", "Relaxed"].some(m => item.mood.includes(m))) {
+      category = "Calm";
+    } else if (["Focused", "Determined", "Productive"].some(m => item.mood.includes(m))) {
+      category = "Focused";
+    }
+    
+    return {
+      name: category,
+      value: item.count,
+      originalMood: item.mood
+    };
+  });
+  
+  // Consolidate similar categories in mood data
+  const consolidatedMoodData = enhancedMoodData.reduce((acc: any[], item) => {
+    const existing = acc.find(i => i.name === item.name);
+    if (existing) {
+      existing.value += item.value;
+      existing.moods = [...(existing.moods || []), item.originalMood];
+    } else {
+      acc.push({...item, moods: [item.originalMood]});
+    }
+    return acc;
+  }, []);
+
   return (
     <AppLayout title="AI Growth Insights">
       {isRegenerating && <LoadingOverlay isLoading={true} message="Regenerating insights..." />}
-      <div className="space-y-8 max-w-7xl mx-auto pb-12 px-4 md:px-6">
+      {addingGoal && <LoadingOverlay isLoading={true} message={`Adding goal: ${addingGoal}`} opacity={0.7} />}
+      
+      <div className="space-y-8 max-w-7xl mx-auto pb-24 px-4 md:px-6">
         {/* Child Snapshot Panel with Regenerate Button */}
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl p-8 shadow-xl">
           <div className="flex flex-col md:flex-row justify-between items-center md:items-start">
@@ -286,18 +391,32 @@ const AIInsights = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
             <div className="bg-white/10 p-5 rounded-lg shadow-inner">
-              <h3 className="text-sm opacity-80 mb-3">Top Skill Area</h3>
-              <div className="flex items-center">
-                <Star className="h-6 w-6 mr-3 text-yellow-300" />
-                <span className="font-semibold text-lg">{insightData.childSnapshot.topSkill}</span>
+              <h3 className="text-sm opacity-80 mb-3">Top Skill Areas</h3>
+              <div className="space-y-2">
+                {insightData.childSnapshot.topSkills.map((skill, index) => (
+                  <div key={index} className="flex items-center">
+                    <Star className="h-5 w-5 mr-3 text-yellow-300" />
+                    <span className="font-semibold text-lg">{skill}</span>
+                  </div>
+                ))}
+                {insightData.childSnapshot.topSkills.length === 0 && (
+                  <div className="text-sm">No top skills identified yet</div>
+                )}
               </div>
             </div>
             
             <div className="bg-white/10 p-5 rounded-lg shadow-inner">
-              <h3 className="text-sm opacity-80 mb-3">Area Needing Attention</h3>
-              <div className="flex items-center">
-                <TrendingDown className="h-6 w-6 mr-3 text-red-300" />
-                <span className="font-semibold text-lg">{insightData.childSnapshot.weakArea}</span>
+              <h3 className="text-sm opacity-80 mb-3">Areas Needing Attention</h3>
+              <div className="space-y-2">
+                {insightData.childSnapshot.weakAreas.map((area, index) => (
+                  <div key={index} className="flex items-center">
+                    <TrendingDown className="h-5 w-5 mr-3 text-red-300" />
+                    <span className="font-semibold text-lg">{area}</span>
+                  </div>
+                ))}
+                {insightData.childSnapshot.weakAreas.length === 0 && (
+                  <div className="text-sm">No weak areas identified</div>
+                )}
               </div>
             </div>
           </div>
@@ -344,37 +463,59 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {insightData.academic.strongSubject !== "N/A" && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {insightData.academic.strongSubject}
-                          </span>
+                    {insightData.academic.strongSubjects.length > 0 ? (
+                      <>
+                        <div>
+                          <h4 className="text-xs font-medium uppercase text-blue-700 dark:text-blue-400 mb-2">
+                            Strong Subjects
+                          </h4>
+                          {insightData.academic.strongSubjects.map((subject, index) => (
+                            <div key={index} className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  {subject}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 dark:bg-green-900/40 dark:text-green-300">
-                          {insightData.academic.strongGrade}
-                        </Badge>
-                      </div>
-                    )}
-                    {insightData.academic.weakSubject !== "N/A" && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <TrendingDown className="h-4 w-4 mr-2 text-red-500" />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {insightData.academic.weakSubject}
-                          </span>
-                        </div>
-                        <Badge className="bg-red-100 text-red-700 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-300">
-                          {insightData.academic.weakGrade}
-                        </Badge>
-                      </div>
-                    )}
-                    {insightData.academic.strongSubject === "N/A" && (
+                      </>
+                    ) : (
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        No academic records available yet.
+                        No strong subjects identified yet.
                       </p>
                     )}
+                    
+                    {insightData.academic.weakSubjects.length > 0 ? (
+                      <>
+                        <div>
+                          <h4 className="text-xs font-medium uppercase text-blue-700 dark:text-blue-400 mb-2">
+                            Subjects Needing Attention
+                          </h4>
+                          {insightData.academic.weakSubjects.map((subject, index) => (
+                            <div key={index} className="flex items-center justify-between mb-2">
+                              <div className="flex items-center">
+                                <TrendingDown className="h-4 w-4 mr-2 text-red-500" />
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                  {subject}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        No weak subjects identified.
+                      </p>
+                    )}
+                    
+                    <p className="text-xs italic text-blue-700 dark:text-blue-300 mt-2">
+                      {insightData.academic.strongSubjects.length > 0 
+                        ? `Continue developing strengths in ${insightData.academic.strongSubjects[0]}.` 
+                        : "Add more academic records to get personalized insights."}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -392,19 +533,31 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {insightData.talent.topActivity !== "N/A" ? (
+                    {insightData.talent.topActivities.length > 0 ? (
                       <>
-                        <div className="flex items-center">
-                          <Award className="h-4 w-4 mr-2 text-yellow-500" />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {insightData.talent.topActivity}
-                          </span>
-                        </div>
+                        <h4 className="text-xs font-medium uppercase text-purple-700 dark:text-purple-400 mb-2">
+                          Top Activities
+                        </h4>
+                        {insightData.talent.topActivities.map((activity, index) => (
+                          <div key={index} className="flex items-center mb-2">
+                            <Award className="h-4 w-4 mr-2 text-yellow-500" />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {activity}
+                            </span>
+                          </div>
+                        ))}
+                        
                         {insightData.talent.achievements.length > 0 && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {insightData.talent.achievements[0]}
-                          </p>
+                          <>
+                            <h4 className="text-xs font-medium uppercase text-purple-700 dark:text-purple-400 mb-2 mt-3">
+                              Recent Achievements
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {insightData.talent.achievements[0]}
+                            </p>
+                          </>
                         )}
+                        
                         <p className="text-xs italic text-purple-700 dark:text-purple-300 mt-2">
                           {insightData.talent.enjoyment}
                         </p>
@@ -431,21 +584,35 @@ const AIInsights = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {insightData.physical.topSport !== "N/A" ? (
+                    {insightData.physical.topSports.length > 0 ? (
                       <>
-                        <div className="flex items-center">
-                          <Award className="h-4 w-4 mr-2 text-yellow-500" />
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {insightData.physical.topSport}
-                          </span>
-                        </div>
+                        <h4 className="text-xs font-medium uppercase text-green-700 dark:text-green-400 mb-2">
+                          Top Sports
+                        </h4>
+                        {insightData.physical.topSports.map((sport, index) => (
+                          <div key={index} className="flex items-center mb-2">
+                            <Award className="h-4 w-4 mr-2 text-yellow-500" />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {sport}
+                            </span>
+                          </div>
+                        ))}
+                        
                         {insightData.physical.achievements.length > 0 && (
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {insightData.physical.achievements[0]}
-                          </p>
+                          <>
+                            <h4 className="text-xs font-medium uppercase text-green-700 dark:text-green-400 mb-2 mt-3">
+                              Recent Achievements
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {insightData.physical.achievements[0]}
+                            </p>
+                          </>
                         )}
+                        
                         <p className="text-xs italic text-green-700 dark:text-green-300 mt-2">
-                          {insightData.physical.recommendation}
+                          {insightData.physical.recommendations.length > 0
+                            ? insightData.physical.recommendations[0]
+                            : "Add more sports records to get personalized recommendations."}
                         </p>
                       </>
                     ) : (
@@ -486,9 +653,9 @@ const AIInsights = () => {
                           {insightData.emotional.recommendation}
                         </p>
                         <div className="flex flex-wrap gap-2 mt-3">
-                          {insightData.emotional.moodHistory.slice(0, 3).map((item, index) => (
+                          {consolidatedMoodData.slice(0, 3).map((item, index) => (
                             <Badge key={index} variant="outline" className="bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-200">
-                              {item.mood}: {item.count}x
+                              {item.name}: {item.value}x
                             </Badge>
                           ))}
                         </div>
@@ -640,7 +807,7 @@ const AIInsights = () => {
           {/* Charts & Analytics Tab */}
           <TabsContent value="charts" className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Subject Mastery Graph */}
+              {/* Subject Mastery Graph - Consolidated across all terms */}
               <Card className="overflow-hidden shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -648,7 +815,7 @@ const AIInsights = () => {
                     Subject Mastery
                   </CardTitle>
                   <CardDescription>
-                    Academic performance by subject
+                    Average performance by subject across all terms
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pl-2">
@@ -662,7 +829,7 @@ const AIInsights = () => {
                           <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
                           <Bar dataKey="score" fill="#4F46E5">
                             {subjectData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              <Cell key={`cell-${index}`} fill={EXTENDED_COLORS[index % EXTENDED_COLORS.length]} />
                             ))}
                           </Bar>
                         </BarChart>
@@ -696,7 +863,7 @@ const AIInsights = () => {
                         <PolarRadiusAxis angle={90} domain={[0, 100]} />
                         <Radar 
                           name="Performance" 
-                          dataKey="A" 
+                          dataKey="value" 
                           stroke="#8884d8" 
                           fill="#8884d8" 
                           fillOpacity={0.6}
@@ -708,7 +875,7 @@ const AIInsights = () => {
                 </CardContent>
               </Card>
               
-              {/* Mood Bubble Chart */}
+              {/* Enhanced Mood Distribution Chart */}
               <Card className="overflow-hidden shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -716,29 +883,38 @@ const AIInsights = () => {
                     Mood Distribution
                   </CardTitle>
                   <CardDescription>
-                    Frequency of different moods from journal entries
+                    Emotional patterns from journal entries
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pl-0">
                   <div className="h-[350px] w-full">
-                    {insightData.emotional.moodHistory.length > 0 ? (
+                    {consolidatedMoodData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart margin={{ top: 10, right: 30, left: 0, bottom: 5 }}>
                           <Pie
-                            dataKey="count"
+                            dataKey="value"
                             isAnimationActive={true}
-                            data={insightData.emotional.moodHistory}
-                            nameKey="mood"
+                            data={consolidatedMoodData}
+                            nameKey="name"
                             cx="50%"
                             cy="50%"
                             outerRadius={80}
                             label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                           >
-                            {insightData.emotional.moodHistory.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            {consolidatedMoodData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={EXTENDED_COLORS[index % EXTENDED_COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}
+                            formatter={(value, name, props) => {
+                              const moods = props.payload.moods;
+                              return [
+                                `${value} entries (${moods.join(', ')})`,
+                                name
+                              ];
+                            }}
+                          />
                           <Legend />
                         </PieChart>
                       </ResponsiveContainer>
@@ -751,7 +927,7 @@ const AIInsights = () => {
                 </CardContent>
               </Card>
               
-              {/* Achievement Distribution */}
+              {/* Enhanced Achievement Distribution */}
               <Card className="overflow-hidden shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -759,7 +935,7 @@ const AIInsights = () => {
                     Achievement Distribution
                   </CardTitle>
                   <CardDescription>
-                    Achievements by category
+                    Accomplishments by category
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pl-0">
@@ -778,7 +954,7 @@ const AIInsights = () => {
                             label={({ name, value }) => `${name}: ${value}`}
                           >
                             {achievementData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              <Cell key={`cell-${index}`} fill={EXTENDED_COLORS[index % EXTENDED_COLORS.length]} />
                             ))}
                           </Pie>
                           <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
@@ -806,32 +982,121 @@ const AIInsights = () => {
                   AI Suggestions
                 </CardTitle>
                 <CardDescription className="text-blue-700/90 dark:text-blue-400/90">
-                  Personalized recommendations based on data analysis
+                  Personalized recommendations based on comprehensive data analysis
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="bg-white/70 dark:bg-gray-900/50 p-6 rounded-lg shadow-inner space-y-5">
-                  <p className="text-gray-800 dark:text-gray-200 text-lg">
-                    {insightData.childSnapshot.name} is {insightData.forecast ? 
-                      `progressing well in ${insightData.childSnapshot.topSkill}.` : 
-                      "showing progress in various areas."}
+                <div className="bg-white/70 dark:bg-gray-900/50 p-6 rounded-lg shadow-inner">
+                  <p className="text-gray-800 dark:text-gray-200 text-lg mb-5">
+                    {insightData.forecast}
                   </p>
                   
-                  <div className="space-y-3 mt-6">
-                    {insightData.suggestions.length > 0 ? (
-                      insightData.suggestions.map((suggestion, index) => (
-                        <div key={index} className="flex items-center gap-3">
-                          <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0">
-                            <CheckIcon className="h-3.5 w-3.5" />
+                  <div className="space-y-6">
+                    {/* Academic Suggestions */}
+                    <div className="space-y-3">
+                      <h3 className="text-base font-medium text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                        <Book className="h-4 w-4" />
+                        Academic Focus
+                      </h3>
+                      <div className="space-y-2 pl-6">
+                        {insightData.suggestions
+                          .filter(s => s.toLowerCase().includes('subject') || 
+                                      s.toLowerCase().includes('study') || 
+                                      s.toLowerCase().includes('academic'))
+                          .map((suggestion, index) => (
+                            <div key={index} className="flex items-center gap-3">
+                              <div className="bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Check className="h-3 w-3" />
+                              </div>
+                              <span className="text-base text-gray-800 dark:text-gray-200">{suggestion}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    
+                    {/* Sports Suggestions */}
+                    <div className="space-y-3">
+                      <h3 className="text-base font-medium text-green-700 dark:text-green-400 flex items-center gap-2">
+                        <Trophy className="h-4 w-4" />
+                        Sports Development
+                      </h3>
+                      <div className="space-y-2 pl-6">
+                        {insightData.suggestions
+                          .filter(s => s.toLowerCase().includes('sport') || 
+                                      s.toLowerCase().includes('physical') || 
+                                      s.toLowerCase().includes('team'))
+                          .map((suggestion, index) => (
+                            <div key={index} className="flex items-center gap-3">
+                              <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Check className="h-3 w-3" />
+                              </div>
+                              <span className="text-base text-gray-800 dark:text-gray-200">{suggestion}</span>
+                            </div>
+                          ))}
+                          {insightData.physical.recommendations.slice(0, 2).map((recommendation, index) => (
+                            <div key={`sports-${index}`} className="flex items-center gap-3">
+                              <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Check className="h-3 w-3" />
+                              </div>
+                              <span className="text-base text-gray-800 dark:text-gray-200">{recommendation}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    
+                    {/* Extracurricular Suggestions */}
+                    <div className="space-y-3">
+                      <h3 className="text-base font-medium text-purple-700 dark:text-purple-400 flex items-center gap-2">
+                        <Star className="h-4 w-4" />
+                        Extracurricular Activities
+                      </h3>
+                      <div className="space-y-2 pl-6">
+                        {insightData.suggestions
+                          .filter(s => s.toLowerCase().includes('extracurricular') || 
+                                      s.toLowerCase().includes('activit') || 
+                                      s.toLowerCase().includes('talent') ||
+                                      s.toLowerCase().includes('art') ||
+                                      s.toLowerCase().includes('music'))
+                          .map((suggestion, index) => (
+                            <div key={index} className="flex items-center gap-3">
+                              <div className="bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Check className="h-3 w-3" />
+                              </div>
+                              <span className="text-base text-gray-800 dark:text-gray-200">{suggestion}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                    
+                    {/* Journal and Emotional Suggestions */}
+                    <div className="space-y-3">
+                      <h3 className="text-base font-medium text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+                        <Heart className="h-4 w-4" />
+                        Emotional Well-being
+                      </h3>
+                      <div className="space-y-2 pl-6">
+                        {insightData.suggestions
+                          .filter(s => s.toLowerCase().includes('journal') || 
+                                      s.toLowerCase().includes('emotion') ||
+                                      s.toLowerCase().includes('reflect'))
+                          .map((suggestion, index) => (
+                            <div key={index} className="flex items-center gap-3">
+                              <div className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
+                                <Check className="h-3 w-3" />
+                              </div>
+                              <span className="text-base text-gray-800 dark:text-gray-200">{suggestion}</span>
+                            </div>
+                          ))}
+                        <div className="flex items-center gap-3">
+                          <div className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Check className="h-3 w-3" />
                           </div>
-                          <span className="text-base text-gray-800 dark:text-gray-200">{suggestion}</span>
+                          <span className="text-base text-gray-800 dark:text-gray-200">
+                            {insightData.emotional.recommendation}
+                          </span>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-base text-gray-600 dark:text-gray-400">
-                        Add more data to receive personalized suggestions.
-                      </p>
-                    )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -845,7 +1110,7 @@ const AIInsights = () => {
                   Growth Forecast
                 </CardTitle>
                 <CardDescription className="text-purple-700/90 dark:text-purple-400/90">
-                  Long-term development trajectory based on current patterns
+                  Long-term development trajectory based on comprehensive analysis
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -853,11 +1118,59 @@ const AIInsights = () => {
                   <p className="text-gray-800 dark:text-gray-200 text-lg">
                     {insightData.forecast || "Add more data to generate a personalized forecast."}
                   </p>
+                  
+                  <div className="mt-6 space-y-5">
+                    {insightData.childSnapshot.topSkills.length > 0 && (
+                      <div className="flex items-start gap-3 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                        <Star className="h-5 w-5 text-purple-500 mt-1" />
+                        <div>
+                          <h4 className="font-medium text-purple-800 dark:text-purple-300">
+                            Talent Development
+                          </h4>
+                          <p className="text-sm text-purple-700/80 dark:text-purple-400/80 mt-1">
+                            With continued focus on {insightData.childSnapshot.topSkills.slice(0, 2).join(' and ')}, 
+                            {insightData.childSnapshot.name} has potential to excel in these areas 
+                            through consistent practice and guidance.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {insightData.childSnapshot.weakAreas.length > 0 && (
+                      <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                        <Activity className="h-5 w-5 text-blue-500 mt-1" />
+                        <div>
+                          <h4 className="font-medium text-blue-800 dark:text-blue-300">
+                            Areas for Growth
+                          </h4>
+                          <p className="text-sm text-blue-700/80 dark:text-blue-400/80 mt-1">
+                            By addressing {insightData.childSnapshot.weakAreas.slice(0, 2).join(' and ')},
+                            significant improvements can be achieved within the next academic term with
+                            targeted support and practice.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-start gap-3 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                      <Trophy className="h-5 w-5 text-green-500 mt-1" />
+                      <div>
+                        <h4 className="font-medium text-green-800 dark:text-green-300">
+                          Progress Outlook
+                        </h4>
+                        <p className="text-sm text-green-700/80 dark:text-green-400/80 mt-1">
+                          By maintaining balanced development across academic, physical, and creative areas,
+                          {insightData.childSnapshot.name} is on track to develop a well-rounded profile that
+                          will support future educational and personal goals.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
               <CardFooter className="pt-0 pb-4 px-6">
                 <div className="text-xs text-purple-700/80 dark:text-purple-400/80 italic">
-                  This forecast is based on current patterns and may evolve as more data becomes available.
+                  This forecast is based on current patterns and will evolve as more data becomes available.
                 </div>
               </CardFooter>
             </Card>
@@ -870,22 +1183,44 @@ const AIInsights = () => {
                   Recommended Action Plan
                 </CardTitle>
                 <CardDescription>
-                  Structured steps to support growth
+                  Structured steps to support growth and development
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-8">
                   <div>
-                    <h3 className="text-base font-medium mb-3 flex items-center">
-                      <div className="h-2.5 w-2.5 rounded-full bg-blue-500 mr-2"></div>
-                      Short-term (Next month)
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-base font-medium flex items-center">
+                        <div className="h-2.5 w-2.5 rounded-full bg-blue-500 mr-2"></div>
+                        Short-term (Next month)
+                      </h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => handleAddAllGoals("Short-term")}
+                      >
+                        <Bookmark className="h-3.5 w-3.5 mr-1" />
+                        Add All
+                      </Button>
+                    </div>
                     {insightData.actionPlan.shortTerm.length > 0 ? (
-                      <ul className="space-y-2 pl-6">
+                      <ul className="space-y-3 pl-6 mt-4">
                         {insightData.actionPlan.shortTerm.map((item, index) => (
-                          <li key={index} className="text-sm flex items-center">
-                            <ChevronRight className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
-                            {item}
+                          <li key={index} className="text-sm flex items-start group">
+                            <ChevronRight className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1 flex items-center justify-between">
+                              <span>{item}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleAddGoal(item, "Short-term")}
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span className="sr-only">Add to goals</span>
+                              </Button>
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -897,16 +1232,38 @@ const AIInsights = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-base font-medium mb-3 flex items-center">
-                      <div className="h-2.5 w-2.5 rounded-full bg-purple-500 mr-2"></div>
-                      Medium-term (Next 3 months)
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-base font-medium flex items-center">
+                        <div className="h-2.5 w-2.5 rounded-full bg-purple-500 mr-2"></div>
+                        Medium-term (Next 3 months)
+                      </h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => handleAddAllGoals("Medium-term")}
+                      >
+                        <Bookmark className="h-3.5 w-3.5 mr-1" />
+                        Add All
+                      </Button>
+                    </div>
                     {insightData.actionPlan.mediumTerm.length > 0 ? (
-                      <ul className="space-y-2 pl-6">
+                      <ul className="space-y-3 pl-6 mt-4">
                         {insightData.actionPlan.mediumTerm.map((item, index) => (
-                          <li key={index} className="text-sm flex items-center">
-                            <ChevronRight className="h-4 w-4 text-purple-500 mr-2 flex-shrink-0" />
-                            {item}
+                          <li key={index} className="text-sm flex items-start group">
+                            <ChevronRight className="h-4 w-4 text-purple-500 mr-2 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1 flex items-center justify-between">
+                              <span>{item}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleAddGoal(item, "Medium-term")}
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span className="sr-only">Add to goals</span>
+                              </Button>
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -918,16 +1275,38 @@ const AIInsights = () => {
                   </div>
                   
                   <div>
-                    <h3 className="text-base font-medium mb-3 flex items-center">
-                      <div className="h-2.5 w-2.5 rounded-full bg-green-500 mr-2"></div>
-                      Long-term (Next year)
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-base font-medium flex items-center">
+                        <div className="h-2.5 w-2.5 rounded-full bg-green-500 mr-2"></div>
+                        Long-term (Next year)
+                      </h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs"
+                        onClick={() => handleAddAllGoals("Long-term")}
+                      >
+                        <Bookmark className="h-3.5 w-3.5 mr-1" />
+                        Add All
+                      </Button>
+                    </div>
                     {insightData.actionPlan.longTerm.length > 0 ? (
-                      <ul className="space-y-2 pl-6">
+                      <ul className="space-y-3 pl-6 mt-4">
                         {insightData.actionPlan.longTerm.map((item, index) => (
-                          <li key={index} className="text-sm flex items-center">
-                            <ChevronRight className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                            {item}
+                          <li key={index} className="text-sm flex items-start group">
+                            <ChevronRight className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1 flex items-center justify-between">
+                              <span>{item}</span>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleAddGoal(item, "Long-term")}
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                <span className="sr-only">Add to goals</span>
+                              </Button>
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -939,11 +1318,84 @@ const AIInsights = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button className="w-full" onClick={() => navigate("/goals")}>
-                  Add These to Goals <ArrowUpRight className="ml-2 h-4 w-4" />
-                </Button>
-              </CardFooter>
+            </Card>
+            
+            {/* Additional AI Insights */}
+            <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-gray-800 dark:to-gray-850 border-none shadow-lg overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center text-indigo-800 dark:text-indigo-300">
+                  <Lightbulb className="h-5 w-5 mr-2 text-yellow-500" />
+                  Key AI Insights
+                </CardTitle>
+                <CardDescription className="text-indigo-700/90 dark:text-indigo-400/90">
+                  Intelligence-driven observations about development patterns
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-white/70 dark:bg-gray-900/50 p-5 rounded-lg shadow-inner space-y-4">
+                    <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400">
+                      <Info className="h-5 w-5" />
+                      <h3 className="font-medium">Learning Style</h3>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm">
+                      {insightData.academic.averageScore > 75 
+                        ? "Demonstrates strong academic abilities that indicate an analytical learning style. "
+                        : "Shows varied academic performance that may benefit from a multi-modal learning approach. "}
+                      {insightData.talent.topActivities.length > 0
+                        ? `Creative interests in ${insightData.talent.topActivities[0]} suggest visual/kinesthetic learning preferences. `
+                        : ""}
+                      Consider incorporating diverse teaching methods to maximize engagement and retention.
+                    </p>
+                    
+                    <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 pt-2">
+                      <Clock className="h-5 w-5" />
+                      <h3 className="font-medium">Development Pace</h3>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm">
+                      {insightData.achievements.recent.length > 3 
+                        ? "Shows rapid progress across multiple areas, indicating accelerated development. "
+                        : "Demonstrates steady development that benefits from consistent support and encouragement. "}
+                      {insightData.goals.completed > 3
+                        ? "High goal completion rate shows strong ability to follow through on commitments. "
+                        : ""}
+                      Continue setting appropriate challenges to maintain motivation and growth.
+                    </p>
+                  </div>
+                  
+                  <div className="bg-white/70 dark:bg-gray-900/50 p-5 rounded-lg shadow-inner space-y-4">
+                    <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400">
+                      <Target className="h-5 w-5" />
+                      <h3 className="font-medium">Unique Strengths</h3>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm">
+                      {insightData.childSnapshot.topSkills.length > 0
+                        ? `Shows particular aptitude in ${insightData.childSnapshot.topSkills.join(', ')}. `
+                        : "Has potential to develop excellence in areas of interest with focused practice. "}
+                      {insightData.academic.strongSubjects.length > 0 && insightData.physical.topSports.length > 0
+                        ? "Demonstrates balance between academic and physical pursuits, which is excellent for overall development. "
+                        : ""}
+                      These strengths can be leveraged as anchors for building confidence and exploring related fields.
+                    </p>
+                    
+                    <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 pt-2">
+                      <Activity className="h-5 w-5" />
+                      <h3 className="font-medium">Growth Trajectory</h3>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm">
+                      {insightData.childSnapshot.growthScore > 75 
+                        ? "Currently on an excellent development path with strong indicators across multiple domains. "
+                        : insightData.childSnapshot.growthScore > 50 
+                          ? "Shows good progress with potential for acceleration with targeted support. "
+                          : "Demonstrates potential that can be further developed with structured guidance. "}
+                      {insightData.childSnapshot.weakAreas.length > 0
+                        ? `Focusing on strengthening ${insightData.childSnapshot.weakAreas.join(', ')} will create a more balanced profile. `
+                        : ""}
+                      Regular tracking and adjustment of goals will help maintain optimal development pace.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
