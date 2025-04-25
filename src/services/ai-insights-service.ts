@@ -1,4 +1,3 @@
-
 // AI Insights Service
 import { collection, doc, getDoc, setDoc, query, where, orderBy, getDocs, addDoc, Timestamp, DocumentData } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -77,11 +76,11 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData> =
     console.log("Sports records:", sportsRecords);
     
     // Get extracurricular records
-    const extracurricularRecords: DocumentData[] = await getCollectionDataByUserId("extracurricular", userId);
+    const extracurricularRecords: DocumentData[] = await getCollectionDataByUserId("extraCurricularRecords", userId);
     console.log("Extracurricular records:", extracurricularRecords);
     
     // Get journal entries
-    const journalEntries: DocumentData[] = await getCollectionDataByUserId("journals", userId);
+    const journalEntries: DocumentData[] = await getCollectionDataByUserId("journal", userId);
     console.log("Journal entries:", journalEntries);
     
     // Get goals
@@ -91,6 +90,10 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData> =
     // Get feedback
     const feedback: DocumentData[] = await getCollectionDataByUserId("feedback", userId);
     console.log("Feedback:", feedback);
+
+    // Get milestones
+    const milestones: DocumentData[] = await getCollectionDataByUserId("milestones", userId);
+    console.log("Milestones:", milestones);
     
     // Process and transform the data
     const transformedData = transformData(
@@ -100,7 +103,8 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData> =
       extracurricularRecords,
       journalEntries,
       goals,
-      feedback
+      feedback,
+      milestones
     );
     
     return transformedData;
@@ -119,8 +123,13 @@ export const regenerateInsights = async (userId: string): Promise<AIInsightData>
     const data = await fetchInsightData(userId);
     
     // We could save this regenerated data if needed
-    // const insightRef = doc(db, "insights", userId);
-    // await setDoc(insightRef, { ...data, updatedAt: Timestamp.now() });
+    const insightRef = doc(db, "insights", userId);
+    await setDoc(insightRef, { 
+      ...data, 
+      updatedAt: Timestamp.now(),
+      regenerated: true,
+      regenerationCount: Math.floor(Math.random() * 1000) // Add a random value to ensure data changes
+    });
     
     return data;
   } catch (error) {
@@ -152,12 +161,12 @@ export const addGoalFromActionPlan = async (
     // Create steps array
     const steps = [
       {
-        text: description,
-        completed: false
+        completed: false,
+        text: description
       },
       {
-        text: "NIL",
-        completed: false
+        completed: false,
+        text: "NIL"
       }
     ];
     
@@ -193,8 +202,7 @@ const getCollectionDataByUserId = async (
     const collectionRef = collection(db, collectionName);
     const q = query(
       collectionRef,
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc")
+      where("userId", "==", userId)
     );
     
     const snapshot = await getDocs(q);
@@ -213,7 +221,8 @@ const transformData = (
   extracurricularRecords: DocumentData[],
   journalEntries: DocumentData[],
   goals: DocumentData[],
-  feedback: DocumentData[]
+  feedback: DocumentData[],
+  milestones: DocumentData[]
 ): AIInsightData => {
   
   // Extract and process academic data
@@ -227,44 +236,75 @@ const transformData = (
     .map(s => s.subject);
   
   // Extract and process sports data
-  const sportsList = processTopActivities(sportsRecords, 'sportName');
+  const sportsList = processTopActivities(sportsRecords, 'eventType', 'sportName');
   const sportsAchievements = sportsRecords
-    .filter(record => record.position && (record.position.toLowerCase().includes('win') || 
-                                         record.position.toLowerCase().includes('first') ||
-                                         record.position.toLowerCase().includes('medal')))
-    .map(record => `${record.position} in ${record.sportName}`);
+    .filter(record => record.position && (
+      record.position.toLowerCase().includes('win') || 
+      record.position.toLowerCase().includes('1st') ||
+      record.position.toLowerCase().includes('gold') ||
+      record.position.toLowerCase().includes('medal')
+    ))
+    .map(record => `${record.position} in ${record.eventType || record.sportName || 'Sports'}`);
   
   // Extract and process extracurricular data
-  const activitiesList = processTopActivities(extracurricularRecords, 'activityName');
+  const activitiesList = processTopActivities(extracurricularRecords, 'activity', 'category');
   const extracurricularAchievements = extracurricularRecords
-    .filter(record => record.achievements && record.achievements.trim() !== '')
-    .map(record => record.achievements);
+    .filter(record => record.achievement && record.achievement.trim() !== '')
+    .map(record => `${record.achievement} in ${record.activity || record.category || 'Activity'}`);
   
   // Process journal entries for mood data
   const moodData = processMoodData(journalEntries);
   
   // Process achievements by category
-  const achievementsByCategory: Record<string, number> = {};
-  [...sportsRecords, ...extracurricularRecords, ...academicRecords]
-    .filter(record => record.achievements || record.position || (record.marks && record.marks > 80))
-    .forEach(record => {
-      const category = record.sportName 
-        ? 'Sports' 
-        : record.activityName 
-          ? 'Extracurricular' 
-          : 'Academic';
-      
-      achievementsByCategory[category] = (achievementsByCategory[category] || 0) + 1;
+  const achievementsByCategory: Record<string, number> = {
+    Academic: 0,
+    Sports: 0,
+    Extracurricular: 0
+  };
+  
+  // Add academic achievements
+  academicRecords
+    .filter(record => record.score >= 80)
+    .forEach(() => {
+      achievementsByCategory['Academic'] = (achievementsByCategory['Academic'] || 0) + 1;
     });
+  
+  // Add sports achievements
+  sportsRecords
+    .filter(record => record.position && (
+      record.position.toLowerCase().includes('gold') ||
+      record.position.toLowerCase().includes('silver') ||
+      record.position.toLowerCase().includes('bronze') ||
+      record.position.toLowerCase().includes('1st') ||
+      record.position.toLowerCase().includes('2nd') ||
+      record.position.toLowerCase().includes('3rd')
+    ))
+    .forEach(() => {
+      achievementsByCategory['Sports'] = (achievementsByCategory['Sports'] || 0) + 1;
+    });
+  
+  // Add extracurricular achievements
+  extracurricularRecords
+    .filter(record => record.achievement)
+    .forEach(() => {
+      achievementsByCategory['Extracurricular'] = (achievementsByCategory['Extracurricular'] || 0) + 1;
+    });
+  
+  // Also include milestones in achievements
+  milestones.forEach(milestone => {
+    const category = milestone.category || 'Other';
+    achievementsByCategory[category] = (achievementsByCategory[category] || 0) + 1;
+  });
   
   // Process recent achievements
   const recentAchievements = [
     ...sportsAchievements, 
     ...extracurricularAchievements,
     ...academicRecords
-      .filter(record => record.marks && record.marks > 85)
-      .map(record => `Scored ${record.marks}% in ${record.subject}`)
-  ].slice(0, 5);
+      .filter(record => record.score && record.score > 85)
+      .map(record => `Scored ${record.score}% in ${record.subject || 'Subject'}`),
+    ...milestones.map(m => m.title || m.description || 'Achievement')
+  ].slice(0, 7);
   
   // Process goals data
   const completedGoals = goals.filter(goal => goal.status === 'Completed').length;
@@ -273,13 +313,30 @@ const transformData = (
     .map(goal => goal.title);
   
   // Process feedback data
-  const positiveComments = feedback
-    .filter(f => f.type === 'positive' || f.rating >= 4)
-    .map(f => f.comment || f.feedback);
+  const feedbackComments = feedback.map(f => f.content || f.message || '').filter(Boolean);
+  // Simple sentiment analysis to determine positive vs improvement areas
+  const positiveComments = feedbackComments.filter(comment => 
+    /good|excellent|great|wonderful|positive|well done|impressive/i.test(comment)
+  );
+  const improvementAreas = feedbackComments.filter(comment => 
+    /improve|better|work on|focus on|needs|should|could|try to|consider/i.test(comment)
+  );
   
-  const improvementAreas = feedback
-    .filter(f => f.type === 'improvement' || f.rating < 3)
-    .map(f => f.comment || f.feedback);
+  // Get combined top skills (academic, sports, extracurricular)
+  const combinedTopSkills = [
+    ...strongSubjects.map(subject => ({ type: 'academic', skill: subject })),
+    ...sportsList.map(sport => ({ type: 'sports', skill: sport })),
+    ...activitiesList.map(activity => ({ type: 'extracurricular', skill: activity }))
+  ];
+  
+  // Get combined weak areas
+  const combinedWeakAreas = [
+    ...weakSubjects.map(subject => ({ type: 'academic', area: subject })),
+    // For sports, consider any with low achievements
+    ...(sportsList.length === 0 ? [{ type: 'sports', area: 'Physical activities' }] : []),
+    // For extracurricular, consider any with low participation
+    ...(activitiesList.length === 0 ? [{ type: 'extracurricular', area: 'Creative activities' }] : [])
+  ];
   
   // Generate suggestions based on available data
   const suggestions = generateSuggestions(
@@ -315,8 +372,8 @@ const transformData = (
       age: profile?.age || calculateAgeFromDOB(profile?.dob) || 0,
       class: profile?.class || profile?.grade || 'Student',
       growthScore: Math.min(growthScore, 100),
-      topSkills: [...strongSubjects, ...sportsList, ...activitiesList].slice(0, 3),
-      weakAreas: weakSubjects,
+      topSkills: combinedTopSkills.slice(0, 5).map(item => item.skill),
+      weakAreas: combinedWeakAreas.slice(0, 5).map(item => item.area),
     },
     academic: {
       averageScore,
@@ -350,8 +407,8 @@ const transformData = (
       recommendation: generateGoalRecommendation(completedGoals, pendingGoals.length),
     },
     feedback: {
-      positive: positiveComments,
-      areasOfImprovement: improvementAreas,
+      positive: positiveComments.length > 0 ? positiveComments : ['Continues to show good progress overall.'],
+      areasOfImprovement: improvementAreas.length > 0 ? improvementAreas : ['Focus on maintaining consistency across all subjects.'],
     },
     suggestions,
     forecast: generateForecast(strongSubjects, weakSubjects, sportsList, activitiesList, growthScore),
@@ -365,15 +422,29 @@ const processAcademicRecords = (academicRecords: DocumentData[]): Array<{subject
   
   // Group scores by subject
   academicRecords.forEach(record => {
-    if (record.subject && record.marks) {
-      const subject = record.subject;
-      const score = parseFloat(record.marks);
+    if (record.subject && record.score !== undefined) {
+      // Normalize subject name (lowercase and trim)
+      const subject = (record.subject || '').toLowerCase().trim();
+      if (!subject) return;
       
-      if (!isNaN(score)) {
+      // Calculate percentage score consistently
+      let scoreValue: number;
+      
+      // If isPercentage flag exists and is true, use score directly
+      if (record.isPercentage === true) {
+        scoreValue = parseFloat(record.score);
+      } 
+      // Otherwise calculate based on score and maxScore
+      else {
+        const maxScore = parseFloat(record.maxScore) || 100;
+        scoreValue = (parseFloat(record.score) / maxScore) * 100;
+      }
+      
+      if (!isNaN(scoreValue)) {
         if (!subjectScoresMap.has(subject)) {
           subjectScoresMap.set(subject, []);
         }
-        subjectScoresMap.get(subject)?.push(score);
+        subjectScoresMap.get(subject)?.push(scoreValue);
       }
     }
   });
@@ -384,7 +455,7 @@ const processAcademicRecords = (academicRecords: DocumentData[]): Array<{subject
   subjectScoresMap.forEach((scores, subject) => {
     const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
     subjectScores.push({
-      subject,
+      subject: subject.charAt(0).toUpperCase() + subject.slice(1), // Capitalize first letter
       score: Math.round(average)
     });
   });
@@ -401,13 +472,17 @@ const calculateAverageScore = (subjectScores: Array<{subject: string, score: num
 };
 
 // Process top activities from records
-const processTopActivities = (records: DocumentData[], nameField: string): string[] => {
+const processTopActivities = (records: DocumentData[], primaryField: string, fallbackField: string): string[] => {
   const activityCounts = new Map<string, number>();
   
   records.forEach(record => {
-    const name = record[nameField];
+    // Try to get name from primary field, then fallback field
+    const name = (record[primaryField] || record[fallbackField] || '').trim();
+    
     if (name) {
-      activityCounts.set(name, (activityCounts.get(name) || 0) + 1);
+      // Normalize and capitalize first letter of each word
+      const normalizedName = name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      activityCounts.set(normalizedName, (activityCounts.get(normalizedName) || 0) + 1);
     }
   });
   
@@ -415,13 +490,14 @@ const processTopActivities = (records: DocumentData[], nameField: string): strin
   return Array.from(activityCounts.entries())
     .sort((a, b) => b[1] - a[1])
     .map(entry => entry[0])
-    .slice(0, 3);
+    .slice(0, 5);
 };
 
 // Process mood data from journal entries
 const processMoodData = (journalEntries: DocumentData[]) => {
   const moodCounts = new Map<string, number>();
   let currentMood = "Neutral";
+  let latestMoodTimestamp = new Date(0);
   let positiveCount = 0;
   let totalEntries = 0;
   
@@ -429,7 +505,13 @@ const processMoodData = (journalEntries: DocumentData[]) => {
     const mood = entry.mood || "Neutral";
     moodCounts.set(mood, (moodCounts.get(mood) || 0) + 1);
     
-    if (entry.createdAt && (!currentMood || entry.createdAt.toDate() > new Date())) {
+    // Track the most recent mood
+    const entryDate = entry.createdAt ? 
+      (entry.createdAt.toDate ? entry.createdAt.toDate() : new Date(entry.createdAt)) : 
+      new Date(entry.date || 0);
+      
+    if (entryDate > latestMoodTimestamp) {
+      latestMoodTimestamp = entryDate;
       currentMood = mood;
     }
     
@@ -464,6 +546,10 @@ const generateSportsRecommendations = (sportsList: string[]): string[] => {
   
   if (sportsList.length > 0) {
     recommendations.unshift(`Continue to develop skills in ${sportsList[0]} through regular practice.`);
+  }
+  
+  if (sportsList.length > 1) {
+    recommendations.push(`Balance time between ${sportsList[0]} and ${sportsList[1]} for well-rounded development.`);
   }
   
   return recommendations;
@@ -510,28 +596,46 @@ const generateSuggestions = (
 ): string[] => {
   const suggestions: string[] = [];
   
+  // Academic suggestions
   if (strongSubjects.length > 0) {
-    suggestions.push(`Continue building on strengths in ${strongSubjects[0]}.`);
+    suggestions.push(`Continue building on strengths in ${strongSubjects.join(', ')}.`);
+    suggestions.push(`Consider exploring advanced topics or competitions in ${strongSubjects[0]}.`);
   }
   
   if (weakSubjects.length > 0) {
-    suggestions.push(`Create a focused study plan for ${weakSubjects[0]} to improve understanding.`);
+    suggestions.push(`Create a focused study plan for ${weakSubjects.join(', ')} to improve understanding.`);
+    suggestions.push(`Consider additional support or resources for ${weakSubjects[0]}.`);
   }
   
+  // Sports suggestions
   if (sportsList.length > 0) {
-    suggestions.push(`Regular practice in ${sportsList[0]} will help develop consistent skills.`);
+    suggestions.push(`Regular practice in ${sportsList.join(', ')} will help develop consistent skills.`);
+    suggestions.push(`Look for opportunities to participate in competitions for ${sportsList[0]}.`);
   } else {
     suggestions.push("Consider introducing regular physical activities to support overall development.");
+    suggestions.push("Explore various sports to find ones that are enjoyable and engaging.");
   }
   
+  // Extracurricular suggestions
   if (activitiesList.length > 0) {
-    suggestions.push(`Continue developing creative skills through ${activitiesList[0]}.`);
+    suggestions.push(`Continue developing creative skills through ${activitiesList.join(', ')}.`);
+    suggestions.push(`Seek opportunities to showcase talents in ${activitiesList[0]}.`);
   } else {
     suggestions.push("Explore extracurricular activities to discover new interests and talents.");
+    suggestions.push("Try different types of activities - arts, music, technology, language - to find areas of interest.");
   }
   
-  if (moodData.moodCounts.length > 0) {
+  // Journal/emotional suggestions
+  if (moodData.moodCounts && moodData.moodCounts.length > 0) {
     suggestions.push("Continue using the journal to track and reflect on emotions and experiences.");
+    
+    if (moodData.currentMood && moodData.currentMood !== "Neutral") {
+      if (["Happy", "Excited", "Joyful"].some(m => moodData.currentMood.includes(m))) {
+        suggestions.push("Channel positive energy into challenging academic and creative pursuits.");
+      } else if (["Sad", "Tired", "Stressed"].some(m => moodData.currentMood.includes(m))) {
+        suggestions.push("Build in regular breaks and enjoyable activities to manage stress levels.");
+      }
+    }
   } else {
     suggestions.push("Start a regular journaling practice to track progress and emotions.");
   }
@@ -540,8 +644,11 @@ const generateSuggestions = (
   suggestions.push("Set specific, measurable goals for both academic and non-academic areas.");
   suggestions.push("Create a balanced weekly schedule with time for study, physical activity, and relaxation.");
   suggestions.push("Celebrate achievements regularly to maintain motivation.");
+  suggestions.push("Explore new topics and activities outside regular curriculum to foster well-rounded growth.");
+  suggestions.push("Practice mindfulness or relaxation techniques to support emotional well-being.");
   
-  return suggestions;
+  // Return a subset to avoid overwhelming the user
+  return suggestions.slice(0, 8);
 };
 
 // Generate action plan
@@ -558,11 +665,11 @@ const generateActionPlan = (
   
   // Short term actions
   if (weakSubjects.length > 0) {
-    shortTerm.push(`Create a focused study plan for ${weakSubjects[0]} with daily practice sessions.`);
+    shortTerm.push(`Create a focused study plan for ${weakSubjects.join(', ')} with daily practice sessions.`);
   }
   
   if (sportsList.length > 0) {
-    shortTerm.push(`Establish a regular practice routine for ${sportsList[0]}.`);
+    shortTerm.push(`Establish a regular practice routine for ${sportsList.join(', ')}.`);
   } else {
     shortTerm.push("Try different physical activities to find ones that are enjoyable.");
   }
@@ -572,11 +679,11 @@ const generateActionPlan = (
   
   // Medium term actions
   if (strongSubjects.length > 0) {
-    mediumTerm.push(`Explore advanced topics in ${strongSubjects[0]} to deepen understanding.`);
+    mediumTerm.push(`Explore advanced topics in ${strongSubjects.join(', ')} to deepen understanding.`);
   }
   
   if (activitiesList.length > 0) {
-    mediumTerm.push(`Look for opportunities to showcase skills in ${activitiesList[0]}.`);
+    mediumTerm.push(`Look for opportunities to showcase skills in ${activitiesList.join(', ')}.`);
   }
   
   mediumTerm.push("Develop consistent study habits for all subjects with weekly review sessions.");
@@ -586,7 +693,8 @@ const generateActionPlan = (
   longTerm.push("Work toward mastery in subjects of greatest interest and aptitude.");
   
   if (sportsList.length > 0 || activitiesList.length > 0) {
-    longTerm.push(`Consider competitions or performances in ${sportsList[0] || activitiesList[0]}.`);
+    const activities = [...sportsList, ...activitiesList].slice(0, 2);
+    longTerm.push(`Consider competitions or performances in ${activities.join(' and ')}.`);
   }
   
   longTerm.push("Develop independent research projects in areas of interest.");

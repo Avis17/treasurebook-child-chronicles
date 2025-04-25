@@ -14,32 +14,56 @@ const StudentProgressRadar = () => {
 
   const radarData = useMemo(() => {
     // Calculate academic performance (average percentage)
-    const academicScore = academicRecords.reduce((acc, record) => {
-      // Calculate percentage based on isPercentage flag
-      const calculatedPercentage = record.isPercentage ? record.score : (record.score / record.maxScore) * 100;
-      return acc + calculatedPercentage;
-    }, 0) / (academicRecords.length || 1);
+    let academicScore = 0;
+    if (academicRecords.length > 0) {
+      academicScore = academicRecords.reduce((acc, record) => {
+        // Check if the record has a valid score
+        if (record.score === undefined || record.score === null) return acc;
+        
+        // Calculate percentage based on isPercentage flag
+        const calculatedPercentage = record.isPercentage ? 
+          Number(record.score) : 
+          (Number(record.score) / (Number(record.maxScore) || 100)) * 100;
+        
+        // Only add valid percentages
+        return isNaN(calculatedPercentage) ? acc : acc + calculatedPercentage;
+      }, 0) / academicRecords.length;
+    }
 
     // Calculate sports performance (based on positions)
-    const sportsScore = sportsRecords.reduce((acc, record) => {
-      const positionScores: Record<string, number> = {
-        'Gold': 100,
-        'Silver': 80,
-        'Bronze': 60,
-        'Finalist': 40,
-        'Participant': 20
-      };
-      return acc + (positionScores[record.position] || 20);
-    }, 0) / (sportsRecords.length || 1);
+    let sportsScore = 0;
+    if (sportsRecords.length > 0) {
+      sportsScore = sportsRecords.reduce((acc, record) => {
+        const position = (record.position || '').toLowerCase();
+        
+        // Map positions to scores
+        let positionScore = 20; // Default score
+        
+        if (position.includes('gold') || position.includes('1st')) {
+          positionScore = 100;
+        } else if (position.includes('silver') || position.includes('2nd')) {
+          positionScore = 80;
+        } else if (position.includes('bronze') || position.includes('3rd')) {
+          positionScore = 60;
+        } else if (position.includes('finalist')) {
+          positionScore = 40;
+        } else if (position.includes('semifinalist') || position.includes('semi-finalist')) {
+          positionScore = 30;
+        }
+        
+        return acc + positionScore;
+      }, 0) / sportsRecords.length;
+    }
 
     // Calculate extracurricular performance
-    const extraScore = extracurricularRecords.length * 20; // 20 points per activity, max 100
-    const normalizedExtraScore = Math.min(100, extraScore);
+    const extraScore = extracurricularRecords.length > 0 ? 
+      Math.min(100, extracurricularRecords.length * 20) :
+      0;
 
     return [
-      { area: 'Academics', value: Math.round(academicScore) },
-      { area: 'Sports', value: Math.round(sportsScore) },
-      { area: 'Extracurricular', value: Math.round(normalizedExtraScore) },
+      { area: 'Academics', value: Math.round(academicScore) || 0 },
+      { area: 'Sports', value: Math.round(sportsScore) || 0 },
+      { area: 'Extracurricular', value: Math.round(extraScore) || 0 },
     ];
   }, [academicRecords, sportsRecords, extracurricularRecords]);
 

@@ -177,7 +177,7 @@ export const useSportsRecords = (userId: string | undefined) =>
   useFirebaseData<SportsRecord>(userId, "sportsRecords");
 
 export const useExtracurricularRecords = (userId: string | undefined) => 
-  useFirebaseData<ExtracurricularRecord>(userId, "extracurricularRecords");
+  useFirebaseData<ExtracurricularRecord>(userId, "extraCurricularRecords");
 
 export const useGoals = (userId: string | undefined) => 
   useFirebaseData<Goal>(userId, "goals");

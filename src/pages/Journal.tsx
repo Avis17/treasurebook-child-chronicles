@@ -12,6 +12,8 @@ import { BookText, Edit, Trash2, Plus, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface JournalEntry {
   id?: string;
@@ -19,6 +21,8 @@ interface JournalEntry {
   content: string;
   date: string;
   userId: string;
+  mood?: string;
+  tags?: string[];
   [key: string]: any; // Add index signature for Firebase compatibility
 }
 
@@ -35,6 +39,7 @@ const JournalPage = () => {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -112,6 +117,39 @@ const JournalPage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      const newTag = tagInput.trim();
+      const currentTags = formData.tags || [];
+      
+      // Only add if tag doesn't already exist
+      if (!currentTags.includes(newTag)) {
+        setFormData(prev => ({
+          ...prev,
+          tags: [...currentTags, newTag]
+        }));
+      }
+      
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    const updatedTags = (formData.tags || []).filter(tag => tag !== tagToRemove);
+    setFormData(prev => ({
+      ...prev,
+      tags: updatedTags
+    }));
+  };
+
+  const handleMoodChange = (mood: string) => {
+    setFormData(prev => ({
+      ...prev,
+      mood
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -179,7 +217,9 @@ const JournalPage = () => {
     setFormData({
       title: entry.title,
       content: entry.content,
-      date: entry.date
+      date: entry.date,
+      mood: entry.mood || "Neutral",
+      tags: entry.tags || []
     });
     setOpenDialog(true);
   };
@@ -224,6 +264,7 @@ const JournalPage = () => {
       mood: "Neutral",
       tags: []
     });
+    setTagInput("");
     setIsEditing(false);
     setCurrentId(null);
   };
@@ -288,6 +329,59 @@ const JournalPage = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <label htmlFor="mood" className="text-sm font-medium dark:text-white">Mood</label>
+                  <Select value={formData.mood} onValueChange={handleMoodChange}>
+                    <SelectTrigger className="dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                      <SelectValue placeholder="Select mood" />
+                    </SelectTrigger>
+                    <SelectContent className="dark:bg-gray-800">
+                      <SelectItem value="Happy">Happy</SelectItem>
+                      <SelectItem value="Sad">Sad</SelectItem>
+                      <SelectItem value="Excited">Excited</SelectItem>
+                      <SelectItem value="Tired">Tired</SelectItem>
+                      <SelectItem value="Focused">Focused</SelectItem>
+                      <SelectItem value="Stressed">Stressed</SelectItem>
+                      <SelectItem value="Relaxed">Relaxed</SelectItem>
+                      <SelectItem value="Angry">Angry</SelectItem>
+                      <SelectItem value="Neutral">Neutral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="tags" className="text-sm font-medium dark:text-white">Tags</label>
+                  <div>
+                    <Input
+                      id="tagInput"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={handleTagInputKeyDown}
+                      placeholder="Add tags (press Enter after each tag)"
+                      className="dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                    />
+                    
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {(formData.tags || []).map((tag, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="secondary"
+                          className="px-2 py-1 flex items-center gap-1"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => removeTag(tag)}
+                            className="ml-1 text-xs rounded-full hover:bg-gray-300 dark:hover:bg-gray-700 h-4 w-4 inline-flex items-center justify-center"
+                          >
+                            ×
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <label htmlFor="date" className="text-sm font-medium dark:text-white">Date</label>
                   <Input
                     type="date"
@@ -342,6 +436,9 @@ const JournalPage = () => {
                       <CardDescription>
                         <Calendar className="h-4 w-4 inline mr-1" />
                         {entry.date && format(new Date(entry.date), "MMMM d, yyyy")}
+                        {entry.mood && (
+                          <Badge className="ml-2" variant="outline">{entry.mood}</Badge>
+                        )}
                       </CardDescription>
                     </div>
                     <div className="flex space-x-2">
@@ -364,6 +461,15 @@ const JournalPage = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="whitespace-pre-wrap">{entry.content}</p>
+                  {entry.tags && entry.tags.length > 0 && (
+                    <div className="mt-4">
+                      <div className="flex flex-wrap gap-2">
+                        {entry.tags.map((tag, idx) => (
+                          <Badge key={idx} variant="secondary">{tag}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <Separator className="my-4" />
                 </CardContent>
               </Card>
