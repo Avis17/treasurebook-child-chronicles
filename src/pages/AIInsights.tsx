@@ -6,6 +6,7 @@ import { auth } from "@/lib/firebase";
 import AppLayout from "@/components/layout/AppLayout";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import LoadingOverlay from "@/components/shared/LoadingOverlay";
 import {
   Card,
   CardContent,
@@ -57,11 +58,12 @@ import {
   ChevronRight,
   ArrowUpRight,
   BarChart as BarChartIcon,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
 
 // Import our data service
-import { fetchInsightData, AIInsightData } from "@/services/ai-insights-service";
+import { fetchInsightData, regenerateInsights, AIInsightData } from "@/services/ai-insights-service";
 
 const cardColors = {
   academic: "from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900",
@@ -87,45 +89,77 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 
 const AIInsights = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [insightData, setInsightData] = useState<AIInsightData | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
 
-  useEffect(() => {
-    const fetchData = async (userId: string) => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        console.log("Fetching AI insights data for user:", userId);
-        const data = await fetchInsightData(userId);
-        console.log("AI insights data fetched:", data);
-        setInsightData(data);
-      } catch (error) {
-        console.error("Error fetching insight data:", error);
-        setError("Failed to load insights data. Please try again later.");
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load insights data"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchData = async (uid: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      console.log("Fetching AI insights data for user:", uid);
+      const data = await fetchInsightData(uid);
+      console.log("AI insights data fetched:", data);
+      setInsightData(data);
+    } catch (error) {
+      console.error("Error fetching insight data:", error);
+      setError("Failed to load insights data. Please try again later.");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load insights data"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
         navigate("/login");
       } else {
+        setUserId(user.uid);
         fetchData(user.uid);
       }
     });
 
     return () => unsubscribe();
   }, [navigate, toast]);
+
+  const handleRegenerate = async () => {
+    if (!userId) return;
+    
+    try {
+      setIsRegenerating(true);
+      toast({
+        title: "Regenerating insights",
+        description: "This may take a moment..."
+      });
+      
+      const data = await regenerateInsights(userId);
+      setInsightData(data);
+      
+      toast({
+        title: "Insights Updated",
+        description: "AI insights have been regenerated"
+      });
+    } catch (error) {
+      console.error("Error regenerating insights:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to regenerate insights"
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -225,8 +259,9 @@ const AIInsights = () => {
 
   return (
     <AppLayout title="AI Growth Insights">
+      {isRegenerating && <LoadingOverlay isLoading={true} message="Regenerating insights..." />}
       <div className="space-y-8 max-w-7xl mx-auto pb-12 px-4 md:px-6">
-        {/* Child Snapshot Panel */}
+        {/* Child Snapshot Panel with Regenerate Button */}
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl p-8 shadow-xl">
           <div className="flex flex-col md:flex-row justify-between items-center md:items-start">
             <div className="mb-6 md:mb-0">
@@ -265,6 +300,18 @@ const AIInsights = () => {
                 <span className="font-semibold text-lg">{insightData.childSnapshot.weakArea}</span>
               </div>
             </div>
+          </div>
+          
+          <div className="mt-8 flex justify-end">
+            <Button 
+              onClick={handleRegenerate}
+              disabled={isRegenerating}
+              variant="outline" 
+              className="bg-white/10 hover:bg-white/20 text-white border-white/25"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Regenerate Insights
+            </Button>
           </div>
         </div>
         
