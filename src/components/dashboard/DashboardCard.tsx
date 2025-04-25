@@ -3,7 +3,7 @@ import * as React from "react";
 import { Card } from "@/components/ui/card";
 
 interface DashboardCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  title?: string;
+  title?: React.ReactNode;  // Changed from string to ReactNode to allow elements
   action?: React.ReactNode;
   className?: string;
   children: React.ReactNode;

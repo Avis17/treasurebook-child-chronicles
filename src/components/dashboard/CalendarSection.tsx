@@ -94,9 +94,15 @@ export const CalendarSection = () => {
     );
   }
 
+  // This is the part causing the error - we need to fix the title prop
   return (
     <DashboardCard 
-      title={<div className="flex items-center"><CalendarIcon className="mr-2 h-5 w-5 text-indigo-500" />{month}</div>}
+      title={
+        <div className="flex items-center">
+          <CalendarIcon className="mr-2 h-5 w-5 text-indigo-500" />
+          <span>{month}</span>
+        </div>
+      }
       gradient
     >
       <div className="flex flex-col space-y-4">
