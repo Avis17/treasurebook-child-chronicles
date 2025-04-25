@@ -118,7 +118,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   return (
     <div className="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
       {/* Header */}
-      <div className="flex flex-col items-center justify-center h-32 px-4 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex flex-col items-center justify-center h-32 px-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
         <img 
           src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png" 
           alt="Treasure Book Logo" 
@@ -130,57 +130,67 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       </div>
 
       {/* Navigation Items - Fixed the ScrollArea to make it scrollable */}
-      <ScrollArea className="flex-1 py-2 overflow-y-auto">
-        <nav className="px-3 space-y-1">
-          {getNavItems().map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.disabled ? "#" : item.path}
-              className={({ isActive }) => `
-                flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
-                transition-colors duration-150 ease-in-out
-                ${item.disabled 
-                  ? 'opacity-50 cursor-not-allowed' 
-                  : isActive 
-                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
-                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
-              `}
-            >
-              {item.icon}
-              <span>{item.name}</span>
-              {item.disabled && (
-                <span className="ml-auto text-xs text-gray-500">(Disabled)</span>
-              )}
-            </NavLink>
-          ))}
+      <ScrollArea className="flex-1 w-full overflow-auto">
+        <nav className="px-3 py-2">
+          <div className="space-y-1">
+            {getNavItems().map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.disabled ? "#" : item.path}
+                className={({ isActive }) => `
+                  flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
+                  transition-colors duration-150 ease-in-out
+                  ${item.disabled 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : isActive 
+                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
+                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
+                `}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+                {item.disabled && (
+                  <span className="ml-auto text-xs text-gray-500">(Disabled)</span>
+                )}
+              </NavLink>
+            ))}
+          </div>
         </nav>
       </ScrollArea>
 
-      {/* Footer Actions - Fixed the button to be clickable */}
-      <div className="sticky bottom-0 p-4 border-t border-gray-200 dark:border-gray-800 space-y-2 bg-white dark:bg-gray-900">
+      {/* Footer Actions - Fixed at bottom with improved visibility */}
+      <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 space-y-2">
         <button
           onClick={toggleTheme}
-          className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors duration-150 ease-in-out"
+          className="flex items-center justify-between w-full gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
+            text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
         >
           {theme === 'dark' ? (
             <>
-              <Sun className="w-5 h-5" />
-              <span>Light Mode</span>
+              <div className="flex items-center gap-3">
+                <Sun className="w-5 h-5" />
+                <span>Light Mode</span>
+              </div>
             </>
           ) : (
             <>
-              <Moon className="w-5 h-5" />
-              <span>Dark Mode</span>
+              <div className="flex items-center gap-3">
+                <Moon className="w-5 h-5" />
+                <span>Dark Mode</span>
+              </div>
             </>
           )}
         </button>
         
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 rounded-md transition-colors duration-150 ease-in-out"
+          className="flex items-center justify-between w-full gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
+            text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
         >
-          <LogOut className="w-5 h-5" />
-          <span>Log out</span>
+          <div className="flex items-center gap-3">
+            <LogOut className="w-5 h-5" />
+            <span>Log out</span>
+          </div>
         </button>
       </div>
     </div>
