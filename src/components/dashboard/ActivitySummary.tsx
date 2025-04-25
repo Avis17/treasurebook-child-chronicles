@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, ExternalLink } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, doc, getDoc, limit } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface Activity {
   id: string;
@@ -80,12 +81,6 @@ const ActivitySummary: React.FC = () => {
         } catch (err) {
           console.error("Error fetching activities:", err);
           setError("Could not load upcoming events due to a database indexing error.");
-          
-          toast({
-            variant: "destructive",
-            title: "Database index error",
-            description: "Check the Firebase console to create the required indexes for calendar events."
-          });
         }
       } catch (error) {
         console.error("Error fetching activities:", error);
@@ -133,10 +128,31 @@ const ActivitySummary: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800 text-center h-full flex flex-col justify-center items-center">
-        <AlertCircle className="h-10 w-10 text-red-500 mb-3" />
-        <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2">{error}</p>
-        <p className="text-xs text-red-500 dark:text-red-400">Please try again later.</p>
+      <div className="flex flex-col items-center justify-center text-center h-full py-8 px-4">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-3" />
+        <p className="text-base font-medium text-red-600 dark:text-red-400 mb-4">{error}</p>
+        <div className="space-y-4 mt-2">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Firebase requires a composite index for this query.
+          </p>
+          <a 
+            href="https://console.firebase.google.com/project/_/firestore/indexes" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="inline-flex items-center text-blue-600 dark:text-blue-400 text-sm font-medium"
+          >
+            Go to Firebase Console
+            <ExternalLink className="ml-1 h-4 w-4" />
+          </a>
+          <Button 
+            onClick={() => window.location.reload()}
+            variant="outline" 
+            size="sm"
+            className="w-full"
+          >
+            Try again later
+          </Button>
+        </div>
       </div>
     );
   }
