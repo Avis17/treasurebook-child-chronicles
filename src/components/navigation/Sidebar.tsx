@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -32,6 +32,8 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
+import { doc, getDoc } from "firebase/firestore";
 
 interface SidebarProps {
   isMobile: boolean;
@@ -51,6 +53,47 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
   const { isAdmin, currentUser } = useAuth();
+  const [profileName, setProfileName] = useState<string | null>(null);
+  
+  // Fetch profile name from Firestore when component mounts
+  useEffect(() => {
+    const fetchProfileName = async () => {
+      if (!currentUser?.uid) return;
+      
+      try {
+        // Try profiles collection first
+        const profileRef = doc(db, "profiles", currentUser.uid);
+        const profileSnap = await getDoc(profileRef);
+        
+        if (profileSnap.exists()) {
+          const data = profileSnap.data();
+          if (data.childName) {
+            setProfileName(data.childName);
+            return;
+          }
+        }
+        
+        // Try users collection as fallback
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          if (data.displayName) {
+            setProfileName(data.displayName);
+            return;
+          }
+        }
+        
+        // Default to Firebase auth display name as last resort
+        setProfileName(currentUser.displayName);
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      }
+    };
+    
+    fetchProfileName();
+  }, [currentUser]);
   
   const handleLogout = async () => {
     try {
@@ -116,7 +159,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   };
 
   return (
-    <div className="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col">
+    <div className="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen">
       {/* Header */}
       <div className="flex flex-col items-center justify-center h-32 px-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
         <img 
@@ -129,8 +172,8 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         </h1>
       </div>
 
-      {/* Navigation Items - Fixed the ScrollArea to make it scrollable */}
-      <ScrollArea className="flex-1 w-full overflow-auto">
+      {/* Navigation Items - Using ScrollArea for scrollable content */}
+      <ScrollArea className="flex-1 overflow-auto">
         <nav className="px-3 py-2">
           <div className="space-y-1">
             {getNavItems().map((item) => (
@@ -158,8 +201,8 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         </nav>
       </ScrollArea>
 
-      {/* Footer Actions - Fixed at bottom with improved visibility */}
-      <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 space-y-2">
+      {/* Footer Actions - Completely separate from scrollable area */}
+      <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <button
           onClick={toggleTheme}
           className="flex items-center justify-between w-full gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
@@ -184,7 +227,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         
         <button
           onClick={handleLogout}
-          className="flex items-center justify-between w-full gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
+          className="flex items-center justify-between w-full gap-3 px-3 py-2 mt-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
             text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
         >
           <div className="flex items-center gap-3">
