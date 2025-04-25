@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Radar } from 'lucide-react';
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar as RechartsRadar, ResponsiveContainer, Tooltip } from 'recharts';
+import { RadarChart, PolarGrid, PolarAngleAxis, Radar as RechartsRadar, ResponsiveContainer, Tooltip, PolarRadiusAxis } from 'recharts';
 import { useAcademicRecords, useSportsRecords, useExtracurricularRecords } from '@/lib/dashboard-service';
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -70,6 +70,7 @@ const StudentProgressRadar = () => {
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={radarData} margin={{ top: 20, right: 30, left: 30, bottom: 20 }}>
               <PolarGrid stroke="#e2e8f0" />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} />
               <PolarAngleAxis
                 dataKey="area"
                 tick={{ fill: '#64748b', fontSize: 12 }}

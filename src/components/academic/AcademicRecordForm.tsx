@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,8 +92,9 @@ export const AcademicRecordForm = ({
       
       if (subjectList.includes(initialData.subject)) {
         setSelectedSubject(initialData.subject);
+        setOtherSubject("");
       } else {
-        setSelectedSubject("other");
+        setSelectedSubject("Other");
         setOtherSubject(initialData.subject);
       }
     }
@@ -122,8 +124,10 @@ export const AcademicRecordForm = ({
   const handleSelectChange = (name: string, value: string) => {
     if (name === "subject") {
       setSelectedSubject(value);
-      if (value !== "other") {
+      if (value !== "Other") {
         setFormData({ ...formData, subject: value });
+      } else {
+        setFormData({ ...formData, subject: otherSubject });
       }
     } else {
       setFormData({ ...formData, [name]: value });
@@ -140,7 +144,7 @@ export const AcademicRecordForm = ({
       return;
     }
     
-    if (!formData.subject) {
+    if (!formData.subject && selectedSubject === "Other" && !otherSubject) {
       toast({
         title: "Error",
         description: "Subject is required",
@@ -150,7 +154,7 @@ export const AcademicRecordForm = ({
     }
     
     try {
-      const finalSubject = selectedSubject === "other" ? otherSubject : selectedSubject;
+      const finalSubject = selectedSubject === "Other" ? otherSubject : selectedSubject;
       
       if (initialData && onRecordUpdated) {
         await onRecordUpdated({
@@ -186,7 +190,7 @@ export const AcademicRecordForm = ({
             remarks: "",
             isPercentage: false,
           });
-          setSelectedSubject("other");
+          setSelectedSubject("Other");
           setOtherSubject("");
         } else {
           throw new Error("Failed to create record");
@@ -321,7 +325,7 @@ export const AcademicRecordForm = ({
                   ))}
                 </SelectContent>
               </Select>
-              {selectedSubject === "other" && (
+              {selectedSubject === "Other" && (
                 <Input
                   id="otherSubject"
                   value={otherSubject}
@@ -403,7 +407,7 @@ export const AcademicRecordForm = ({
             </Button>
             <Button 
               onClick={handleAddRecord} 
-              disabled={!formData.subject}
+              disabled={(selectedSubject === "Other" && !otherSubject) || (!formData.subject && selectedSubject !== "Other")}
             >
               {submitButtonText}
             </Button>

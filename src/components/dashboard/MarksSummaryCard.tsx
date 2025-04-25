@@ -187,7 +187,7 @@ const MarksSummaryCard = () => {
                             <span className="font-medium">
                               {record.isPercentage 
                                 ? `${Math.round(record.calculatedPercentage)}%` 
-                                : `${record.score}/${record.maxScore}`}
+                                : `${record.score}/${record.maxScore} (${Math.round(record.calculatedPercentage)}%)`}
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
