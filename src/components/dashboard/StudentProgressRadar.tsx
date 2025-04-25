@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Radar } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar as RechartsRadar, ResponsiveContainer, Tooltip, PolarRadiusAxis } from 'recharts';
-import { useAcademicRecords, useSportsRecords, useExtracurricularRecords } from '@/lib/dashboard-service';
+import { useAcademicRecords, useSportsRecords, useExtracurricularRecords, useProfile, calculateGrowthScore } from '@/lib/dashboard-service';
 import { useAuth } from "@/contexts/AuthContext";
 
 const StudentProgressRadar = () => {
@@ -11,6 +11,7 @@ const StudentProgressRadar = () => {
   const { data: academicRecords, loading: loadingAcademics } = useAcademicRecords(currentUser?.uid);
   const { data: sportsRecords, loading: loadingSports } = useSportsRecords(currentUser?.uid);
   const { data: extracurricularRecords, loading: loadingExtra } = useExtracurricularRecords(currentUser?.uid);
+  const { profile, loading: loadingProfile } = useProfile(currentUser?.uid);
 
   const radarData = useMemo(() => {
     // Calculate academic performance (average percentage)
@@ -57,7 +58,7 @@ const StudentProgressRadar = () => {
 
     // Calculate extracurricular performance
     const extraScore = extracurricularRecords && extracurricularRecords.length > 0 ? 
-      Math.min(100, extracurricularRecords.length * 20) :
+      Math.min(extracurricularRecords.length * 20, 100) :
       0;
 
     return [
@@ -67,7 +68,19 @@ const StudentProgressRadar = () => {
     ];
   }, [academicRecords, sportsRecords, extracurricularRecords]);
 
-  if (loadingAcademics || loadingSports || loadingExtra) {
+  const studentName = profile?.childName || "Student";
+  const growthScore = useMemo(() => {
+    return calculateGrowthScore(
+      academicRecords || [], 
+      sportsRecords || [], 
+      extracurricularRecords || [], 
+      [], // goals
+      [], // milestones
+      []  // journal entries
+    );
+  }, [academicRecords, sportsRecords, extracurricularRecords]);
+
+  if (loadingAcademics || loadingSports || loadingExtra || loadingProfile) {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -86,7 +99,7 @@ const StudentProgressRadar = () => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
+        <CardTitle className="text-sm font-medium">{studentName}'s Progress</CardTitle>
         <Radar className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
@@ -124,6 +137,10 @@ const StudentProgressRadar = () => {
           </ResponsiveContainer>
         </div>
         <div className="mt-4 space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">Overall Growth</span>
+            <span className="text-sm font-medium">{growthScore}%</span>
+          </div>
           {radarData.map((item) => (
             <div key={item.area} className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">{item.area}</span>

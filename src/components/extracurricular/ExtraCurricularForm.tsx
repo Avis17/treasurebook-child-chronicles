@@ -20,7 +20,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -39,6 +38,29 @@ const achievementOptions = [
   "Honorable Mention",
   "Best Performance",
   "Other"
+];
+
+const categoryOptions = [
+  "Arts & Culture",
+  "Music",
+  "Dance",
+  "Drama & Theatre",
+  "Debate & Public Speaking",
+  "Academic Competitions",
+  "Community Service",
+  "Leadership",
+  "Technology & Coding",
+  "Environmental Activities",
+  "Other"
+];
+
+const levelOptions = [
+  "School Level",
+  "Inter-School",
+  "District Level",
+  "State Level",
+  "National Level",
+  "International Level"
 ];
 
 const formSchema = z.object({
@@ -80,7 +102,7 @@ export const ExtraCurricularForm = ({ isOpen, onClose, onSubmit, initialData }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[650px] sm:max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{initialData ? "Edit Activity" : "Add Activity"}</DialogTitle>
           <DialogDescription>
@@ -89,12 +111,12 @@ export const ExtraCurricularForm = ({ isOpen, onClose, onSubmit, initialData }: 
         </DialogHeader>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 grid sm:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="activity"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="sm:col-span-2">
                   <FormLabel>Activity</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. Soccer" {...field} />
@@ -103,19 +125,32 @@ export const ExtraCurricularForm = ({ isOpen, onClose, onSubmit, initialData }: 
                 </FormItem>
               )}
             />
+            
             <FormField
               control={form.control}
               name="category"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. Sports" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categoryOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            
             <FormField
               control={form.control}
               name="date"
@@ -129,19 +164,32 @@ export const ExtraCurricularForm = ({ isOpen, onClose, onSubmit, initialData }: 
                 </FormItem>
               )}
             />
+            
             <FormField
               control={form.control}
               name="level"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Level</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. National" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select level" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {levelOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            
             <FormField
               control={form.control}
               name="organizer"
@@ -181,7 +229,7 @@ export const ExtraCurricularForm = ({ isOpen, onClose, onSubmit, initialData }: 
               )}
             />
 
-            <Button type="submit">{initialData ? "Update" : "Submit"}</Button>
+            <Button type="submit" className="sm:col-span-2">{initialData ? "Update" : "Submit"}</Button>
           </form>
         </Form>
       </DialogContent>

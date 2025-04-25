@@ -123,7 +123,6 @@ export const SportsRecordForm = ({ isOpen, onClose, onSubmit, initialData }: Spo
     // If "Other" is selected as event type, use the custom sport type value
     if (values.eventType === "Other" && customSportType) {
       finalValues.sportName = customSportType;
-      finalValues.eventType = customSportType; // Also update eventType
     } else {
       finalValues.sportName = values.eventType;
     }
@@ -133,7 +132,7 @@ export const SportsRecordForm = ({ isOpen, onClose, onSubmit, initialData }: Spo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[650px] sm:max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{initialData ? "Edit Sports Record" : "Add New Sports Record"}</DialogTitle>
           <DialogDescription>
@@ -141,12 +140,12 @@ export const SportsRecordForm = ({ isOpen, onClose, onSubmit, initialData }: Spo
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 grid sm:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="eventName"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="sm:col-span-2">
                   <FormLabel>Event Name</FormLabel>
                   <FormControl>
                     <Input placeholder="Event's name" {...field} />
@@ -239,7 +238,7 @@ export const SportsRecordForm = ({ isOpen, onClose, onSubmit, initialData }: Spo
                         <Button
                           variant={"outline"}
                           className={cn(
-                            "w-[240px] pl-3 text-left font-normal",
+                            "w-full pl-3 text-left font-normal",
                             !field.value && "text-muted-foreground"
                           )}
                         >
@@ -334,7 +333,7 @@ export const SportsRecordForm = ({ isOpen, onClose, onSubmit, initialData }: Spo
                 </FormItem>
               )}
             />
-            <Button type="submit">Submit</Button>
+            <Button type="submit" className="sm:col-span-2">Submit</Button>
           </form>
         </Form>
       </DialogContent>
