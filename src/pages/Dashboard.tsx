@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +13,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import OverviewCards from "@/components/dashboard/OverviewCards";
 import ActivitySummary from "@/components/dashboard/ActivitySummary";
 import MarksSummaryCard from "@/components/dashboard/MarksSummaryCard";
+import { LearningProgressCards } from "@/components/dashboard/LearningProgressCards";
 import { ChevronRight } from "lucide-react";
 
 const Dashboard = () => {
