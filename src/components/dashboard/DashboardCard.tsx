@@ -2,8 +2,9 @@
 import * as React from "react";
 import { Card } from "@/components/ui/card";
 
-interface DashboardCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  title?: React.ReactNode;  // Changed from string to ReactNode to allow elements
+// Use Omit to exclude the 'title' property from HTMLAttributes before extending
+interface DashboardCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
+  title?: React.ReactNode;  // Define our own title prop with ReactNode type
   action?: React.ReactNode;
   className?: string;
   children: React.ReactNode;
