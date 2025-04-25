@@ -1,3 +1,4 @@
+
 import React from "react";
 import { DashboardCard } from "./DashboardCard";
 import { Calendar } from "@/components/ui/calendar";
@@ -376,9 +377,12 @@ export const CalendarSection = () => {
               }
             }}
             components={{
-              Day: ({ date: dayDate, ...props }) => {
+              Day: ({ date: dayDate, displayMonth, ...props }) => {
                 const className = getDayClassName(dayDate);
-                return <button {...props} className={`${props.className || ''} ${className}`} />;
+                return <button 
+                  {...props} 
+                  className={`${props.className || ''} ${className}`} 
+                />
               }
             }}
           />
