@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, NavLink, useLocation } from "react-router-dom"
 import { signOut } from "firebase/auth"
 import { auth, db } from "@/lib/firebase"
@@ -35,11 +35,11 @@ import {
   MessageSquare,
   HelpCircle,
   File,
-  Image
+  Image,
+  ChevronLeft
 } from "lucide-react"
 import { useTheme } from "@/providers/ThemeProvider"
 import { useAuth } from "@/contexts/AuthContext"
-import { useEffect } from "react"
 import { doc, getDoc } from "firebase/firestore"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
@@ -67,6 +67,8 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   const { theme, toggleTheme } = useTheme();
   const { isAdmin, currentUser } = useAuth();
   const [profileName, setProfileName] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [openGroups, setOpenGroups] = useState<string[]>(['Overview']);
 
   useEffect(() => {
     const fetchProfileName = async () => {
@@ -180,27 +182,38 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
     return groups
   }
 
-  const [openGroups, setOpenGroups] = useState<string[]>(['Overview'])
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
   const toggleGroup = (title: string) => {
     setOpenGroups(prev =>
       prev.includes(title)
         ? prev.filter(t => t !== title)
         : [...prev, title]
-    )
-  }
+    );
+  };
 
   return (
-    <div className="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen">
-      <div className="flex flex-col items-center justify-center h-32 px-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
-        <img 
-          src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png" 
-          alt="Treasure Book Logo" 
-          className="h-16 w-auto mb-2"
-        />
-        <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">
-          TreasureBook
-        </h1>
+    <div className={`fixed inset-y-0 left-0 z-40 transition-all duration-300 ease-in-out ${
+      isCollapsed ? 'w-16' : 'w-64'
+    } bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen`}>
+      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-800">
+        {!isCollapsed && (
+          <img 
+            src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png" 
+            alt="Treasure Book Logo" 
+            className="h-8 w-auto"
+          />
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className={`${isCollapsed ? 'mx-auto' : ''}`}
+        >
+          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </Button>
       </div>
 
       <ScrollArea className="flex-1 overflow-auto">
@@ -209,17 +222,21 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
             {getNavGroups().map((group) => (
               <Collapsible
                 key={group.title}
-                open={openGroups.includes(group.title)}
-                onOpenChange={() => toggleGroup(group.title)}
+                open={!isCollapsed && openGroups.includes(group.title)}
+                onOpenChange={() => !isCollapsed && toggleGroup(group.title)}
                 className="space-y-1"
               >
                 <CollapsibleTrigger asChild>
-                  <button className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md">
-                    {group.title}
-                    {openGroups.includes(group.title) ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
+                  <button className={`flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md ${
+                    isCollapsed ? 'justify-center' : ''
+                  }`}>
+                    {!isCollapsed && group.title}
+                    {!isCollapsed && (
+                      openGroups.includes(group.title) ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )
                     )}
                   </button>
                 </CollapsibleTrigger>
@@ -229,18 +246,21 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
                       key={item.path}
                       to={item.disabled ? "#" : item.path}
                       className={({ isActive }) => `
-                        flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium ml-2
-                        transition-colors duration-150 ease-in-out
+                        flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
+                        transition-colors duration-150 ease-in-out ${
+                          isCollapsed ? 'justify-center' : 'ml-2'
+                        }
                         ${item.disabled 
                           ? 'opacity-50 cursor-not-allowed' 
                           : isActive 
                             ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
                             : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
                       `}
+                      title={isCollapsed ? item.name : undefined}
                     >
                       {item.icon}
-                      <span>{item.name}</span>
-                      {item.disabled && (
+                      {!isCollapsed && <span>{item.name}</span>}
+                      {!isCollapsed && item.disabled && (
                         <span className="ml-auto text-xs text-gray-500">(Disabled)</span>
                       )}
                     </NavLink>
@@ -252,45 +272,34 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         </nav>
       </ScrollArea>
 
-      <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+      <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-800">
         <button
           onClick={toggleTheme}
-          className="flex items-center justify-between w-full gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
-            text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+          className={`flex items-center justify-${isCollapsed ? 'center' : 'between'} w-full gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
+            text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800`}
         >
           {theme === 'dark' ? (
-            <>
-              <div className="flex items-center gap-3">
-                <Sun className="w-5 h-5" />
-                <span>Light Mode</span>
-              </div>
-            </>
+            <Sun className="w-5 h-5" />
           ) : (
-            <>
-              <div className="flex items-center gap-3">
-                <Moon className="w-5 h-5" />
-                <span>Dark Mode</span>
-              </div>
-            </>
+            <Moon className="w-5 h-5" />
           )}
+          {!isCollapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
         </button>
         
         <button
           onClick={handleLogout}
-          className="flex items-center justify-between w-full gap-3 px-3 py-2 mt-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
-            text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+          className={`flex items-center justify-${isCollapsed ? 'center' : 'between'} w-full gap-3 px-3 py-2 mt-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out
+            text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20`}
         >
-          <div className="flex items-center gap-3">
-            <LogOut className="w-5 h-5" />
-            <span>Log out</span>
-          </div>
+          <LogOut className="w-5 h-5" />
+          {!isCollapsed && <span>Log out</span>}
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Sidebar
+export default Sidebar;
 
 export const navItems = [
   {

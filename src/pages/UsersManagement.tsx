@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { VERIFICATION_STATUS } from "@/lib/constants";
 
@@ -27,6 +26,8 @@ interface User {
   permissions?: {
     storage: boolean;
     aiInsights: boolean;
+    quiz: boolean;
+    voicePractice: boolean;
   };
   createdAt: any;
 }
@@ -53,7 +54,7 @@ const UsersManagement = () => {
       const usersData = usersSnapshot.docs.map(doc => ({
         uid: doc.id,
         ...doc.data(),
-        permissions: doc.data().permissions || { storage: false, aiInsights: false }
+        permissions: doc.data().permissions || { storage: false, aiInsights: false, quiz: false, voicePractice: false }
       } as User));
       
       setUsers(usersData);
@@ -95,10 +96,14 @@ const UsersManagement = () => {
     }
   };
 
-  const handleStoragePermissionChange = async (userId: string, enabled: boolean) => {
+  const handlePermissionChange = async (
+    userId: string, 
+    permission: 'storage' | 'aiInsights' | 'quiz' | 'voicePractice', 
+    enabled: boolean
+  ) => {
     try {
       await updateDoc(doc(db, "users", userId), {
-        "permissions.storage": enabled,
+        [`permissions.${permission}`]: enabled,
       });
 
       setUsers(prevUsers => 
@@ -107,7 +112,7 @@ const UsersManagement = () => {
             ...user, 
             permissions: { 
               ...user.permissions, 
-              storage: enabled 
+              [permission]: enabled 
             } 
           } : user
         )
@@ -115,45 +120,13 @@ const UsersManagement = () => {
 
       toast({
         title: "Permissions Updated",
-        description: `Storage permission ${enabled ? 'enabled' : 'disabled'} for user`,
+        description: `${permission} permission ${enabled ? 'enabled' : 'disabled'} for user`,
       });
     } catch (error) {
-      console.error("Error updating storage permission:", error);
+      console.error(`Error updating ${permission} permission:`, error);
       toast({
         title: "Error",
-        description: "Failed to update storage permission",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleAIInsightsPermissionChange = async (userId: string, enabled: boolean) => {
-    try {
-      await updateDoc(doc(db, "users", userId), {
-        "permissions.aiInsights": enabled,
-      });
-
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user.uid === userId ? { 
-            ...user, 
-            permissions: { 
-              ...user.permissions, 
-              aiInsights: enabled 
-            } 
-          } : user
-        )
-      );
-
-      toast({
-        title: "Permissions Updated",
-        description: `AI Insights permission ${enabled ? 'enabled' : 'disabled'} for user`,
-      });
-    } catch (error) {
-      console.error("Error updating AI Insights permission:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update AI Insights permission",
+        description: `Failed to update ${permission} permission`,
         variant: "destructive",
       });
     }
@@ -175,7 +148,7 @@ const UsersManagement = () => {
         {loading ? (
           <div className="flex justify-center p-4">Loading users...</div>
         ) : (
-          <div className="border rounded-md">
+          <div className="border rounded-md overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -184,7 +157,9 @@ const UsersManagement = () => {
                   <TableHead>Registration Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Storage Access</TableHead>
-                  <TableHead>AI Insights Access</TableHead>
+                  <TableHead>AI Insights</TableHead>
+                  <TableHead>Quiz Access</TableHead>
+                  <TableHead>Voice Practice</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -210,7 +185,7 @@ const UsersManagement = () => {
                         {user.verificationStatus === VERIFICATION_STATUS.APPROVED && (
                           <Switch
                             checked={user.permissions?.storage || false}
-                            onCheckedChange={(checked) => handleStoragePermissionChange(user.uid, checked)}
+                            onCheckedChange={(checked) => handlePermissionChange(user.uid, 'storage', checked)}
                           />
                         )}
                       </TableCell>
@@ -218,7 +193,23 @@ const UsersManagement = () => {
                         {user.verificationStatus === VERIFICATION_STATUS.APPROVED && (
                           <Switch
                             checked={user.permissions?.aiInsights || false}
-                            onCheckedChange={(checked) => handleAIInsightsPermissionChange(user.uid, checked)}
+                            onCheckedChange={(checked) => handlePermissionChange(user.uid, 'aiInsights', checked)}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {user.verificationStatus === VERIFICATION_STATUS.APPROVED && (
+                          <Switch
+                            checked={user.permissions?.quiz || false}
+                            onCheckedChange={(checked) => handlePermissionChange(user.uid, 'quiz', checked)}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {user.verificationStatus === VERIFICATION_STATUS.APPROVED && (
+                          <Switch
+                            checked={user.permissions?.voicePractice || false}
+                            onCheckedChange={(checked) => handlePermissionChange(user.uid, 'voicePractice', checked)}
                           />
                         )}
                       </TableCell>
@@ -244,7 +235,7 @@ const UsersManagement = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">No users found</TableCell>
+                    <TableCell colSpan={9} className="text-center">No users found</TableCell>
                   </TableRow>
                 )}
               </TableBody>
