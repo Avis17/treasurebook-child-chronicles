@@ -35,32 +35,28 @@ export function Animals() {
   const [currentOptions, setCurrentOptions] = useState<Animal[]>([]);
   const [targetAnimal, setTargetAnimal] = useState<Animal>({ name: "", image: "" });
   
-  // Fetch animals from API once when component loads
+  // Fetch animals when component loads
   useEffect(() => {
     fetchAnimals();
   }, []);
   
   const fetchAnimals = async () => {
     try {
-      // Try to use the Zoo Animal API
-      const response = await fetch("https://zoo-animal-api.herokuapp.com/animals/rand/10");
+      // Use Unsplash directly instead of the Zoo Animal API that has CORS issues
+      const animalNames = ["Lion", "Elephant", "Tiger", "Giraffe", "Zebra", "Penguin", 
+                          "Bear", "Wolf", "Fox", "Deer", "Monkey", "Kangaroo", "Koala"];
       
-      if (response.ok) {
-        const data = await response.json();
-        const formattedAnimals = data.map((animal: any) => ({
-          name: animal.name,
-          image: animal.image_link
-        }));
-        setAnimals(formattedAnimals);
-      } else {
-        // Use fallback if API fails
-        setAnimals(fallbackAnimals);
-      }
+      const formattedAnimals = animalNames.map(name => ({
+        name,
+        image: `https://source.unsplash.com/300x300/?${name.toLowerCase()},animal`
+      }));
+      
+      setAnimals(formattedAnimals);
+      setLoading(false);
     } catch (error) {
-      console.error("Error fetching animals:", error);
-      // Use fallback if API fails
+      console.error("Error setting up animals:", error);
+      // Use fallback if Unsplash fails
       setAnimals(fallbackAnimals);
-    } finally {
       setLoading(false);
     }
   };
@@ -147,7 +143,7 @@ export function Animals() {
               alt={animal.name}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.currentTarget.src = `https://source.unsplash.com/featured/?${animal.name}`;
+                e.currentTarget.src = `https://source.unsplash.com/featured/?${animal.name.toLowerCase()},animal`;
               }}
             />
           </Button>

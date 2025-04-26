@@ -29,6 +29,7 @@ interface User {
     aiInsights: boolean;
     quiz: boolean;
     voicePractice: boolean;
+    funLearning: boolean;
   };
   createdAt: any;
 }
@@ -59,7 +60,8 @@ const UsersManagement = () => {
           storage: false, 
           aiInsights: false, 
           quiz: false, 
-          voicePractice: false 
+          voicePractice: false,
+          funLearning: false
         }
       } as User));
       
@@ -104,7 +106,7 @@ const UsersManagement = () => {
 
   const handlePermissionChange = async (
     userId: string, 
-    permission: 'storage' | 'aiInsights' | 'quiz' | 'voicePractice', 
+    permission: 'storage' | 'aiInsights' | 'quiz' | 'voicePractice' | 'funLearning', 
     enabled: boolean
   ) => {
     try {
@@ -166,6 +168,7 @@ const UsersManagement = () => {
                   <TableHead>AI Insights</TableHead>
                   <TableHead>Quiz Access</TableHead>
                   <TableHead>Voice Practice</TableHead>
+                  <TableHead>Fun Learning</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -220,6 +223,14 @@ const UsersManagement = () => {
                         )}
                       </TableCell>
                       <TableCell>
+                        {user.verificationStatus === VERIFICATION_STATUS.APPROVED && (
+                          <Switch
+                            checked={user.permissions?.funLearning || false}
+                            onCheckedChange={(checked) => handlePermissionChange(user.uid, 'funLearning', checked)}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Select
                           value={user.verificationStatus}
                           onValueChange={(value) => handleStatusChange(user.uid, value)}
@@ -241,7 +252,7 @@ const UsersManagement = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center">No users found</TableCell>
+                    <TableCell colSpan={10} className="text-center">No users found</TableCell>
                   </TableRow>
                 )}
               </TableBody>

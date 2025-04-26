@@ -79,6 +79,13 @@ const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.Rea
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Check Fun Learning permission for fun learning routes
+  const isFunLearningRoute = location.pathname === '/fun-learning' || location.pathname.startsWith('/fun-learning/');
+  if (isFunLearningRoute && !currentUser.permissions?.funLearning) {
+    console.log("Fun Learning permission needed but not granted");
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <>{children}</>;
 };
 
