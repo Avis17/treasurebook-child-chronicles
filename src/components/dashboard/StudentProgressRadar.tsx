@@ -5,6 +5,7 @@ import { Radar } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar as RechartsRadar, ResponsiveContainer, Tooltip, PolarRadiusAxis } from 'recharts';
 import { useAcademicRecords, useSportsRecords, useExtracurricularRecords, useProfile, calculateGrowthScore } from '@/lib/dashboard-service';
 import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
 
 const StudentProgressRadar = () => {
   const { currentUser } = useAuth();
@@ -136,17 +137,47 @@ const StudentProgressRadar = () => {
             </RadarChart>
           </ResponsiveContainer>
         </div>
-        <div className="mt-4 space-y-2">
+        
+        <div className="mt-6 space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">Overall Growth</span>
-            <span className="text-sm font-medium">{growthScore}%</span>
-          </div>
-          {radarData.map((item) => (
-            <div key={item.area} className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">{item.area}</span>
-              <span className="text-sm font-medium">{item.value}%</span>
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold">Overall Growth</span>
+              <Badge variant={growthScore > 70 ? "success" : growthScore > 50 ? "warning" : "destructive"} 
+                className={`px-2 py-1 ${
+                  growthScore > 70 
+                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100" 
+                    : growthScore > 50 
+                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100"
+                      : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100"
+                }`}>
+                {growthScore}%
+              </Badge>
             </div>
-          ))}
+            <div className="text-sm text-muted-foreground">
+              {growthScore > 70 
+                ? "Excellent Progress" 
+                : growthScore > 50 
+                  ? "Good Progress" 
+                  : "Needs Improvement"}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4">
+            {radarData.map((item) => (
+              <div key={item.area} className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <div className="text-sm font-medium mb-1">{item.area}</div>
+                <div className="flex justify-between items-center">
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div 
+                      className="bg-blue-600 h-2.5 rounded-full" 
+                      style={{ width: `${item.value}%` }}
+                    ></div>
+                  </div>
+                  <span className="ml-2 text-sm font-medium">{item.value}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>

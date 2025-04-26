@@ -28,7 +28,9 @@ import BackupExport from "@/pages/BackupExport";
 import Profile from "@/pages/Profile";
 import Settings from "@/pages/Settings";
 import Feedback from "@/pages/Feedback";
+import FeedbackTable from "@/pages/FeedbackTable";
 import Calendar from "@/pages/Calendar";
+import Help from "@/pages/Help";
 
 function App() {
   return (
@@ -61,6 +63,8 @@ function App() {
               <Route path="profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
               <Route path="settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
               <Route path="feedback" element={<PrivateRoute><Feedback /></PrivateRoute>} />
+              <Route path="feedback-table" element={<PrivateRoute><FeedbackTable /></PrivateRoute>} />
+              <Route path="help" element={<PrivateRoute><Help /></PrivateRoute>} />
               <Route path="users" element={<PrivateRoute requiresAdmin={true}><UsersManagement /></PrivateRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -28,7 +28,9 @@ import {
   Home,
   GraduationCap,
   CalendarDays,
-  BookOpenText
+  BookOpenText,
+  MessageSquare,
+  HelpCircle
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -135,6 +137,8 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
       { name: "Milestones", icon: <Archive className="w-5 h-5" />, path: "/milestones" },
       { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
+      { name: "Feedback", icon: <MessageSquare className="w-5 h-5" />, path: "/feedback" },
+      { name: "Help", icon: <HelpCircle className="w-5 h-5" />, path: "/help" },
       { name: "Profile", icon: <User className="w-5 h-5" />, path: "/profile" },
       { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
     ];
