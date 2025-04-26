@@ -120,8 +120,11 @@ const Sports = () => {
         throw new Error("Record ID is missing");
       }
 
-      const recordRef = doc(db, "sportsRecords", updatedRecord.id);
-      await updateDoc(recordRef, updatedRecord);
+      // Create a copy of the record without the id field for Firestore update
+      const { id, ...recordData } = updatedRecord;
+      const recordRef = doc(db, "sportsRecords", id);
+      
+      await updateDoc(recordRef, recordData);
 
       setRecords(
         records.map((record) =>
