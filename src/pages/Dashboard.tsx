@@ -16,6 +16,7 @@ import { FeedbackSection } from "@/components/dashboard/FeedbackSection";
 import { ResourcesSection } from "@/components/dashboard/ResourcesSection";
 import ProfileHeader from "@/components/dashboard/ProfileHeader";
 import { StatsSummaryCards } from "@/components/dashboard/StatsSummaryCards";
+import { BadgesSection } from "@/components/dashboard/BadgesSection";
 
 const Dashboard = () => {
   const { currentUser, loading } = useAuth();
@@ -51,6 +52,9 @@ const Dashboard = () => {
           
           {/* Stats Summary Cards */}
           <StatsSummaryCards />
+          
+          {/* Badges Section */}
+          <BadgesSection />
           
           {/* Main Content - Single Column Layout */}
           <div className="space-y-8">
