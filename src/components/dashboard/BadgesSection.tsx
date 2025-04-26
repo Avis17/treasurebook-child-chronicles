@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from "react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
-import { Award, Trophy, Star, Medal, Sparkles, CheckCircle, BookOpen, Calendar, Target, Activity } from "lucide-react";
+import { Award, Trophy, Star, Medal, Sparkles, CheckCircle, BookOpen, Calendar, Target, Activity, ChevronDown } from "lucide-react";
 import { Badge, BADGE_THRESHOLDS, fetchUserBadges, getUserProgressCounts } from "@/lib/badge-service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -297,13 +297,21 @@ export const BadgesSection = () => {
     return counts;
   }, {Bronze: 0, Silver: 0, Gold: 0});
 
+  const [isExpanded, setIsExpanded] = useState(true);
+
   return (
     <DashboardCard
       title={
-        <div className="flex items-center gap-2">
-          <Trophy className="h-6 w-6 text-yellow-500" />
-          <span>My Achievements</span>
-        </div>
+        <CollapsibleTrigger 
+          className="flex items-center gap-2 w-full cursor-pointer"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className="flex items-center gap-2 flex-1">
+            <Trophy className="h-6 w-6 text-yellow-500" />
+            <span>My Achievements</span>
+          </div>
+          <ChevronDown className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+        </CollapsibleTrigger>
       }
       action={
         <div className="flex items-center gap-2">
@@ -332,100 +340,104 @@ export const BadgesSection = () => {
       }
       className="col-span-full"
     >
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="rounded-lg overflow-hidden shadow-md">
-              <Skeleton className="h-24 w-full" />
-              <div className="p-4">
-                <Skeleton className="h-5 w-3/4 mb-2" />
-                <Skeleton className="h-3 w-1/2 mb-3" />
-                <Skeleton className="h-2 w-full mb-1" />
-                <Skeleton className="h-3 w-2/3" />
-              </div>
+      <Collapsible defaultOpen={true}>
+        <CollapsibleContent>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className="rounded-lg overflow-hidden shadow-md">
+                  <Skeleton className="h-24 w-full" />
+                  <div className="p-4">
+                    <Skeleton className="h-5 w-3/4 mb-2" />
+                    <Skeleton className="h-3 w-1/2 mb-3" />
+                    <Skeleton className="h-2 w-full mb-1" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-8">
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-4 shadow-sm">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div className="flex-1">
-                <h3 className="text-lg font-bold flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-purple-500" />
-                  Badge Collection Progress
-                </h3>
-                <p className="text-sm text-muted-foreground mb-2">Unlock all badges to complete your collection</p>
-                <div className="flex items-center gap-2">
-                  <Progress value={unlockedPercentage} className="h-2.5 flex-1" />
-                  <span className="text-sm font-medium">{Math.round(unlockedPercentage)}%</span>
+          ) : (
+            <div className="space-y-8">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-4 shadow-sm">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-purple-500" />
+                      Badge Collection Progress
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2">Unlock all badges to complete your collection</p>
+                    <div className="flex items-center gap-2">
+                      <Progress value={unlockedPercentage} className="h-2.5 flex-1" />
+                      <span className="text-sm font-medium">{Math.round(unlockedPercentage)}%</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 flex-wrap md:flex-nowrap">
+                    {Object.keys(BADGE_COLORS).map(level => (
+                      <div key={level} className="flex items-center gap-2 bg-white/80 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg shadow-sm">
+                        <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${BADGE_COLORS[level as keyof typeof BADGE_COLORS].bg}`}></div>
+                        <span className="text-xs font-medium">{level}</span>
+                        <span className="text-xs bg-gray-100 dark:bg-gray-600 px-1.5 rounded">
+                          {badgeLevelCounts[level as keyof typeof badgeLevelCounts] || 0}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-3 flex-wrap md:flex-nowrap">
-                {Object.keys(BADGE_COLORS).map(level => (
-                  <div key={level} className="flex items-center gap-2 bg-white/80 dark:bg-gray-700/50 px-3 py-1.5 rounded-lg shadow-sm">
-                    <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${BADGE_COLORS[level as keyof typeof BADGE_COLORS].bg}`}></div>
-                    <span className="text-xs font-medium">{level}</span>
-                    <span className="text-xs bg-gray-100 dark:bg-gray-600 px-1.5 rounded">
-                      {badgeLevelCounts[level as keyof typeof badgeLevelCounts] || 0}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
-          {Object.entries(groupedBadges).map(([category, categoryBadges]) => (
-            <div key={category} className="space-y-4">
-              <div className="flex items-center gap-2">
-                {CATEGORY_DETAILS[category as keyof typeof CATEGORY_DETAILS]?.icon && (
-                  <div className={`p-1.5 rounded-lg ${CATEGORY_DETAILS[category as keyof typeof CATEGORY_DETAILS].bg}`}>
-                    {React.createElement(CATEGORY_DETAILS[category as keyof typeof CATEGORY_DETAILS].icon, { 
-                      className: `w-5 h-5 ${CATEGORY_DETAILS[category as keyof typeof CATEGORY_DETAILS].color}` 
-                    })}
+              {Object.entries(groupedBadges).map(([category, categoryBadges]) => (
+                <div key={category} className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    {CATEGORY_DETAILS[category as keyof typeof CATEGORY_DETAILS]?.icon && (
+                      <div className={`p-1.5 rounded-lg ${CATEGORY_DETAILS[category as keyof typeof CATEGORY_DETAILS].bg}`}>
+                        {React.createElement(CATEGORY_DETAILS[category as keyof typeof CATEGORY_DETAILS].icon, { 
+                          className: `w-5 h-5 ${CATEGORY_DETAILS[category as keyof typeof CATEGORY_DETAILS].color}` 
+                        })}
+                      </div>
+                    )}
+                    <h3 className="text-lg font-bold">
+                      {category === 'ExtraCurricular' ? 'Activities' : category} Badges
+                    </h3>
                   </div>
-                )}
-                <h3 className="text-lg font-bold">
-                  {category === 'ExtraCurricular' ? 'Activities' : category} Badges
-                </h3>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-4">
-                {categoryBadges.map(badge => (
-                  <BadgeItem key={badge.id} badge={badge} />
-                ))}
-              </div>
-              
-              {getNextBadgeInfo(category as keyof typeof BADGE_THRESHOLDS) && (
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                  <div className="flex justify-between items-center mb-1 text-sm">
-                    <span className="font-medium flex items-center gap-1.5">
-                      <Trophy className="h-4 w-4 text-amber-500" />
-                      Next {category === 'ExtraCurricular' ? 'Activity' : category} Badge:
-                    </span>
-                    <span className="text-sm">
-                      <span className="font-medium">{getProgressCount(category as keyof typeof BADGE_THRESHOLDS)}</span>
-                      <span className="text-muted-foreground">/{getNextBadgeInfo(category as keyof typeof BADGE_THRESHOLDS)?.required}</span>
-                    </span>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-4">
+                    {categoryBadges.map(badge => (
+                      <BadgeItem key={badge.id} badge={badge} />
+                    ))}
                   </div>
-                  <Progress 
-                    value={(getProgressCount(category as keyof typeof BADGE_THRESHOLDS) / 
-                           (getNextBadgeInfo(category as keyof typeof BADGE_THRESHOLDS)?.required || 1)) * 100}
-                    className="h-2"
-                  />
+                  
+                  {getNextBadgeInfo(category as keyof typeof BADGE_THRESHOLDS) && (
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                      <div className="flex justify-between items-center mb-1 text-sm">
+                        <span className="font-medium flex items-center gap-1.5">
+                          <Trophy className="h-4 w-4 text-amber-500" />
+                          Next {category === 'ExtraCurricular' ? 'Activity' : category} Badge:
+                        </span>
+                        <span className="text-sm">
+                          <span className="font-medium">{getProgressCount(category as keyof typeof BADGE_THRESHOLDS)}</span>
+                          <span className="text-muted-foreground">/{getNextBadgeInfo(category as keyof typeof BADGE_THRESHOLDS)?.required}</span>
+                        </span>
+                      </div>
+                      <Progress 
+                        value={(getProgressCount(category as keyof typeof BADGE_THRESHOLDS) / 
+                               (getNextBadgeInfo(category as keyof typeof BADGE_THRESHOLDS)?.required || 1)) * 100}
+                        className="h-2"
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
+              
+              <div className="mt-6 text-sm text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                <p className="flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Badges are unlocked based on your child's achievements in quizzes, journals, sports, goals, and activities.
+                </p>
+              </div>
             </div>
-          ))}
-          
-          <div className="mt-6 text-sm text-gray-500 dark:text-gray-400 italic bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
-            <p className="flex items-center gap-2">
-              <Info className="h-4 w-4" />
-              Badges are unlocked based on your child's achievements in quizzes, journals, sports, goals, and activities.
-            </p>
-          </div>
-        </div>
-      )}
+          )}
+        </CollapsibleContent>
+      </Collapsible>
     </DashboardCard>
   );
 };
