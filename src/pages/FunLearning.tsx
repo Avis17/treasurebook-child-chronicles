@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -15,7 +14,7 @@ import { doc, updateDoc, increment } from "firebase/firestore";
 export const FunLearning = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentUser } = useAuth();
+  const { currentUser, isAdmin } = useAuth();
   const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
@@ -26,16 +25,16 @@ export const FunLearning = () => {
       }
 
       // Check if user has permission to access fun learning
-      // Similar to how other features check permissions
+      // Use the currentUser from AuthContext which includes permissions
       const hasPermission = 
-        user.permissions?.funLearning || 
-        user.isAdmin;
+        currentUser?.permissions?.funLearning || 
+        isAdmin;
 
       setHasPermission(hasPermission !== false);
     });
 
     return () => unsubscribe();
-  }, [navigate]);
+  }, [navigate, currentUser, isAdmin]);
 
   const incrementLearningAttempt = async () => {
     if (!currentUser?.uid) return;
