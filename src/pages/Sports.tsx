@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -76,11 +77,13 @@ const Sports = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      const docRef = await addDoc(collection(db, "sportsRecords"), {
+      const newRecord = {
         ...values,
         userId: user.uid,
         createdAt: serverTimestamp(),
-      });
+      };
+
+      const docRef = await addDoc(collection(db, "sportsRecords"), newRecord);
 
       // Update profile counter
       const userProfileRef = doc(db, "profiles", user.uid);
@@ -143,9 +146,13 @@ const Sports = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (record: SportsRecord) => {
     try {
-      await deleteDoc(doc(db, "sportsRecords", id));
+      if (!record.id) {
+        throw new Error("Record ID is missing");
+      }
+      
+      await deleteDoc(doc(db, "sportsRecords", record.id));
       
       // Update profile counter
       const user = auth.currentUser;
@@ -156,7 +163,7 @@ const Sports = () => {
         });
       }
       
-      setRecords(records.filter(record => record.id !== id));
+      setRecords(records.filter(item => item.id !== record.id));
       
       toast({
         title: "Success",
