@@ -9,11 +9,31 @@ import { ActionPlanTabs } from "@/components/ai-insights/ActionPlanTabs";
 import { ForecastSection } from "@/components/ai-insights/ForecastSection";
 import { SuggestionsSection } from "@/components/ai-insights/SuggestionsSection";
 import { QuizInsights } from "@/components/ai-insights/QuizInsights";
-import suggestions from "@/data/ai-insights/suggestions.json";
+import suggestionsData from "@/data/ai-insights/suggestions.json";
 import forecasts from "@/data/ai-insights/forecasts.json";
-import actionPlans from "@/data/ai-insights/action-plans.json";
+import actionPlansData from "@/data/ai-insights/action-plans.json";
 import { useSportsRecords, useAcademicRecords, useExtracurricularRecords, identifyWeakAreas } from "@/lib/dashboard-service";
 import { Lightbulb } from "lucide-react";
+
+// Transform action plans data to match expected ActionPlan type
+const transformActionPlans = () => {
+  return {
+    shortterm: actionPlansData.flatMap(plan => plan.shortTerm || []),
+    mediumterm: actionPlansData.flatMap(plan => plan.mediumTerm || []),
+    longterm: actionPlansData.flatMap(plan => plan.longTerm || [])
+  };
+};
+
+// Transform suggestions data to match expected format
+const transformSuggestions = () => {
+  return suggestionsData.map(suggestion => ({
+    id: suggestion.id,
+    category: suggestion.category,
+    title: `Insight #${suggestion.priority}`,
+    text: suggestion.content,
+    type: suggestion.trigger.condition
+  }));
+};
 
 export default function AIInsights() {
   const { currentUser } = useAuth();
@@ -25,6 +45,8 @@ export default function AIInsights() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [weakAreas, setWeakAreas] = useState<string[]>([]);
+  const [actionPlans, setActionPlans] = useState(() => transformActionPlans());
+  const [suggestions, setSuggestions] = useState(() => transformSuggestions());
 
   // Wait for all data to load
   useEffect(() => {
