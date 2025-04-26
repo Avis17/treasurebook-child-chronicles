@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,9 +43,45 @@ export function QuizAttemptModal({
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
   const [answerSubmitted, setAnswerSubmitted] = useState(false);
+  // Store fixed options for each question to prevent reshuffling
+  const [questionOptions, setQuestionOptions] = useState<string[][]>([]);
   
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
+  
+  // Ref to track if the component is mounted
+  const isMounted = useRef(true);
+  
+  // Initialize options for all questions when the modal opens
+  useEffect(() => {
+    if (open && quiz.questions.length > 0) {
+      // Reset state when opening a new quiz
+      setCurrentQuestionIndex(0);
+      setAnswers(Array(quiz.questions.length).fill(''));
+      setQuizCompleted(false);
+      setTimeLeft(300);
+      setAnswerSubmitted(false);
+      
+      // Generate and store fixed options for each question
+      const allOptions = quiz.questions.map(question => {
+        if (quiz.type === 'boolean') {
+          return ['True', 'False'];
+        } else {
+          // For multiple choice, shuffle the answers once
+          return shuffleArray([
+            question.correct_answer,
+            ...question.incorrect_answers
+          ]);
+        }
+      });
+      
+      setQuestionOptions(allOptions);
+    }
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, [open, quiz]);
   
   // Timer effect
   useEffect(() => {
@@ -65,23 +101,7 @@ export function QuizAttemptModal({
     return () => clearInterval(timer);
   }, [open, quizCompleted]);
   
-  // Prepare answer options for current question
-  const getOptions = () => {
-    if (!currentQuestion) return [];
-    
-    if (quiz.type === 'boolean') {
-      return ['True', 'False'];
-    } else {
-      // For multiple choice, shuffle the answers
-      const options = [
-        currentQuestion.correct_answer,
-        ...currentQuestion.incorrect_answers
-      ];
-      return shuffleArray(options);
-    }
-  };
-  
-  // Shuffle array helper function
+  // Shuffle array helper function (only used during initialization)
   const shuffleArray = (array: string[]) => {
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -150,22 +170,11 @@ export function QuizAttemptModal({
     });
   };
   
-  // Handle clicking outside modal
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen && !quizCompleted) {
-      // Confirm before closing if quiz is in progress
-      if (window.confirm("Are you sure you want to exit the quiz? Your progress will be lost.")) {
-        onOpenChange(false);
-      }
-    } else {
-      onOpenChange(newOpen);
-    }
-  };
-
-  const options = getOptions();
+  // Get options for the current question from the stored options array
+  const options = questionOptions[currentQuestionIndex] || [];
   
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between mb-2">
@@ -248,7 +257,7 @@ export function QuizAttemptModal({
         <div className="flex justify-between mt-6">
           <Button 
             variant="outline" 
-            onClick={() => handleOpenChange(false)}
+            onClick={() => onOpenChange(false)}
           >
             Exit Quiz
           </Button>

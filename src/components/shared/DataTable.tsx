@@ -30,7 +30,7 @@ interface DataTableProps<T> {
     title?: string;
     description?: string;
   };
-  loading?: boolean; // Add the missing loading prop
+  loading?: boolean;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -42,7 +42,7 @@ export function DataTable<T extends Record<string, any>>({
   onEdit,
   onDelete,
   deleteDialogProps,
-  loading = false, // Default to false
+  loading = false,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{

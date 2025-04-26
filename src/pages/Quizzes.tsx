@@ -82,6 +82,12 @@ const Quizzes = () => {
 
   const form = useForm<QuizFormValues>({
     resolver: zodResolver(quizSchema),
+    defaultValues: {
+      class: "",
+      category: "",
+      difficulty: "",
+      type: "multiple"
+    }
   });
 
   // Fetch categories from the Open Trivia API
@@ -106,39 +112,8 @@ const Quizzes = () => {
 
   // Fetch quiz attempts from Firebase
   useEffect(() => {
-    const fetchQuizAttempts = async () => {
-      if (!currentUser) return;
-      
-      setTableLoading(true);
-      try {
-        let attemptQuery = query(
-          collection(db, "quizAttempts"),
-          where("userId", "==", currentUser.uid),
-          orderBy("timestamp", "desc")
-        );
-        
-        const querySnapshot = await getDocs(attemptQuery);
-        const attempts: QuizAttempt[] = [];
-        
-        querySnapshot.forEach((doc) => {
-          attempts.push({ id: doc.id, ...doc.data() } as QuizAttempt);
-        });
-        
-        setQuizAttempts(attempts);
-      } catch (error) {
-        console.error("Error fetching quiz attempts:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load your quiz attempts.",
-        });
-      } finally {
-        setTableLoading(false);
-      }
-    };
-
     fetchQuizAttempts();
-  }, [currentUser, toast]);
+  }, [currentUser]);
 
   const onSubmit = async (values: QuizFormValues) => {
     setIsLoading(true);
@@ -169,13 +144,14 @@ const Quizzes = () => {
         const categoryObj = categories.find(c => c.id.toString() === categoryId);
         const categoryName = categoryObj ? categoryObj.name : "General Knowledge";
         
-        setCurrentQuiz({
+        const newQuiz = {
           ...values,
           categoryId: parseInt(categoryId),
           categoryName,
           questions: decodedQuestions
-        });
+        };
         
+        setCurrentQuiz(newQuiz);
         setIsDialogOpen(false);
         setQuizModalOpen(true);
       } else {
@@ -203,6 +179,19 @@ const Quizzes = () => {
     textArea.innerHTML = text;
     return textArea.value;
   }
+
+  // Reset the quiz state when modal is closed
+  const handleQuizModalClose = (open: boolean) => {
+    if (!open) {
+      // Ask for confirmation before closing
+      if (window.confirm("Are you sure you want to exit the quiz? Your progress will be lost.")) {
+        setQuizModalOpen(false);
+        // Don't need to reset currentQuiz here as it will be overwritten on next quiz start
+      }
+    } else {
+      setQuizModalOpen(open);
+    }
+  };
 
   // Handle quiz completion
   const handleQuizComplete = async (result: any) => {
@@ -261,6 +250,7 @@ const Quizzes = () => {
     
     setTableLoading(true);
     try {
+      // Create a compound query with proper indexing (userId and timestamp)
       const attemptQuery = query(
         collection(db, "quizAttempts"),
         where("userId", "==", currentUser.uid),
@@ -277,9 +267,27 @@ const Quizzes = () => {
       setQuizAttempts(attempts);
     } catch (error) {
       console.error("Error fetching quiz attempts:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load quiz attempts. Please make sure you created the required index in Firebase.",
+      });
     } finally {
       setTableLoading(false);
     }
+  };
+
+  // Reset form when dialog is closed
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open) {
+      form.reset({
+        class: "",
+        category: "",
+        difficulty: "",
+        type: "multiple"
+      });
+    }
+    setIsDialogOpen(open);
   };
 
   // Define DataTable columns
@@ -461,7 +469,7 @@ const Quizzes = () => {
       </div>
 
       {/* Quiz Setup Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Start New Quiz</DialogTitle>
@@ -477,7 +485,7 @@ const Quizzes = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Class</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a class" />
@@ -500,7 +508,7 @@ const Quizzes = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Difficulty</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select difficulty" />
@@ -523,7 +531,7 @@ const Quizzes = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a category" />
@@ -551,7 +559,7 @@ const Quizzes = () => {
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         className="flex flex-col space-y-1"
                       >
                         <div className="flex items-center space-x-2">
@@ -573,7 +581,7 @@ const Quizzes = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
+                  onClick={() => handleDialogOpenChange(false)}
                 >
                   Cancel
                 </Button>
@@ -597,7 +605,7 @@ const Quizzes = () => {
       {currentQuiz && (
         <QuizAttemptModal
           open={quizModalOpen}
-          onOpenChange={setQuizModalOpen}
+          onOpenChange={handleQuizModalClose}
           quiz={currentQuiz}
           onComplete={handleQuizComplete}
         />
