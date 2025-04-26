@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -49,7 +48,7 @@ const Gallery = () => {
       
       setLoading(true);
       const fetchedImages = await fetchGalleryImages(currentUser.uid);
-      setImages(fetchedImages);
+      setImages(fetchedImages as GalleryImage[]);
     } catch (error) {
       console.error("Error loading images:", error);
       toast({
@@ -81,7 +80,6 @@ const Gallery = () => {
       setSelectedImage(null);
       loadImages();
       
-      // Reset file input
       const fileInput = document.getElementById("image") as HTMLInputElement;
       if (fileInput) fileInput.value = "";
       
@@ -127,7 +125,6 @@ const Gallery = () => {
     "personal"
   ];
 
-  // Filter images by category and search query
   const filteredImages = images.filter(image => {
     const categoryMatch = selectedCategory === 'all' || image.category === selectedCategory;
     const searchMatch = !searchQuery || 

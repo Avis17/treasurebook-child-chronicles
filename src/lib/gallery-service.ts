@@ -1,7 +1,8 @@
+
 import { toast } from "@/components/ui/use-toast";
 import { v4 as uuidv4 } from "uuid";
 import { db, storage } from "@/lib/firebase";
-import { collection, addDoc, deleteDoc, doc, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, deleteDoc, doc, query, where, getDocs, serverTimestamp, DocumentData } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 
 export interface GalleryItem {
@@ -65,7 +66,7 @@ export const uploadImage = async (
   }
 };
 
-// Rename to match the import in Gallery.tsx
+// Fix the fetchGalleryImages function to return the correct type
 export const fetchGalleryImages = async (userId: string) => {
   try {
     const galleryQuery = query(
@@ -75,17 +76,24 @@ export const fetchGalleryImages = async (userId: string) => {
     
     const querySnapshot = await getDocs(galleryQuery);
     
-    return querySnapshot.docs.map(doc => ({
-      ...doc.data(),
-      id: doc.data().id || doc.id,
-    }));
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: data.id || doc.id,
+        name: data.name || "",
+        url: data.url || "",
+        timestamp: data.timestamp,
+        userId: data.userId || "",
+        category: data.category || "general"
+      };
+    });
   } catch (error) {
     console.error("Error fetching gallery images:", error);
     return [];
   }
 };
 
-// Rename to match the import in Gallery.tsx
+// Fix the function to match the expected return type
 export const deleteImageFromStorage = async (imageId: string, userId?: string | null) => {
   try {
     if (!userId) {
