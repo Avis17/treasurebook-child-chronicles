@@ -356,7 +356,7 @@ const Settings = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="dark:text-white">Password</Label>
+                  <Label className="dark:text-white">Password</Label><br />
                   <Button 
                     variant="outline" 
                     onClick={handlePasswordReset}
@@ -370,7 +370,7 @@ const Settings = () => {
                 <Separator className="dark:bg-gray-700" />
                 
                 <div className="space-y-2">
-                  <Label className="dark:text-white">Account</Label>
+                  <Label className="dark:text-white">Account</Label><br />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="destructive">Delete Account</Button>

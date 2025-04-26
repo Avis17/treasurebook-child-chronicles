@@ -9,7 +9,7 @@ import { collection, query, where, getDocs, orderBy } from "firebase/firestore"
 interface QuizAttempt {
   id: string
   title: string
-  score: number
+  percentage: number
   date: any
   userId: string
 }
@@ -47,11 +47,11 @@ export function QuizSummarySection() {
           attempts.push({
             id: doc.id,
             title: data.title,
-            score: data.score,
+            percentage: data.percentage,
             date: data.date,
             userId: data.userId
           })
-          totalScore += data.score
+          totalScore += data.percentage
         })
 
         setQuizData({
@@ -95,11 +95,11 @@ export function QuizSummarySection() {
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">{quiz.title}</span>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(quiz.date.toDate()).toLocaleDateString()}
+                        {new Date(quiz?.date).toLocaleDateString()}
                       </span>
                     </div>
-                    <Badge variant={quiz.score >= 80 ? "success" : "secondary"}>
-                      {quiz.score}%
+                    <Badge variant={quiz.percentage >= 80 ? "success" : "secondary"}>
+                      {quiz.percentage}%
                     </Badge>
                   </div>
                 ))
