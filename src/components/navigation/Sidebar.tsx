@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -47,7 +46,7 @@ interface NavItem {
   name: string;
   icon: React.ReactNode;
   path: string;
-  requiresPermission?: 'storage' | 'aiInsights'; // Make this optional with specific allowed values
+  requiresPermission?: 'storage' | 'aiInsights' | 'quiz'; // Added quiz permission
 }
 
 const Sidebar = ({ isMobile }: SidebarProps) => {
@@ -137,7 +136,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
       { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
       { name: "Milestones", icon: <Archive className="w-5 h-5" />, path: "/milestones" },
-      { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes" },
+      { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes", requiresPermission: 'quiz' },
       { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
       { name: "Feedback", icon: <MessageSquare className="w-5 h-5" />, path: "/feedback" },
       { name: "Help", icon: <HelpCircle className="w-5 h-5" />, path: "/help" },
@@ -207,7 +206,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         </nav>
       </ScrollArea>
 
-      {/* Footer Actions - Completely separate from scrollable area */}
+      {/* Footer Actions */}
       <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <button
           onClick={toggleTheme}
