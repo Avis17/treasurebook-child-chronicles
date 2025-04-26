@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +16,8 @@ import { ResourcesSection } from "@/components/dashboard/ResourcesSection";
 import ProfileHeader from "@/components/dashboard/ProfileHeader";
 import { StatsSummaryCards } from "@/components/dashboard/StatsSummaryCards";
 import { BadgesSection } from "@/components/dashboard/BadgesSection";
+import { BadgeInfoDialog } from "@/components/dashboard/BadgeInfoDialog";
+import { QuizSummarySection } from "@/components/dashboard/QuizSummarySection";
 
 const Dashboard = () => {
   const { currentUser, loading } = useAuth();
@@ -54,10 +55,17 @@ const Dashboard = () => {
           <StatsSummaryCards />
           
           {/* Badges Section */}
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold">Badges & Achievements</h2>
+            <BadgeInfoDialog />
+          </div>
           <BadgesSection />
           
           {/* Main Content - Single Column Layout */}
           <div className="space-y-8">
+            {/* Quiz Summary Section */}
+            <QuizSummarySection />
+            
             {/* Academic Performance */}
             <AcademicPerformanceSection />
             
