@@ -65,6 +65,20 @@ const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.Rea
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Check Quiz permission for quizzes routes
+  const isQuizRoute = location.pathname === '/quizzes';
+  if (isQuizRoute && !currentUser.permissions?.quiz) {
+    console.log("Quiz permission needed but not granted");
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Check Voice Practice permission for voice practice routes
+  const isVoicePracticeRoute = location.pathname === '/voice-practice';
+  if (isVoicePracticeRoute && !currentUser.permissions?.voicePractice) {
+    console.log("Voice Practice permission needed but not granted");
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return <>{children}</>;
 };
 

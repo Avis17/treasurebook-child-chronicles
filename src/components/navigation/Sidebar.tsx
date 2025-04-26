@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react"
 import { useNavigate, NavLink, useLocation } from "react-router-dom"
 import { signOut } from "firebase/auth"
@@ -36,12 +37,14 @@ import {
   HelpCircle,
   File,
   Image,
-  ChevronLeft
+  ChevronLeft,
+  Lock
 } from "lucide-react"
 import { useTheme } from "@/providers/ThemeProvider"
 import { useAuth } from "@/contexts/AuthContext"
 import { doc, getDoc } from "firebase/firestore"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface NavGroup {
   title: string
@@ -60,6 +63,31 @@ interface SidebarProps {
   isMobile: boolean;
 }
 
+// Helper function to save sidebar state to localStorage
+const saveSidebarState = (isCollapsed: boolean, openGroups: string[]) => {
+  try {
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
+    localStorage.setItem('sidebarOpenGroups', JSON.stringify(openGroups));
+  } catch (error) {
+    console.error("Error saving sidebar state to localStorage:", error);
+  }
+};
+
+// Helper function to get sidebar state from localStorage
+const getSidebarState = () => {
+  try {
+    const isCollapsed = localStorage.getItem('sidebarCollapsed');
+    const openGroups = localStorage.getItem('sidebarOpenGroups');
+    return {
+      isCollapsed: isCollapsed ? JSON.parse(isCollapsed) : false,
+      openGroups: openGroups ? JSON.parse(openGroups) : ['Overview']
+    };
+  } catch (error) {
+    console.error("Error getting sidebar state from localStorage:", error);
+    return { isCollapsed: false, openGroups: ['Overview'] };
+  }
+};
+
 const Sidebar = ({ isMobile }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,8 +95,11 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   const { theme, toggleTheme } = useTheme();
   const { isAdmin, currentUser } = useAuth();
   const [profileName, setProfileName] = useState<string | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [openGroups, setOpenGroups] = useState<string[]>(['Overview']);
+  
+  // Get initial state from localStorage
+  const { isCollapsed: initialCollapsed, openGroups: initialOpenGroups } = getSidebarState();
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  const [openGroups, setOpenGroups] = useState<string[]>(initialOpenGroups);
 
   useEffect(() => {
     const fetchProfileName = async () => {
@@ -106,6 +137,11 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
     fetchProfileName();
   }, [currentUser]);
 
+  // Save sidebar state to localStorage when it changes
+  useEffect(() => {
+    saveSidebarState(isCollapsed, openGroups);
+  }, [isCollapsed, openGroups]);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -125,20 +161,44 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   };
 
   const getNavGroups = (): NavGroup[] => {
+    // Check user permissions
+    const hasStorageAccess = currentUser?.permissions?.storage || isAdmin;
+    const hasAIInsightsAccess = currentUser?.permissions?.aiInsights || isAdmin;
+    const hasQuizAccess = currentUser?.permissions?.quiz || isAdmin;
+    const hasVoicePracticeAccess = currentUser?.permissions?.voicePractice || isAdmin;
+
     const groups: NavGroup[] = [
       {
         title: "Overview",
         items: [
           { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
-          { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights", requiresPermission: 'aiInsights' },
+          { 
+            name: "AI Insights", 
+            icon: hasAIInsightsAccess ? <Lightbulb className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
+            path: "/ai-insights", 
+            requiresPermission: 'aiInsights',
+            disabled: !hasAIInsightsAccess
+          },
         ]
       },
       {
         title: "Learning",
         items: [
           { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
-          { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes", requiresPermission: 'quiz' },
-          { name: "Voice Practice", icon: <Mic className="w-5 h-5" />, path: "/voice-practice", requiresPermission: 'voicePractice' },
+          { 
+            name: "Quiz Master", 
+            icon: hasQuizAccess ? <BrainCircuit className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
+            path: "/quizzes", 
+            requiresPermission: 'quiz',
+            disabled: !hasQuizAccess
+          },
+          { 
+            name: "Voice Practice", 
+            icon: hasVoicePracticeAccess ? <Mic className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
+            path: "/voice-practice", 
+            requiresPermission: 'voicePractice',
+            disabled: !hasVoicePracticeAccess
+          },
         ]
       },
       {
@@ -153,8 +213,20 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       {
         title: "Resources",
         items: [
-          { name: "Gallery", icon: <ImageIcon className="w-5 h-5" />, path: "/gallery", requiresPermission: 'storage' },
-          { name: "Documents", icon: <FileArchive className="w-5 h-5" />, path: "/documents", requiresPermission: 'storage' },
+          { 
+            name: "Gallery", 
+            icon: hasStorageAccess ? <ImageIcon className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
+            path: "/gallery", 
+            requiresPermission: 'storage',
+            disabled: !hasStorageAccess
+          },
+          { 
+            name: "Documents", 
+            icon: hasStorageAccess ? <FileArchive className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
+            path: "/documents", 
+            requiresPermission: 'storage',
+            disabled: !hasStorageAccess
+          },
           { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
         ]
       },
@@ -203,7 +275,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
           <img 
             src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png" 
             alt="Treasure Book Logo" 
-            className="h-8 w-auto"
+            className="h-10 w-auto" // Increased logo size
           />
         )}
         <Button
@@ -242,28 +314,46 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-1">
                   {group.items.map((item) => (
-                    <NavLink
-                      key={item.path}
-                      to={item.disabled ? "#" : item.path}
-                      className={({ isActive }) => `
-                        flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
-                        transition-colors duration-150 ease-in-out ${
-                          isCollapsed ? 'justify-center' : 'ml-2'
-                        }
-                        ${item.disabled 
-                          ? 'opacity-50 cursor-not-allowed' 
-                          : isActive 
-                            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
-                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
-                      `}
-                      title={isCollapsed ? item.name : undefined}
-                    >
-                      {item.icon}
-                      {!isCollapsed && <span>{item.name}</span>}
-                      {!isCollapsed && item.disabled && (
-                        <span className="ml-auto text-xs text-gray-500">(Disabled)</span>
-                      )}
-                    </NavLink>
+                    <TooltipProvider key={item.path} delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div>
+                            <NavLink
+                              to={item.disabled ? "#" : item.path}
+                              className={({ isActive }) => `
+                                flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
+                                transition-colors duration-150 ease-in-out ${
+                                  isCollapsed ? 'justify-center' : 'ml-2'
+                                }
+                                ${item.disabled 
+                                  ? 'opacity-50 cursor-not-allowed text-gray-400 dark:text-gray-600' 
+                                  : isActive 
+                                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
+                                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
+                              `}
+                              onClick={(e) => {
+                                if (item.disabled) {
+                                  e.preventDefault();
+                                }
+                              }}
+                              title={isCollapsed ? item.name : undefined}
+                            >
+                              {item.icon}
+                              {!isCollapsed && <span>{item.name}</span>}
+                              {!isCollapsed && item.disabled && (
+                                <span className="ml-auto text-xs text-red-500">(Restricted)</span>
+                              )}
+                            </NavLink>
+                          </div>
+                        </TooltipTrigger>
+                        {(isCollapsed || item.disabled) && (
+                          <TooltipContent side="right">
+                            <p>{item.name}</p>
+                            {item.disabled && <p className="text-xs text-red-500">Access Restricted</p>}
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
                   ))}
                 </CollapsibleContent>
               </Collapsible>

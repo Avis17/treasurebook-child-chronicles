@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -54,7 +55,12 @@ const UsersManagement = () => {
       const usersData = usersSnapshot.docs.map(doc => ({
         uid: doc.id,
         ...doc.data(),
-        permissions: doc.data().permissions || { storage: false, aiInsights: false, quiz: false, voicePractice: false }
+        permissions: doc.data().permissions || { 
+          storage: false, 
+          aiInsights: false, 
+          quiz: false, 
+          voicePractice: false 
+        }
       } as User));
       
       setUsers(usersData);
@@ -148,7 +154,7 @@ const UsersManagement = () => {
         {loading ? (
           <div className="flex justify-center p-4">Loading users...</div>
         ) : (
-          <div className="border rounded-md overflow-x-auto">
+          <div className="border rounded-md table-container overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

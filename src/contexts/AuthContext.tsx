@@ -10,6 +10,8 @@ export interface AuthUser extends User {
   permissions?: {
     storage: boolean;
     aiInsights: boolean;
+    quiz: boolean;
+    voicePractice: boolean;
   };
 }
 
@@ -49,7 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const enhancedAdmin = {
               ...user,
               verificationStatus: VERIFICATION_STATUS.APPROVED, // Always approved for admin
-              permissions: { storage: true, aiInsights: true }, // Full permissions for admin
+              permissions: { storage: true, aiInsights: true, quiz: true, voicePractice: true }, // Full permissions for admin
             };
             setCurrentUser(enhancedAdmin);
             setLoading(false);
@@ -63,14 +65,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const enhancedUser = {
               ...user,
               verificationStatus: userData.verificationStatus || VERIFICATION_STATUS.PENDING,
-              permissions: userData.permissions || { storage: false, aiInsights: false },
+              permissions: userData.permissions || { storage: false, aiInsights: false, quiz: false, voicePractice: false },
             };
             setCurrentUser(enhancedUser);
           } else {
             setCurrentUser({
               ...user,
               verificationStatus: VERIFICATION_STATUS.PENDING,
-              permissions: { storage: false, aiInsights: false }
+              permissions: { storage: false, aiInsights: false, quiz: false, voicePractice: false }
             });
           }
         } catch (error) {
@@ -78,7 +80,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setCurrentUser({
             ...user,
             verificationStatus: VERIFICATION_STATUS.PENDING,
-            permissions: { storage: false, aiInsights: false }
+            permissions: { storage: false, aiInsights: false, quiz: false, voicePractice: false }
           });
         }
       } else {

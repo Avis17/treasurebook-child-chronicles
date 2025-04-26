@@ -5,6 +5,15 @@
     padding-left: 1rem;
     padding-right: 1rem;
   }
+  
+  /* Add space for sidebar on large screens */
+  .has-sidebar-space {
+    margin-left: 16rem; /* Width of expanded sidebar */
+  }
+  
+  .has-sidebar-space.sidebar-collapsed {
+    margin-left: 4rem; /* Width of collapsed sidebar */
+  }
 }
 
 @media (max-width: 768px) {
@@ -22,11 +31,66 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+  
+  /* Make tables scroll horizontally on small screens */
+  table {
+    min-width: 100%;
+    white-space: nowrap;
+  }
+  
+  /* Adjust card layouts */
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
 
   /* Form responsiveness */
   .form-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+  
+  /* Content should expand when sidebar is hidden on mobile */
+  .main-content {
+    width: 100%;
+    margin-left: 0;
+  }
+  
+  /* On mobile, hide sidebar by default */
+  .sidebar-mobile-hidden {
+    display: none;
+  }
+  
+  /* Add padding on mobile when sidebar is hidden */
+  .mobile-padding {
+    padding: 1rem;
+  }
+  
+  /* Adjust typography for better mobile readability */
+  h1 {
+    font-size: 1.75rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+  
+  .mobile-full-width {
+    width: 100% !important;
+  }
+  
+  /* Stack buttons on mobile */
+  .button-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  /* Voice practice page adjustments */
+  .voice-practice-tabs .tab-triggers {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -38,11 +102,62 @@
   /* Card grid responsiveness */
   .card-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   /* Navigation responsiveness */
   .nav-items {
     flex-direction: column;
+  }
+  
+  /* Button adjustments */
+  button.full-width-mobile {
+    width: 100%;
+  }
+  
+  /* Hide elements on small screens */
+  .hide-on-small {
+    display: none;
+  }
+  
+  /* Stack elements that are side by side */
+  .stack-on-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  /* Adjust padding and margins */
+  .mobile-section {
+    padding: 1rem 0.5rem;
+  }
+  
+  /* Fix form controls on small screens */
+  input, select, textarea {
+    font-size: 16px; /* Prevents iOS zoom on input */
+  }
+  
+  /* UsersManagement page specific */
+  .users-table-wrapper {
+    margin: 0 -1rem;
+  }
+  
+  /* Adjust padding for pages */
+  .page-container {
+    padding: 0.5rem;
+  }
+  
+  /* Adjust spacing in cards */
+  .card-content {
+    padding: 1rem;
+  }
+  
+  /* Ensure labels and inputs stack properly */
+  .form-row {
+    flex-direction: column;
+  }
+  
+  .form-row > * {
+    width: 100%;
   }
 }
 
@@ -50,5 +165,64 @@
 @media print {
   .no-print {
     display: none;
+  }
+  
+  /* Ensure that tables print correctly */
+  .table-print-friendly {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table-print-friendly th,
+  .table-print-friendly td {
+    border: 1px solid #ddd;
+  }
+}
+
+/* Transition for smooth sidebar handling */
+.sidebar-transition {
+  transition: margin 0.3s ease;
+}
+
+/* Adjust App Layout for sidebar */
+.app-with-sidebar {
+  display: flex;
+}
+
+.main-content-area {
+  flex: 1;
+  transition: margin-left 0.3s ease;
+}
+
+.main-content-area.sidebar-expanded {
+  margin-left: 16rem; /* Width of expanded sidebar */
+}
+
+.main-content-area.sidebar-collapsed {
+  margin-left: 4rem; /* Width of collapsed sidebar */
+}
+
+@media (max-width: 768px) {
+  .main-content-area.sidebar-expanded,
+  .main-content-area.sidebar-collapsed {
+    margin-left: 0; /* On mobile, content takes full width */
+  }
+  
+  .sidebar-mobile {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 50;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .sidebar-mobile-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 16rem;
+    height: 100%;
   }
 }
