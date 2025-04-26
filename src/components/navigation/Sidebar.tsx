@@ -53,6 +53,7 @@ interface NavItem {
   icon: React.ReactNode
   path: string
   requiresPermission?: 'storage' | 'aiInsights' | 'quiz' | 'voicePractice'
+  disabled?: boolean
 }
 
 interface SidebarProps {
