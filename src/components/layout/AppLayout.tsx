@@ -28,10 +28,9 @@ const AppLayout = ({ children, title, hideHeader = false }: AppLayoutProps) => {
   }, [navigate]);
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar isMobile={isMobile} />
-      
-      <div className="flex-1 overflow-auto flex flex-col pb-16">
+      <div className="flex-1 flex flex-col w-full transition-all duration-300">
         <main className="container mx-auto px-6 py-8 flex-grow">
           {!hideHeader && (
             <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">

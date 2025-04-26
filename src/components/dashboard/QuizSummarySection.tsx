@@ -12,10 +12,10 @@ import { toast } from "@/hooks/use-toast"
 interface QuizAttempt {
   id: string
   title: string
-  categoryName: string
   percentage: number
   date: any
   userId: string
+  category?: string
 }
 
 export function QuizSummarySection() {
@@ -48,7 +48,7 @@ export function QuizSummarySection() {
         )
 
         const querySnapshot = await getDocs(q)
-        const attempts: any = []
+        const attempts: QuizAttempt[] = []
         let totalScore = 0
         let highestScore = 0
 
@@ -56,7 +56,7 @@ export function QuizSummarySection() {
           const data = doc.data() as QuizAttempt
           attempts.push({
             id: doc.id,
-            title: data.title || data.categoryName || 'Unnamed Quiz',
+            title: data.title || data.category || 'Unnamed Quiz',
             percentage: data.percentage || 0,
             date: data.date,
             userId: data.userId
