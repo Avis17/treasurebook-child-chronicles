@@ -33,6 +33,12 @@ import Calendar from "@/pages/Calendar";
 import Help from "@/pages/Help";
 import Quizzes from "@/pages/Quizzes";
 import VoicePractice from "@/pages/VoicePractice";
+import FunLearning from "@/pages/FunLearning";
+import Colors from "@/pages/fun-learning/Colors";
+import Animals from "@/pages/fun-learning/Animals";
+import Numbers from "@/pages/fun-learning/Numbers";
+import Shapes from "@/pages/fun-learning/Shapes";
+import Flags from "@/pages/fun-learning/Flags";
 
 function App() {
   return (
@@ -69,6 +75,12 @@ function App() {
               <Route path="help" element={<PrivateRoute><Help /></PrivateRoute>} />
               <Route path="quizzes" element={<PrivateRoute><Quizzes /></PrivateRoute>} />
               <Route path="voice-practice" element={<PrivateRoute><VoicePractice /></PrivateRoute>} />
+              <Route path="fun-learning" element={<PrivateRoute><FunLearning /></PrivateRoute>} />
+              <Route path="fun-learning/colors" element={<PrivateRoute><Colors /></PrivateRoute>} />
+              <Route path="fun-learning/animals" element={<PrivateRoute><Animals /></PrivateRoute>} />
+              <Route path="fun-learning/numbers" element={<PrivateRoute><Numbers /></PrivateRoute>} />
+              <Route path="fun-learning/shapes" element={<PrivateRoute><Shapes /></PrivateRoute>} />
+              <Route path="fun-learning/flags" element={<PrivateRoute><Flags /></PrivateRoute>} />
               <Route path="users" element={<PrivateRoute requiresAdmin={true}><UsersManagement /></PrivateRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react"
 import { useNavigate, NavLink, useLocation } from "react-router-dom"
 import { signOut } from "firebase/auth"
@@ -38,7 +37,8 @@ import {
   File,
   Image,
   ChevronLeft,
-  Lock
+  Lock,
+  Gamepad
 } from "lucide-react"
 import { useTheme } from "@/providers/ThemeProvider"
 import { useAuth } from "@/contexts/AuthContext"
@@ -55,7 +55,7 @@ interface NavItem {
   name: string
   icon: React.ReactNode
   path: string
-  requiresPermission?: 'storage' | 'aiInsights' | 'quiz' | 'voicePractice'
+  requiresPermission?: 'storage' | 'aiInsights' | 'quiz' | 'voicePractice' | 'funLearning'
   disabled?: boolean
 }
 
@@ -63,7 +63,6 @@ interface SidebarProps {
   isMobile: boolean;
 }
 
-// Helper function to save sidebar state to localStorage
 const saveSidebarState = (isCollapsed: boolean, openGroups: string[]) => {
   try {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
@@ -73,7 +72,6 @@ const saveSidebarState = (isCollapsed: boolean, openGroups: string[]) => {
   }
 };
 
-// Helper function to get sidebar state from localStorage
 const getSidebarState = () => {
   try {
     const isCollapsed = localStorage.getItem('sidebarCollapsed');
@@ -96,7 +94,6 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   const { isAdmin, currentUser } = useAuth();
   const [profileName, setProfileName] = useState<string | null>(null);
   
-  // Get initial state from localStorage
   const { isCollapsed: initialCollapsed, openGroups: initialOpenGroups } = getSidebarState();
   const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const [openGroups, setOpenGroups] = useState<string[]>(initialOpenGroups);
@@ -137,7 +134,6 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
     fetchProfileName();
   }, [currentUser]);
 
-  // Save sidebar state to localStorage when it changes
   useEffect(() => {
     saveSidebarState(isCollapsed, openGroups);
   }, [isCollapsed, openGroups]);
@@ -161,11 +157,11 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   };
 
   const getNavGroups = (): NavGroup[] => {
-    // Check user permissions
     const hasStorageAccess = currentUser?.permissions?.storage || isAdmin;
     const hasAIInsightsAccess = currentUser?.permissions?.aiInsights || isAdmin;
     const hasQuizAccess = currentUser?.permissions?.quiz || isAdmin;
     const hasVoicePracticeAccess = currentUser?.permissions?.voicePractice || isAdmin;
+    const hasFunLearningAccess = currentUser?.permissions?.funLearning || isAdmin;
 
     const groups: NavGroup[] = [
       {
@@ -191,6 +187,13 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
             path: "/quizzes", 
             requiresPermission: 'quiz',
             disabled: !hasQuizAccess
+          },
+          { 
+            name: "Fun Learning", 
+            icon: hasFunLearningAccess ? <Gamepad className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
+            path: "/fun-learning", 
+            requiresPermission: 'funLearning',
+            disabled: !hasFunLearningAccess
           },
           { 
             name: "Voice Practice", 
@@ -241,7 +244,6 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       },
     ]
 
-    // Add admin section if user is admin
     if (isAdmin) {
       groups.push({
         title: "Admin",
@@ -275,7 +277,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
           <img 
             src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png" 
             alt="Treasure Book Logo" 
-            className="h-10 w-auto" // Increased logo size
+            className="h-10 w-auto"
           />
         )}
         <Button

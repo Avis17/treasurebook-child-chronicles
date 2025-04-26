@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
 import { deleteDoc, doc, updateDoc, increment } from "firebase/firestore"
 import { useAuth } from "@/contexts/AuthContext"
@@ -17,6 +17,7 @@ export function DeleteQuizButton({ quizId, onDelete }: DeleteQuizButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const { currentUser } = useAuth()
+  const { toast } = useToast()
 
   const handleDelete = async () => {
     try {
