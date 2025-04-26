@@ -141,7 +141,7 @@ const Help = () => {
                       Can I export my child's data?
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Yes, you can export all data in various formats including PDF and Excel. Go to Settings > Backup & Export to access this feature.
+                      Yes, you can export all data in various formats including PDF and Excel. Go to Settings &gt; Backup &amp; Export to access this feature.
                     </p>
                   </div>
                   
