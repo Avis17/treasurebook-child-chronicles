@@ -30,8 +30,7 @@ import {
   BookOpenText,
   MessageSquare,
   HelpCircle,
-  BrainCircuit,
-  Mic
+  BrainCircuit
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,11 +41,12 @@ interface SidebarProps {
   isMobile: boolean;
 }
 
+// Define an interface for the navigation items
 interface NavItem {
   name: string;
   icon: React.ReactNode;
   path: string;
-  requiresPermission?: 'storage' | 'aiInsights';
+  requiresPermission?: 'storage' | 'aiInsights' | 'quiz'; // Added quiz permission
 }
 
 const Sidebar = ({ isMobile }: SidebarProps) => {
@@ -57,11 +57,13 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   const { isAdmin, currentUser } = useAuth();
   const [profileName, setProfileName] = useState<string | null>(null);
   
+  // Fetch profile name from Firestore when component mounts
   useEffect(() => {
     const fetchProfileName = async () => {
       if (!currentUser?.uid) return;
       
       try {
+        // Try profiles collection first
         const profileRef = doc(db, "profiles", currentUser.uid);
         const profileSnap = await getDoc(profileRef);
         
@@ -73,6 +75,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
           }
         }
         
+        // Try users collection as fallback
         const userRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userRef);
         
@@ -84,6 +87,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
           }
         }
         
+        // Default to Firebase auth display name as last resort
         setProfileName(currentUser.displayName);
       } catch (error) {
         console.error("Error fetching profile data:", error);
@@ -112,12 +116,14 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   };
 
   const getNavItems = () => {
+    // Now all of these items are typed as NavItem
     const baseItems: NavItem[] = [
       { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
       { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights", requiresPermission: 'aiInsights' },
       { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
       { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
       { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
+      { name: "Voice Practice", icon: <BrainCircuit className="w-5 h-5" />, path: "/voice-practice" },
     ];
 
     const storageItems: NavItem[] = [
@@ -131,8 +137,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
       { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
       { name: "Milestones", icon: <Archive className="w-5 h-5" />, path: "/milestones" },
-      { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes" },
-      { name: "Voice Practice", icon: <Mic className="w-5 h-5" />, path: "/voice-practice" },
+      { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes", requiresPermission: 'quiz' },
       { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
       { name: "Feedback", icon: <MessageSquare className="w-5 h-5" />, path: "/feedback" },
       { name: "Help", icon: <HelpCircle className="w-5 h-5" />, path: "/help" },
@@ -148,6 +153,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
 
     const processedItems = items.map(item => ({
       ...item,
+      // Update this line to bypass permission check for admin users
       disabled: item.requiresPermission && !isAdmin ? !currentUser?.permissions?.[item.requiresPermission] : false,
     }));
 
@@ -160,6 +166,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
 
   return (
     <div className="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen">
+      {/* Header */}
       <div className="flex flex-col items-center justify-center h-32 px-4 border-b border-gray-200 dark:border-gray-800 shrink-0">
         <img 
           src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png" 
@@ -171,6 +178,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         </h1>
       </div>
 
+      {/* Navigation Items - Using ScrollArea for scrollable content */}
       <ScrollArea className="flex-1 overflow-auto">
         <nav className="px-3 py-2">
           <div className="space-y-1">
@@ -199,6 +207,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         </nav>
       </ScrollArea>
 
+      {/* Footer Actions */}
       <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <button
           onClick={toggleTheme}

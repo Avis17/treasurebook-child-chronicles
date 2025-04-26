@@ -1,40 +1,73 @@
 
-import { useState, useRef } from "react";
-import { useToast } from "@/hooks/use-toast";
+import React, { useState, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/layout/AppLayout";
-import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Play, Save, ArrowRight } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Mic, MicOff, Speech, Headphones, Play, Pause, Save, CheckCircle, Timer, AlertCircle } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
-const speakingPrompts = [
-  "Talk about your favorite animal for 30 seconds",
-  "Describe your perfect day",
-  "Tell a short story about a magical adventure",
-  "Explain how to make your favorite food",
-  "If you could have any superpower, what would it be and why?",
-  "Tell us about your favorite book or movie character",
-  "Describe what you want to be when you grow up",
-  "Talk about a place you would like to visit",
-  "Share something interesting you learned recently",
-  "Describe your favorite hobby"
+const PRACTICE_PROMPTS = [
+  {
+    id: "animals",
+    title: "Favorite Animal",
+    prompt: "Talk about your favorite animal for 1 minute",
+    category: "Nature",
+    difficulty: "Easy"
+  },
+  {
+    id: "story",
+    title: "Short Story",
+    prompt: "Tell a story about a magical adventure in 1 minute",
+    category: "Storytelling",
+    difficulty: "Medium"
+  },
+  {
+    id: "dream",
+    title: "Dream Job",
+    prompt: "Describe your dream job when you grow up",
+    category: "Career",
+    difficulty: "Easy"
+  },
+  {
+    id: "vacation",
+    title: "Dream Vacation",
+    prompt: "Talk about your dream vacation spot",
+    category: "Travel",
+    difficulty: "Easy"
+  },
+  {
+    id: "superpower",
+    title: "Superpower",
+    prompt: "If you had a superpower, what would it be and why?",
+    category: "Imagination",
+    difficulty: "Medium"
+  },
+  {
+    id: "book",
+    title: "Favorite Book",
+    prompt: "Describe your favorite book and why you like it",
+    category: "Literature",
+    difficulty: "Medium"
+  }
 ];
 
 const VoicePractice = () => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioURL, setAudioURL] = useState<string | null>(null);
-  const [currentPrompt, setCurrentPrompt] = useState(speakingPrompts[0]);
-  const [recordingTime, setRecordingTime] = useState(0);
+  const { currentUser } = useAuth();
   const { toast } = useToast();
+  const [recording, setRecording] = useState(false);
+  const [audioURL, setAudioURL] = useState<string | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [selectedPrompt, setSelectedPrompt] = useState(PRACTICE_PROMPTS[0]);
+  const [completedPrompts, setCompletedPrompts] = useState<string[]>([]);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<number | null>(null);
-
-  const getRandomPrompt = () => {
-    const randomIndex = Math.floor(Math.random() * speakingPrompts.length);
-    setCurrentPrompt(speakingPrompts[randomIndex]);
-  };
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const startRecording = async () => {
     try {
@@ -44,8 +77,8 @@ const VoicePractice = () => {
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
       
-      mediaRecorder.ondataavailable = (e) => {
-        audioChunksRef.current.push(e.data);
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
       };
       
       mediaRecorder.onstop = () => {
@@ -53,203 +86,313 @@ const VoicePractice = () => {
         const audioUrl = URL.createObjectURL(audioBlob);
         setAudioURL(audioUrl);
         
-        // Stop all tracks in the stream
+        // Stop all tracks on the stream to release microphone
         stream.getTracks().forEach(track => track.stop());
       };
       
-      // Start recording
-      mediaRecorder.start();
-      setIsRecording(true);
-      setAudioURL(null);
+      // Reset timer
       setRecordingTime(0);
-      
-      // Start timer
-      timerRef.current = window.setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prevTime => prevTime + 1);
       }, 1000);
+      
+      mediaRecorder.start();
+      setRecording(true);
+      
+      // Auto-stop after 70 seconds (slightly over 1 minute to give buffer)
+      setTimeout(() => {
+        if (mediaRecorderRef.current?.state === "recording") {
+          stopRecording();
+        }
+      }, 70000);
       
     } catch (error) {
       console.error("Error accessing microphone:", error);
       toast({
-        title: "Microphone Access Error",
+        title: "Microphone Access Failed",
         description: "Please allow microphone access to use this feature.",
         variant: "destructive"
       });
     }
   };
-
+  
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+    if (mediaRecorderRef.current && recording) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      setRecording(false);
       
-      // Clear timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-      
-      toast({
-        title: "Recording stopped",
-        description: "Your recording has been saved. You can listen to it now.",
-      });
     }
   };
-
+  
+  const playAudio = () => {
+    if (audioRef.current && audioURL) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+  
   const saveRecording = () => {
-    if (audioURL) {
-      const a = document.createElement("a");
-      a.href = audioURL;
-      a.download = `speaking-practice-${new Date().toISOString()}.mp3`;
-      a.click();
-      
-      toast({
-        title: "Recording saved",
-        description: "Your recording has been downloaded to your device.",
-      });
-    }
+    if (!audioURL) return;
+    
+    // In a real app, you would upload the recording to storage
+    // For now, we'll just mark it as completed
+    setCompletedPrompts(prev => [...prev, selectedPrompt.id]);
+    
+    toast({
+      title: "Recording Saved!",
+      description: "Your voice practice has been saved successfully.",
+    });
   };
-
+  
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+  
+  const selectPrompt = (prompt: typeof PRACTICE_PROMPTS[0]) => {
+    setSelectedPrompt(prompt);
+    // Clear previous recording
+    setAudioURL(null);
+    setRecording(false);
+    setIsPlaying(false);
+    setRecordingTime(0);
+    
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
   };
 
   return (
     <AppLayout title="Voice Practice">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <DashboardCard 
-          title={
-            <div className="flex items-center gap-2">
-              <Mic className="h-5 w-5 text-blue-500" />
-              <span>Voice Practice</span>
-              <Badge variant="info" className="ml-2">Coming Soon</Badge>
-            </div>
-          }
-          gradient
-        >
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold mb-2">Speak and Learn</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Practice speaking skills with fun prompts! Record yourself speaking about different topics to improve communication and confidence.
+      <div className="container py-6">
+        <div className="mx-auto max-w-5xl space-y-8">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2 mb-2">
+              <Speech className="h-8 w-8 text-purple-500" />
+              Speak and Learn
+            </h1>
+            <p className="text-muted-foreground">
+              Practice and improve speaking skills through fun recording exercises
             </p>
           </div>
           
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg mb-6">
-            <h3 className="text-lg font-medium mb-4">Today's Speaking Prompt:</h3>
-            <p className="text-xl font-semibold mb-6 text-blue-700 dark:text-blue-300">"{currentPrompt}"</p>
-            <Button 
-              variant="outline" 
-              className="flex gap-2 items-center" 
-              onClick={getRandomPrompt}
-            >
-              <ArrowRight className="h-4 w-4" /> Get New Prompt
-            </Button>
-          </div>
-          
-          <div className="space-y-6">
-            <div className="flex items-center justify-center gap-4 my-8">
-              {!isRecording ? (
-                <Button 
-                  onClick={startRecording} 
-                  className="bg-red-500 hover:bg-red-600 flex items-center gap-2 px-6"
-                >
-                  <Mic className="h-4 w-4" /> Start Recording
-                </Button>
-              ) : (
-                <Button 
-                  onClick={stopRecording} 
-                  variant="destructive" 
-                  className="flex items-center gap-2 px-6 animate-pulse"
-                >
-                  <Square className="h-4 w-4" /> Stop Recording ({formatTime(recordingTime)})
-                </Button>
-              )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1 space-y-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Speaking Prompts</CardTitle>
+                  <CardDescription>
+                    Choose a topic to practice speaking
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {PRACTICE_PROMPTS.map((prompt) => (
+                    <div
+                      key={prompt.id}
+                      onClick={() => selectPrompt(prompt)}
+                      className={`p-3 rounded-lg cursor-pointer border transition-all ${
+                        selectedPrompt.id === prompt.id
+                          ? "bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-900/20 border-transparent"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-medium text-sm">{prompt.title}</h3>
+                        {completedPrompts.includes(prompt.id) && (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{prompt.prompt}</p>
+                      <div className="flex gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          {prompt.category}
+                        </Badge>
+                        <Badge 
+                          className={`text-xs ${
+                            prompt.difficulty === "Easy" 
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
+                          }`}
+                        >
+                          {prompt.difficulty}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             </div>
             
-            {audioURL && (
-              <div className="flex flex-col items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                <h3 className="text-lg font-medium">Your Recording</h3>
-                <audio src={audioURL} controls className="w-full max-w-md" />
-                <div className="flex gap-3">
-                  <Button 
-                    variant="outline" 
-                    className="flex items-center gap-2"
-                    onClick={saveRecording}
-                  >
-                    <Save className="h-4 w-4" /> Save Recording
-                  </Button>
-                  <Button 
-                    variant="default" 
-                    className="flex items-center gap-2"
-                    onClick={startRecording}
-                  >
-                    <Mic className="h-4 w-4" /> Record Again
-                  </Button>
-                </div>
-              </div>
-            )}
+            <div className="md:col-span-2 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{selectedPrompt.title}</CardTitle>
+                  <CardDescription>{selectedPrompt.prompt}</CardDescription>
+                </CardHeader>
+                <CardContent className="pt-2">
+                  <div className="bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-900/20 rounded-lg p-6 flex flex-col items-center justify-center min-h-52">
+                    {recording ? (
+                      <div className="text-center">
+                        <div className="relative inline-block">
+                          <div className="animate-ping absolute inline-flex h-16 w-16 rounded-full bg-purple-400 opacity-30"></div>
+                          <Mic className="relative h-16 w-16 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <p className="mt-4 text-lg font-medium">Recording...</p>
+                        <div className="flex items-center justify-center mt-2">
+                          <Timer className="h-4 w-4 mr-2 text-purple-600 dark:text-purple-400" />
+                          <span className="text-lg font-mono">{formatTime(recordingTime)}</span>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="lg" 
+                          onClick={stopRecording} 
+                          className="mt-6"
+                        >
+                          <MicOff className="mr-2 h-4 w-4" /> Stop Recording
+                        </Button>
+                      </div>
+                    ) : audioURL ? (
+                      <div className="text-center w-full">
+                        <Headphones className="h-16 w-16 mx-auto text-purple-600 dark:text-purple-400 mb-4" />
+                        <audio ref={audioRef} src={audioURL} onEnded={() => setIsPlaying(false)} className="hidden" />
+                        
+                        <div className="grid grid-cols-2 gap-3 mt-4">
+                          <Button onClick={playAudio} variant="outline" className="flex-1">
+                            {isPlaying ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+                            {isPlaying ? "Pause" : "Listen"}
+                          </Button>
+                          <Button onClick={saveRecording} className="flex-1">
+                            <Save className="mr-2 h-4 w-4" /> Save Recording
+                          </Button>
+                        </div>
+                        
+                        <Button 
+                          variant="ghost" 
+                          className="mt-4 text-muted-foreground" 
+                          onClick={() => {
+                            setAudioURL(null);
+                            setRecordingTime(0);
+                          }}
+                        >
+                          Record Again
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <Mic className="h-16 w-16 text-gray-400 mb-4 mx-auto" />
+                        <h3 className="text-lg font-medium">Ready to start speaking?</h3>
+                        <p className="text-sm text-muted-foreground mt-2 mb-6">
+                          Press the button below to start recording your answer
+                        </p>
+                        <Button 
+                          onClick={startRecording} 
+                          size="lg"
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
+                          <Mic className="mr-2 h-4 w-4" /> Start Recording
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col text-sm text-muted-foreground border-t pt-4">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <p>Practice speaking for one minute. Try to speak clearly and use descriptive language.</p>
+                  </div>
+                </CardFooter>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Speaking Tips</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="general">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="general">General Tips</TabsTrigger>
+                      <TabsTrigger value="clarity">Speaking Clearly</TabsTrigger>
+                      <TabsTrigger value="confidence">Building Confidence</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="general" className="pt-4 space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Plan Your Main Points</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Before you start recording, take a few seconds to think about 2-3 main points you want to cover.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Use Examples</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Support your ideas with specific examples or stories to make your speaking more engaging.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Pace Yourself</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Don't rush through your speaking. Take your time and speak at a comfortable pace.
+                        </p>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="clarity" className="pt-4 space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Speak Up</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Make sure you're speaking loudly enough to be heard clearly.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Pronunciation</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Take your time to pronounce words fully, especially difficult ones.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Avoid Filler Words</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Try to reduce using words like "um," "like," and "you know" too frequently.
+                        </p>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="confidence" className="pt-4 space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Practice Regularly</h4>
+                        <p className="text-sm text-muted-foreground">
+                          The more you practice speaking, the more confident you'll become.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Listen to Yourself</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Review your recordings to identify areas for improvement.
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Positive Self-Talk</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Remind yourself that making mistakes is part of learning and improving.
+                        </p>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-          
-          <div className="mt-8 bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
-            <h3 className="font-medium">Benefits of Voice Practice:</h3>
-            <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-              <li>Improves communication skills</li>
-              <li>Builds confidence in public speaking</li>
-              <li>Develops vocabulary and language fluency</li>
-              <li>Enhances critical thinking through verbal expression</li>
-              <li>Prepares for future academic and professional success</li>
-            </ul>
-          </div>
-        </DashboardCard>
-        
-        <DashboardCard 
-          title="Practice Tips"
-          className="border-green-100 dark:border-green-900"
-        >
-          <div className="space-y-4">
-            <div className="flex gap-3 items-start">
-              <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
-                <span className="text-lg">1</span>
-              </div>
-              <div>
-                <h3 className="font-medium">Find a quiet space</h3>
-                <p className="text-sm text-muted-foreground">Choose a location with minimal background noise for better recording quality.</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 items-start">
-              <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
-                <span className="text-lg">2</span>
-              </div>
-              <div>
-                <h3 className="font-medium">Speak clearly and at a steady pace</h3>
-                <p className="text-sm text-muted-foreground">Don't rush - take your time to articulate words clearly.</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 items-start">
-              <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
-                <span className="text-lg">3</span>
-              </div>
-              <div>
-                <h3 className="font-medium">Listen to your recordings</h3>
-                <p className="text-sm text-muted-foreground">Review your recordings to identify areas for improvement.</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 items-start">
-              <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
-                <span className="text-lg">4</span>
-              </div>
-              <div>
-                <h3 className="font-medium">Practice regularly</h3>
-                <p className="text-sm text-muted-foreground">Consistent practice leads to better speaking skills over time.</p>
-              </div>
-            </div>
-          </div>
-        </DashboardCard>
+        </div>
       </div>
     </AppLayout>
   );

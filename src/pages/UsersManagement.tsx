@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -27,6 +28,7 @@ interface User {
   permissions?: {
     storage: boolean;
     aiInsights: boolean;
+    quiz: boolean;
   };
   createdAt: any;
 }
@@ -53,7 +55,7 @@ const UsersManagement = () => {
       const usersData = usersSnapshot.docs.map(doc => ({
         uid: doc.id,
         ...doc.data(),
-        permissions: doc.data().permissions || { storage: false, aiInsights: false }
+        permissions: doc.data().permissions || { storage: false, aiInsights: false, quiz: false }
       } as User));
       
       setUsers(usersData);
@@ -159,6 +161,38 @@ const UsersManagement = () => {
     }
   };
 
+  const handleQuizPermissionChange = async (userId: string, enabled: boolean) => {
+    try {
+      await updateDoc(doc(db, "users", userId), {
+        "permissions.quiz": enabled,
+      });
+
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.uid === userId ? { 
+            ...user, 
+            permissions: { 
+              ...user.permissions, 
+              quiz: enabled 
+            } 
+          } : user
+        )
+      );
+
+      toast({
+        title: "Permissions Updated",
+        description: `Quiz permission ${enabled ? 'enabled' : 'disabled'} for user`,
+      });
+    } catch (error) {
+      console.error("Error updating Quiz permission:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update Quiz permission",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (timestamp: any) => {
     if (!timestamp) return "N/A";
     if (timestamp.toDate) {
@@ -185,6 +219,7 @@ const UsersManagement = () => {
                   <TableHead>Status</TableHead>
                   <TableHead>Storage Access</TableHead>
                   <TableHead>AI Insights Access</TableHead>
+                  <TableHead>Quiz Access</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -223,6 +258,14 @@ const UsersManagement = () => {
                         )}
                       </TableCell>
                       <TableCell>
+                        {user.verificationStatus === VERIFICATION_STATUS.APPROVED && (
+                          <Switch
+                            checked={user.permissions?.quiz || false}
+                            onCheckedChange={(checked) => handleQuizPermissionChange(user.uid, checked)}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Select
                           value={user.verificationStatus}
                           onValueChange={(value) => handleStatusChange(user.uid, value)}
@@ -244,7 +287,7 @@ const UsersManagement = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">No users found</TableCell>
+                    <TableCell colSpan={8} className="text-center">No users found</TableCell>
                   </TableRow>
                 )}
               </TableBody>
