@@ -64,13 +64,6 @@ const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.Rea
     console.log("AI insights permission needed but not granted");
     return <Navigate to="/dashboard" replace />;
   }
-  
-  // Check Quiz permission for quizzes route
-  const isQuizRoute = location.pathname === '/quizzes';
-  if (isQuizRoute && !currentUser.permissions?.quiz) {
-    console.log("Quiz permission needed but not granted");
-    return <Navigate to="/dashboard" replace />;
-  }
 
   return <>{children}</>;
 };
