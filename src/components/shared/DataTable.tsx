@@ -30,6 +30,7 @@ interface DataTableProps<T> {
     title?: string;
     description?: string;
   };
+  loading?: boolean; // Add the missing loading prop
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -41,6 +42,7 @@ export function DataTable<T extends Record<string, any>>({
   onEdit,
   onDelete,
   deleteDialogProps,
+  loading = false, // Default to false
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{
@@ -168,7 +170,15 @@ export function DataTable<T extends Record<string, any>>({
             onSort={handleSort}
           />
           <TableBody>
-            {paginatedData.length > 0 ? (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={allColumns.length} className="h-24">
+                  <div className="flex justify-center items-center">
+                    <div className="animate-spin h-8 w-8 border-t-2 border-primary rounded-full"></div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : paginatedData.length > 0 ? (
               paginatedData.map((item, index) => (
                 <TableRow key={index}>
                   {allColumns.map((column) => (
