@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, HelpCircle, LifeBuoy, Mail, MessageSquare, User, BrainCircuit } from "lucide-react";
+import { AlertCircle, HelpCircle, LifeBuoy, Mail, MessageSquare, User, BrainCircuit, Target } from "lucide-react";
 import { QuizSection } from "@/components/help/QuizSection";
 
 const Help = () => {
@@ -23,10 +23,11 @@ const Help = () => {
           </div>
 
           <Tabs defaultValue="guides" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="guides">Guides</TabsTrigger>
               <TabsTrigger value="faq">FAQ</TabsTrigger>
               <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
+              <TabsTrigger value="goals">Goals</TabsTrigger>
               <TabsTrigger value="contact">Contact Support</TabsTrigger>
             </TabsList>
             
@@ -180,6 +181,112 @@ const Help = () => {
             
             <TabsContent value="quizzes">
               <QuizSection />
+            </TabsContent>
+            
+            <TabsContent value="goals">
+              <section className="space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-bold tracking-tight">Goal Setting</h2>
+                  <p className="text-muted-foreground">
+                    Learn how to set and track goals for your child's development
+                  </p>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <Card>
+                    <CardHeader className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-full bg-rose-100 p-2 dark:bg-rose-900">
+                          <Target className="h-4 w-4 text-rose-700 dark:text-rose-400" />
+                        </div>
+                        <CardTitle className="text-lg">Creating Effective Goals</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Effective goals are specific, measurable, achievable, relevant, and time-bound (SMART).
+                      </p>
+                      <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+                        <li><strong>Specific:</strong> Clearly define what you want to achieve</li>
+                        <li><strong>Measurable:</strong> Include metrics to track progress</li>
+                        <li><strong>Achievable:</strong> Set realistic and attainable goals</li>
+                        <li><strong>Relevant:</strong> Ensure goals align with broader objectives</li>
+                        <li><strong>Time-bound:</strong> Set deadlines for accountability</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900">
+                          <Target className="h-4 w-4 text-blue-700 dark:text-blue-400" />
+                        </div>
+                        <CardTitle className="text-lg">Goal Categories</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        TreasureBook supports different types of goals to track various aspects of your child's development:
+                      </p>
+                      <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+                        <li><strong>Academic Goals:</strong> Improve grades, complete projects, learn new skills</li>
+                        <li><strong>Sports Goals:</strong> Master techniques, achieve personal bests, join teams</li>
+                        <li><strong>Social Skills:</strong> Make new friends, participate in group activities</li>
+                        <li><strong>Personal Development:</strong> Learn time management, develop confidence</li>
+                        <li><strong>Extracurricular:</strong> Learn instruments, art skills, or other hobbies</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-full bg-green-100 p-2 dark:bg-green-900">
+                          <Target className="h-4 w-4 text-green-700 dark:text-green-400" />
+                        </div>
+                        <CardTitle className="text-lg">Tracking Progress</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        TreasureBook provides tools to monitor your child's progress toward goals:
+                      </p>
+                      <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+                        <li>Update goal statuses (Not Started, In Progress, Completed)</li>
+                        <li>Add notes and milestones to track incremental progress</li>
+                        <li>Set reminders for goal-related activities or deadlines</li>
+                        <li>View progress charts to see improvement over time</li>
+                        <li>Celebrate achievements with virtual badges and rewards</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900">
+                          <Target className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+                        </div>
+                        <CardTitle className="text-lg">Tips for Success</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Strategies to help your child achieve their goals:
+                      </p>
+                      <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-2">
+                        <li>Break down large goals into smaller, manageable steps</li>
+                        <li>Review goals regularly and adjust as needed</li>
+                        <li>Celebrate progress, not just final achievements</li>
+                        <li>Involve your child in the goal-setting process</li>
+                        <li>Connect goals to your child's interests and strengths</li>
+                        <li>Use visual trackers to maintain motivation</li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                </div>
+              </section>
             </TabsContent>
             
             <TabsContent value="contact">
