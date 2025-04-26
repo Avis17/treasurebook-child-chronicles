@@ -1,5 +1,3 @@
-
-// Update Journal.tsx to use the hideHeader prop and fix any Firebase query issues
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -51,21 +49,18 @@ const JournalPage = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      // Check journal collection
       const journalRef1 = collection(db, "journal");
       const q1 = query(
         journalRef1,
         where("userId", "==", user.uid)
       );
 
-      // Also check journalEntries collection for backward compatibility
       const journalRef2 = collection(db, "journalEntries");
       const q2 = query(
         journalRef2,
         where("userId", "==", user.uid)
       );
 
-      // Fetch from both collections
       const [querySnapshot1, querySnapshot2] = await Promise.all([
         getDocs(q1),
         getDocs(q2)
@@ -73,7 +68,6 @@ const JournalPage = () => {
 
       const entriesData: JournalEntry[] = [];
       
-      // Process entries from journal collection
       querySnapshot1.forEach((doc) => {
         entriesData.push({
           id: doc.id,
@@ -81,7 +75,6 @@ const JournalPage = () => {
         } as JournalEntry);
       });
       
-      // Process entries from journalEntries collection
       querySnapshot2.forEach((doc) => {
         const data = doc.data();
         if (!entriesData.some(entry => entry.id === doc.id)) {
@@ -92,11 +85,10 @@ const JournalPage = () => {
         }
       });
       
-      // Sort locally
       entriesData.sort((a, b) => {
         const dateA = a.date ? new Date(a.date).getTime() : 0;
         const dateB = b.date ? new Date(b.date).getTime() : 0;
-        return dateB - dateA; // Sort in descending order (newest first)
+        return dateB - dateA;
       });
       
       setJournalEntries(entriesData);
@@ -123,7 +115,6 @@ const JournalPage = () => {
       const newTag = tagInput.trim();
       const currentTags = formData.tags || [];
       
-      // Only add if tag doesn't already exist
       if (!currentTags.includes(newTag)) {
         setFormData(prev => ({
           ...prev,
@@ -164,18 +155,14 @@ const JournalPage = () => {
         tags: formData.tags || []
       } as JournalEntry;
       
-      // Always use the journal collection for new entries
       if (isEditing && currentId) {
-        // Try to update in both collections to ensure consistency
         try {
-          // Update in journalEntries collection
           await updateDoc(doc(db, "journalEntries", currentId), entryData);
         } catch (error) {
           console.log("Entry not found in journalEntries, trying journal collection");
         }
         
         try {
-          // Update in journal collection
           await updateDoc(doc(db, "journal", currentId), entryData);
         } catch (error) {
           console.log("Entry not found in journal collection");
@@ -186,10 +173,14 @@ const JournalPage = () => {
           description: "Your journal entry has been successfully updated",
         });
       } else {
-        // Always add new entries to the journal collection
         await addDoc(collection(db, "journal"), {
           ...entryData,
           createdAt: new Date()
+        });
+        
+        const userProfileRef = doc(db, "profiles", user.uid);
+        await updateDoc(userProfileRef, {
+          journalEntriesCount: increment(1)
         });
         
         toast({
@@ -228,7 +219,6 @@ const JournalPage = () => {
     if (!id) return;
     
     try {
-      // Try deleting from both collections to ensure consistency
       try {
         await deleteDoc(doc(db, "journalEntries", id));
       } catch (error) {
@@ -239,6 +229,14 @@ const JournalPage = () => {
         await deleteDoc(doc(db, "journal", id));
       } catch (error) {
         console.log("Entry not found in journal or already deleted");
+      }
+      
+      const user = auth.currentUser;
+      if (user?.uid) {
+        const userProfileRef = doc(db, "profiles", user.uid);
+        await updateDoc(userProfileRef, {
+          journalEntriesCount: increment(-1)
+        });
       }
       
       toast({

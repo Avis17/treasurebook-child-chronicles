@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -94,6 +93,12 @@ const Extracurricular = () => {
 
       const docRef = await addDoc(collection(db, "extraCurricularRecords"), newRecord);
       
+      // Update profile counter
+      const userProfileRef = doc(db, "profiles", user.uid);
+      await updateDoc(userProfileRef, {
+        extraCurricularCount: increment(1)
+      });
+
       setRecords([...records, { ...newRecord, id: docRef.id }]);
       
       toast({
@@ -160,6 +165,15 @@ const Extracurricular = () => {
       }
 
       await deleteDoc(doc(db, "extraCurricularRecords", record.id));
+      
+      // Decrement profile counter
+      const user = auth.currentUser;
+      if (user?.uid) {
+        const userProfileRef = doc(db, "profiles", user.uid);
+        await updateDoc(userProfileRef, {
+          extraCurricularCount: increment(-1)
+        });
+      }
       
       setRecords(records.filter((r) => r.id !== record.id));
       

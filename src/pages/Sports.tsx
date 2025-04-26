@@ -1,44 +1,40 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp, updateDoc, increment } from "firebase/firestore";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { DataTable } from "@/components/shared/DataTable";
-import { SportsRecordForm } from "@/components/sports/SportsRecordForm";
+import { SportsForm } from "@/components/sports/SportsForm";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 export interface SportsRecord {
   id?: string;
   userId: string;
-  eventName: string;
-  eventType: string;
+  sport: string;
   date: string;
-  position: string;
-  venue: string;
-  achievement: string;
   level: string;
-  coach: string;
+  position: string;
+  organizer: string;
+  achievement: string;
+  certificate: boolean;
   notes?: string;
   createdAt?: any;
-  updatedAt?: any;
 }
 
 const Sports = () => {
-  const [sportsRecords, setSportsRecords] = useState<SportsRecord[]>([]);
+  const [records, setRecords] = useState<SportsRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<SportsRecord | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const fetchSportsRecords = async (userId: string) => {
+  const fetchRecords = async (userId: string) => {
     try {
       setIsLoading(true);
       const recordsRef = collection(db, "sportsRecords");
@@ -50,7 +46,7 @@ const Sports = () => {
         fetchedRecords.push({ id: doc.id, ...doc.data() } as SportsRecord);
       });
       
-      setSportsRecords(fetchedRecords);
+      setRecords(fetchedRecords);
     } catch (error) {
       console.error("Error fetching sports records:", error);
       toast({
@@ -68,42 +64,38 @@ const Sports = () => {
       if (!user) {
         navigate("/login");
       } else {
-        fetchSportsRecords(user.uid);
+        fetchRecords(user.uid);
       }
     });
 
     return () => unsubscribe();
   }, [navigate]);
 
-  const handleAddRecord = async (record: SportsRecord) => {
+  const handleAddRecord = async (values: SportsRecord) => {
     try {
       const user = auth.currentUser;
-      if (!user) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "You must be logged in to add a record",
-        });
-        return;
-      }
+      if (!user) return;
 
-      const newRecord = {
-        ...record,
+      const docRef = await addDoc(collection(db, "sportsRecords"), {
+        ...values,
         userId: user.uid,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
+      });
 
-      const docRef = await addDoc(collection(db, "sportsRecords"), newRecord);
-      
-      setSportsRecords([...sportsRecords, { ...newRecord, id: docRef.id }]);
+      // Update profile counter
+      const userProfileRef = doc(db, "profiles", user.uid);
+      await updateDoc(userProfileRef, {
+        sportsParticipationsCount: increment(1)
+      });
+
+      setRecords([...records, { id: docRef.id, ...values }]);
       
       toast({
         title: "Success",
         description: "Sports record added successfully",
       });
       
-      setIsFormOpen(false);
+      setIsDialogOpen(false);
     } catch (error) {
       console.error("Error adding sports record:", error);
       toast({
@@ -114,26 +106,22 @@ const Sports = () => {
     }
   };
 
-  const handleEditRecord = (record: SportsRecord) => {
+  const handleEdit = (record: SportsRecord) => {
     setEditingRecord(record);
-    setIsFormOpen(true);
+    setIsDialogOpen(true);
   };
 
-  const handleUpdateRecord = async (updatedRecord: SportsRecord) => {
+  const handleUpdate = async (updatedRecord: SportsRecord) => {
     try {
       if (!updatedRecord.id) {
         throw new Error("Record ID is missing");
       }
 
       const recordRef = doc(db, "sportsRecords", updatedRecord.id);
-      
-      await updateDoc(recordRef, {
-        ...updatedRecord,
-        updatedAt: serverTimestamp(),
-      });
+      await updateDoc(recordRef, updatedRecord);
 
-      setSportsRecords(
-        sportsRecords.map((record) =>
+      setRecords(
+        records.map((record) =>
           record.id === updatedRecord.id ? updatedRecord : record
         )
       );
@@ -143,7 +131,7 @@ const Sports = () => {
         description: "Sports record updated successfully",
       });
       
-      setIsFormOpen(false);
+      setIsDialogOpen(false);
       setEditingRecord(null);
     } catch (error) {
       console.error("Error updating sports record:", error);
@@ -155,15 +143,20 @@ const Sports = () => {
     }
   };
 
-  const handleDeleteRecord = async (record: SportsRecord) => {
+  const handleDelete = async (id: string) => {
     try {
-      if (!record.id) {
-        throw new Error("Record ID is missing");
-      }
-
-      await deleteDoc(doc(db, "sportsRecords", record.id));
+      await deleteDoc(doc(db, "sportsRecords", id));
       
-      setSportsRecords(sportsRecords.filter((r) => r.id !== record.id));
+      // Update profile counter
+      const user = auth.currentUser;
+      if (user?.uid) {
+        const userProfileRef = doc(db, "profiles", user.uid);
+        await updateDoc(userProfileRef, {
+          sportsParticipationsCount: increment(-1)
+        });
+      }
+      
+      setRecords(records.filter(record => record.id !== id));
       
       toast({
         title: "Success",
@@ -179,64 +172,56 @@ const Sports = () => {
     }
   };
 
-  const closeForm = () => {
-    setIsFormOpen(false);
+  const closeDialog = () => {
+    setIsDialogOpen(false);
     setEditingRecord(null);
   };
 
   const columns = [
     {
-      header: "Event Name",
-      accessor: "eventName" as keyof SportsRecord,
-    },
-    {
-      header: "Event Type",
-      accessor: "eventType" as keyof SportsRecord,
+      header: "Sport",
+      accessor: "sport" as keyof SportsRecord,
     },
     {
       header: "Date",
       accessor: "date" as keyof SportsRecord,
     },
     {
-      header: "Position/Result",
-      accessor: "position" as keyof SportsRecord,
-      render: (record: SportsRecord) => {
-        const position = record.position?.toLowerCase();
-        return (
-          <Badge 
-            variant={
-              position?.includes("1st") || position?.includes("gold") ? "default" : 
-              position?.includes("2nd") || position?.includes("silver") ? "secondary" :
-              position?.includes("3rd") || position?.includes("bronze") ? "outline" : 
-              "secondary"
-            }
-          >
-            {record.position}
-          </Badge>
-        );
-      }
-    },
-    {
       header: "Level",
       accessor: "level" as keyof SportsRecord,
     },
     {
-      header: "Venue",
-      accessor: "venue" as keyof SportsRecord,
+      header: "Position",
+      accessor: "position" as keyof SportsRecord,
+    },
+    {
+      header: "Organizer",
+      accessor: "organizer" as keyof SportsRecord,
+    },
+    {
+      header: "Achievement",
+      accessor: "achievement" as keyof SportsRecord,
+    },
+    {
+      header: "Certificate",
+      accessor: "certificate" as keyof SportsRecord,
+      render: (record: SportsRecord) => (
+        <span>{record.certificate ? "Yes" : "No"}</span>
+      ),
     },
   ];
 
   return (
-    <AppLayout title="Sports Records">
+    <AppLayout title="Sports Activities">
       <div className="flex justify-between items-center mb-6">
-        <Button onClick={() => setIsFormOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Record
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add New Sport
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>My Sports Achievements</CardTitle>
+          <CardTitle>My Sports Activities & Achievements</CardTitle>
           <CardDescription>
             Track and manage all your sports activities and achievements
           </CardDescription>
@@ -248,12 +233,12 @@ const Sports = () => {
             </div>
           ) : (
             <DataTable
-              data={sportsRecords}
+              data={records}
               columns={columns}
               searchable={true}
-              searchFields={["eventName", "eventType", "venue", "level", "position"]}
-              onEdit={handleEditRecord}
-              onDelete={handleDeleteRecord}
+              searchFields={["sport", "organizer", "achievement", "level", "position"]}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
               deleteDialogProps={{
                 title: "Delete Sports Record",
                 description: "Are you sure you want to delete this sports record? This action cannot be undone.",
@@ -263,11 +248,11 @@ const Sports = () => {
         </CardContent>
       </Card>
 
-      {isFormOpen && (
-        <SportsRecordForm
-          isOpen={isFormOpen}
-          onClose={closeForm}
-          onSubmit={editingRecord ? handleUpdateRecord : handleAddRecord}
+      {isDialogOpen && (
+        <SportsForm
+          isOpen={isDialogOpen}
+          onClose={closeDialog}
+          onSubmit={editingRecord ? handleUpdate : handleAddRecord}
           initialData={editingRecord || undefined}
         />
       )}
