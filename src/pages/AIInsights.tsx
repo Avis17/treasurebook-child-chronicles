@@ -434,23 +434,24 @@ const AIInsights = () => {
 
             <div className="flex flex-col items-center">
               <div className="text-sm opacity-80 mb-2">Overall Growth</div>
-              <div className="relative">
+              <div className="relative flex flex-col items-center">
                 <div className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center shadow-inner">
-                  <div className="text-3xl font-bold">{insightData.childSnapshot.growthScore}%</div>
-                </div>
-                {/* Info Button */}
-                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-[10px] text-white opacity-80 text-center leading-tight">
-                  <Dialog>
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center shadow-inner">
-                        <div className="text-3xl font-bold text-white">{insightData.childSnapshot.growthScore}%</div>
-                      </div>
-                      <DialogTrigger asChild>
-                        <button className="text-[11px] text-white underline hover:text-white/90 transition">
-                          ℹ️ How Growth % is calculated?
-                        </button>
-                      </DialogTrigger>
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="text-4xl font-extrabold text-white tracking-wide leading-none">
+                      {insightData.childSnapshot.growthScore}
+                      <span className="text-lg font-semibold">%</span>
                     </div>
+                  </div>
+                </div>
+
+                {/* Info Button - moved closer */}
+                <div className="mt-1 text-[11px] text-white opacity-80 text-center leading-tight whitespace-nowrap">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <button className="underline hover:text-white/90 transition whitespace-nowrap">
+                        ℹ️ How Growth % is calculated?
+                      </button>
+                    </DialogTrigger>
 
                     <DialogContent className="max-w-md">
                       <DialogHeader>
@@ -477,10 +478,13 @@ const AIInsights = () => {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-
                 </div>
               </div>
             </div>
+
+
+
+
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
