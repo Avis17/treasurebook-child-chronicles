@@ -66,6 +66,8 @@ export const fetchInsightData = async (userId: string): Promise<AIInsightData> =
     const profileRef = doc(db, "profiles", userId);
     const profileSnap = await getDoc(profileRef);
     const profileData = profileSnap.exists() ? profileSnap.data() : null;
+
+    console.log("data....", profileData)
     
     // Get academic records
     const academicRecords: DocumentData[] = await getCollectionDataByUserId("academicRecords", userId);
@@ -436,23 +438,30 @@ const transformData = (
     pendingGoals
   );
   
-  // Calculate overall growth score
-  const growthScore = Math.round(
-    (averageScore * 0.4) + 
-    (sportsList.length > 0 ? 20 : 0) + 
-    (activitiesList.length > 0 ? 20 : 0) +
-    (moodData.positivePercentage || 0)
-  );
+  // Calculate SMART balanced growth score
+const academicScore = averageScore; // 0-100
+
+const sportsScore = sportsAchievements.length > 0 ? 100 : (sportsList.length > 0 ? 60 : 40);
+const talentScore = extracurricularAchievements.length > 0 ? 100 : (activitiesList.length > 0 ? 60 : 40);
+const emotionalScore = moodData.positivePercentage || 50;
+
+const growthScore = Math.min(100, Math.round(
+  (academicScore * 0.4) +
+  (sportsScore * 0.2) +
+  (talentScore * 0.2) +
+  (emotionalScore * 0.2)
+));
+
   
   // Build and return the full insight data structure
   return {
     childSnapshot: {
-      name: profile?.displayName || profile?.name || 'Student',
-      age: profile?.age || calculateAgeFromDOB(profile?.dob) || 0,
-      class: profile?.class || profile?.grade || 'Student',
+      name: profile?.childName || profile?.name || 'Student',
+      age: calculateAgeFromDOB(profile?.birthdate) || 0,
+      class: profile?.currentClass || profile?.grade || '--',
       growthScore: Math.min(growthScore, 100),
       topSkills: combinedTopSkills.slice(0, 5).map(item => item.skill),
-      weakAreas: combinedWeakAreas.slice(0, 5),
+      weakAreas: combinedWeakAreas.slice(0, 5)
     },
     academic: {
       averageScore,

@@ -1,4 +1,36 @@
 
+/**
+ * 📖 AI Insights Page - Overview
+ * 
+ * This page fetches real-time growth data for a child across:
+ *  - Academics
+ *  - Sports
+ *  - Talents & Extracurriculars
+ *  - Emotional Well-being
+ *  - Goals and Teacher Feedback
+ * 
+ * It intelligently calculates:
+ *  - Overall Growth Score (out of 100%)
+ *  - Top Skills
+ *  - Areas Needing Attention
+ *  - Visual Radar and Charts
+ *  - Personalized AI Recommendations
+ *  - Growth Forecast
+ * 
+ * 🚀 Parents can view an accurate, balanced snapshot of the child's holistic growth journey.
+ * 
+ * 📈 Overall Growth Score Calculation:
+ * 
+ *  - 40% from Academic Performance
+ *  - 20% from Sports Achievements
+ *  - 20% from Talents/Extracurricular Achievements
+ *  - 20% from Emotional Positivity (Journal Moods)
+ * 
+ * Smarter weighting ensures even if child excels in sports or talents more than academics, 
+ * they are still fairly represented.
+ */
+
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { onAuthStateChanged } from "firebase/auth";
@@ -69,6 +101,7 @@ import {
 
 // Import our data service
 import { fetchInsightData, regenerateInsights, addGoalFromActionPlan, AIInsightData } from "@/services/ai-insights-service";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"; // Add if not already
 
 const cardColors = {
   academic: "from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900",
@@ -108,7 +141,7 @@ const AIInsights = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       console.log("Fetching AI insights data for user:", uid);
       const data = await fetchInsightData(uid);
       console.log("AI insights data fetched:", data);
@@ -141,17 +174,17 @@ const AIInsights = () => {
 
   const handleRegenerate = async () => {
     if (!userId) return;
-    
+
     try {
       setIsRegenerating(true);
       toast({
         title: "Regenerating insights",
         description: "This may take a moment..."
       });
-      
+
       const data = await regenerateInsights(userId);
       setInsightData(data);
-      
+
       toast({
         title: "Insights Updated",
         description: "AI insights have been regenerated"
@@ -167,27 +200,27 @@ const AIInsights = () => {
       setIsRegenerating(false);
     }
   };
-  
+
   const handleAddGoal = async (action: string, timeframe: "Short-term" | "Medium-term" | "Long-term") => {
     if (!userId || !insightData) return;
-    
+
     try {
       setAddingGoal(action);
-      
+
       // Map timeframe to actual time period
-      const timeframeMapped = timeframe === "Short-term" ? "Short-term" : 
-                            timeframe === "Medium-term" ? "Medium-term" : "Long-term";
-      
+      const timeframeMapped = timeframe === "Short-term" ? "Short-term" :
+        timeframe === "Medium-term" ? "Medium-term" : "Long-term";
+
       // Create a descriptive title
       const title = action.split('.')[0]; // Use first sentence as title
-      
+
       await addGoalFromActionPlan(userId, title, action, timeframeMapped);
-      
+
       toast({
         title: "Goal Added",
         description: `Successfully added "${title}" to your goals`,
       });
-      
+
     } catch (error) {
       console.error("Error adding goal:", error);
       toast({
@@ -199,24 +232,24 @@ const AIInsights = () => {
       setAddingGoal(null);
     }
   };
-  
+
   const handleAddAllGoals = async (timeframe: "Short-term" | "Medium-term" | "Long-term") => {
     if (!userId || !insightData) return;
-    
+
     try {
       setAddingGoal(`Adding all ${timeframe} goals`);
-      
+
       // Fix: Ensure we have a proper array before iterating
       const goalsKey = timeframe.toLowerCase().replace('-', '') as keyof typeof insightData.actionPlan;
       const goals = insightData.actionPlan[goalsKey];
-      
+
       // Check if goals is an array before iterating
       if (Array.isArray(goals)) {
         // Add each goal sequentially
         for (const goal of goals) {
           await addGoalFromActionPlan(userId, goal.split('.')[0], goal, timeframe);
         }
-        
+
         toast({
           title: "Goals Added",
           description: `Successfully added ${goals.length} ${timeframe} goals`,
@@ -229,7 +262,7 @@ const AIInsights = () => {
           description: "Unable to process goals. Data format issue."
         });
       }
-      
+
     } catch (error) {
       console.error("Error adding goals:", error);
       toast({
@@ -280,8 +313,8 @@ const AIInsights = () => {
             <p className="mb-6 text-lg text-blue-700/80 dark:text-blue-400/80">
               We need more data to generate insights. Please add more records to your TreasureBook.
             </p>
-            <Button 
-              onClick={() => navigate('/dashboard')} 
+            <Button
+              onClick={() => navigate('/dashboard')}
               size="lg"
               className="px-8 py-6 text-lg"
             >
@@ -297,34 +330,39 @@ const AIInsights = () => {
   const radarData = [
     {
       subject: 'Academics',
-      value: insightData.academic.averageScore,
+      value: insightData.academic.averageScore, // direct academic %
       fullMark: 100,
     },
     {
       subject: 'Sports',
-      value: insightData.physical.topSports.length > 0 ? 
-          (insightData.physical.achievements.length > 0 ? 80 : 65) : 40,
+      value: insightData.physical.achievements.length > 0
+        ? 90
+        : (insightData.physical.topSports.length > 0 ? 65 : 40),
       fullMark: 100,
     },
     {
-      subject: 'Arts',
-      value: insightData.talent.topActivities.length > 0 ? 
-          (insightData.talent.achievements.length > 0 ? 85 : 70) : 45,
+      subject: 'Talent',
+      value: insightData.talent.achievements.length > 0
+        ? 90
+        : (insightData.talent.topActivities.length > 0 ? 65 : 40),
       fullMark: 100,
     },
     {
       subject: 'Social',
-      value: insightData.emotional.moodHistory.some(m => 
-         ["Happy", "Excited", "Joyful"].includes(m.mood)) ? 75 : 60,
+      value: insightData.emotional.moodHistory.some(m =>
+        ["Happy", "Excited", "Joyful", "Cheerful", "Elated"].includes(m.mood)
+      ) ? 75 : 55,
       fullMark: 100,
     },
     {
       subject: 'Goals',
-      value: insightData.goals.completed > 0 ? 
-          (insightData.goals.completed / (insightData.goals.completed + insightData.goals.pending.length)) * 100 : 50,
+      value: (insightData.goals.completed + insightData.goals.pending.length) > 0
+        ? (insightData.goals.completed / (insightData.goals.completed + insightData.goals.pending.length)) * 100
+        : 50,
       fullMark: 100,
-    },
+    }
   ];
+
 
   // Data for achievement chart
   const achievementData = Object.entries(insightData.achievements.byCategory).map(([category, count]) => ({
@@ -353,14 +391,14 @@ const AIInsights = () => {
     } else if (["Focused", "Determined", "Productive"].some(m => item.mood.includes(m))) {
       category = "Focused";
     }
-    
+
     return {
       name: category,
       value: item.count,
       originalMood: item.mood
     };
   });
-  
+
   // Consolidate similar categories in mood data
   const consolidatedMoodData = enhancedMoodData.reduce((acc: any[], item) => {
     const existing = acc.find(i => i.name === item.name);
@@ -368,7 +406,7 @@ const AIInsights = () => {
       existing.value += item.value;
       existing.moods = [...(existing.moods || []), item.originalMood];
     } else {
-      acc.push({...item, moods: [item.originalMood]});
+      acc.push({ ...item, moods: [item.originalMood] });
     }
     return acc;
   }, []);
@@ -377,7 +415,7 @@ const AIInsights = () => {
     <AppLayout title="AI Growth Insights">
       {isRegenerating && <LoadingOverlay isLoading={true} message="Regenerating insights..." />}
       {addingGoal && <LoadingOverlay isLoading={true} message={`Adding goal: ${addingGoal}`} opacity={0.7} />}
-      
+
       <div className="space-y-8 max-w-7xl mx-auto pb-24 px-4 md:px-6">
         {/* Child Snapshot Panel with Regenerate Button */}
         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl p-8 shadow-xl">
@@ -393,15 +431,58 @@ const AIInsights = () => {
                 </Badge>
               </div>
             </div>
-            
+
             <div className="flex flex-col items-center">
               <div className="text-sm opacity-80 mb-2">Overall Growth</div>
-              <div className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center shadow-inner">
-                <div className="text-3xl font-bold">{insightData.childSnapshot.growthScore}%</div>
+              <div className="relative">
+                <div className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center shadow-inner">
+                  <div className="text-3xl font-bold">{insightData.childSnapshot.growthScore}%</div>
+                </div>
+                {/* Info Button */}
+                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-[10px] text-white opacity-80 text-center leading-tight">
+                  <Dialog>
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-28 h-28 rounded-full bg-white/20 flex items-center justify-center shadow-inner">
+                        <div className="text-3xl font-bold text-white">{insightData.childSnapshot.growthScore}%</div>
+                      </div>
+                      <DialogTrigger asChild>
+                        <button className="text-[11px] text-white underline hover:text-white/90 transition">
+                          ℹ️ How Growth % is calculated?
+                        </button>
+                      </DialogTrigger>
+                    </div>
+
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>How Overall Growth is Calculated</DialogTitle>
+                        <DialogDescription>
+                          Your child's Overall Growth is based on 4 key areas:
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="mt-4 space-y-3 text-gray-700 dark:text-gray-300 text-sm">
+                        <ul className="list-disc pl-5">
+                          <li><b>40%</b> from Academic Performance</li>
+                          <li><b>20%</b> from Sports Achievements</li>
+                          <li><b>20%</b> from Talents & Extracurriculars</li>
+                          <li><b>20%</b> from Emotional Well-being</li>
+                        </ul>
+                        <p className="mt-4">
+                          🌱 <b>Tip:</b> Support your child with consistent academics, encourage activities & journaling. Every step counts!
+                        </p>
+                      </div>
+                      <DialogFooter>
+                        <DialogTrigger asChild>
+                          <Button variant="default">Got it!</Button>
+                        </DialogTrigger>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                </div>
               </div>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
             <div className="bg-white/10 p-5 rounded-lg shadow-inner">
               <h3 className="text-sm opacity-80 mb-3">Top Skill Areas</h3>
@@ -417,7 +498,7 @@ const AIInsights = () => {
                 )}
               </div>
             </div>
-            
+
             <div className="bg-white/10 p-5 rounded-lg shadow-inner">
               <h3 className="text-sm opacity-80 mb-3">Areas Needing Attention</h3>
               <div className="space-y-2">
@@ -433,12 +514,12 @@ const AIInsights = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="mt-8 flex justify-end">
-            <Button 
+            <Button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              variant="outline" 
+              variant="outline"
               className="bg-white/10 hover:bg-white/20 text-white border-white/25"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -446,7 +527,7 @@ const AIInsights = () => {
             </Button>
           </div>
         </div>
-        
+
         {/* Tabs for dashboard sections */}
         <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-3 mb-8">
@@ -454,7 +535,7 @@ const AIInsights = () => {
             <TabsTrigger value="charts" className="py-3">Charts & Analytics</TabsTrigger>
             <TabsTrigger value="recommendations" className="py-3">AI Recommendations</TabsTrigger>
           </TabsList>
-          
+
           {/* Overview Tab - AI Insight Cards */}
           <TabsContent value="overview" className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -499,7 +580,7 @@ const AIInsights = () => {
                         No strong subjects identified yet.
                       </p>
                     )}
-                    
+
                     {insightData.academic.weakSubjects.length > 0 ? (
                       <>
                         <div>
@@ -523,10 +604,10 @@ const AIInsights = () => {
                         No weak subjects identified.
                       </p>
                     )}
-                    
+
                     <p className="text-xs italic text-blue-700 dark:text-blue-300 mt-2">
-                      {insightData.academic.strongSubjects.length > 0 
-                        ? `Continue developing strengths in ${insightData.academic.strongSubjects[0]}.` 
+                      {insightData.academic.strongSubjects.length > 0
+                        ? `Continue developing strengths in ${insightData.academic.strongSubjects[0]}.`
                         : "Add more academic records to get personalized insights."}
                     </p>
                   </div>
@@ -559,7 +640,7 @@ const AIInsights = () => {
                             </span>
                           </div>
                         ))}
-                        
+
                         {insightData.talent.achievements.length > 0 && (
                           <>
                             <h4 className="text-xs font-medium uppercase text-purple-700 dark:text-purple-400 mb-2 mt-3">
@@ -570,7 +651,7 @@ const AIInsights = () => {
                             </p>
                           </>
                         )}
-                        
+
                         <p className="text-xs italic text-purple-700 dark:text-purple-300 mt-2">
                           {insightData.talent.enjoyment}
                         </p>
@@ -610,7 +691,7 @@ const AIInsights = () => {
                             </span>
                           </div>
                         ))}
-                        
+
                         {insightData.physical.achievements.length > 0 && (
                           <>
                             <h4 className="text-xs font-medium uppercase text-green-700 dark:text-green-400 mb-2 mt-3">
@@ -621,7 +702,7 @@ const AIInsights = () => {
                             </p>
                           </>
                         )}
-                        
+
                         <p className="text-xs italic text-green-700 dark:text-green-300 mt-2">
                           {insightData.physical.recommendations.length > 0
                             ? insightData.physical.recommendations[0]
@@ -791,7 +872,7 @@ const AIInsights = () => {
                           </ul>
                         </div>
                       )}
-                      
+
                       {insightData.feedback.areasOfImprovement.length > 0 && (
                         <div>
                           <h4 className="text-xs font-medium uppercase text-teal-700 dark:text-teal-400 mb-3">
@@ -816,7 +897,7 @@ const AIInsights = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* Charts & Analytics Tab */}
           <TabsContent value="charts" className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -839,7 +920,7 @@ const AIInsights = () => {
                           <CartesianGrid strokeDasharray="3 3" stroke="#d4d4d4" />
                           <XAxis dataKey="name" />
                           <YAxis domain={[0, 100]} />
-                          <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
+                          <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }} />
                           <Bar dataKey="score" fill="#4F46E5">
                             {subjectData.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={EXTENDED_COLORS[index % EXTENDED_COLORS.length]} />
@@ -874,11 +955,11 @@ const AIInsights = () => {
                         <PolarGrid stroke="#d4d4d4" />
                         <PolarAngleAxis dataKey="subject" />
                         <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                        <Radar 
-                          name="Performance" 
-                          dataKey="value" 
-                          stroke="#8884d8" 
-                          fill="#8884d8" 
+                        <Radar
+                          name="Performance"
+                          dataKey="value"
+                          stroke="#8884d8"
+                          fill="#8884d8"
                           fillOpacity={0.6}
                         />
                         <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }} />
@@ -887,7 +968,7 @@ const AIInsights = () => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Enhanced Mood Distribution Chart */}
               <Card className="overflow-hidden shadow-lg">
                 <CardHeader>
@@ -918,7 +999,7 @@ const AIInsights = () => {
                               <Cell key={`cell-${index}`} fill={EXTENDED_COLORS[index % EXTENDED_COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip 
+                          <Tooltip
                             contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}
                             formatter={(value, name, props) => {
                               const moods = props.payload.moods;
@@ -939,7 +1020,7 @@ const AIInsights = () => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Enhanced Achievement Distribution */}
               <Card className="overflow-hidden shadow-lg">
                 <CardHeader>
@@ -970,7 +1051,7 @@ const AIInsights = () => {
                               <Cell key={`cell-${index}`} fill={EXTENDED_COLORS[index % EXTENDED_COLORS.length]} />
                             ))}
                           </Pie>
-                          <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }}/>
+                          <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px" }} />
                           <Legend />
                         </PieChart>
                       </ResponsiveContainer>
@@ -984,7 +1065,7 @@ const AIInsights = () => {
               </Card>
             </div>
           </TabsContent>
-          
+
           {/* AI Recommendations Tab */}
           <TabsContent value="recommendations" className="space-y-8">
             {/* AI Suggestion Panel */}
@@ -1003,7 +1084,7 @@ const AIInsights = () => {
                   <p className="text-gray-800 dark:text-gray-200 text-lg mb-5">
                     {insightData.forecast}
                   </p>
-                  
+
                   <div className="space-y-6">
                     {/* Academic Suggestions */}
                     <div className="space-y-3">
@@ -1013,9 +1094,9 @@ const AIInsights = () => {
                       </h3>
                       <div className="space-y-2 pl-6">
                         {insightData.suggestions
-                          .filter(s => s.toLowerCase().includes('subject') || 
-                                      s.toLowerCase().includes('study') || 
-                                      s.toLowerCase().includes('academic'))
+                          .filter(s => s.toLowerCase().includes('subject') ||
+                            s.toLowerCase().includes('study') ||
+                            s.toLowerCase().includes('academic'))
                           .map((suggestion, index) => (
                             <div key={index} className="flex items-center gap-3">
                               <div className="bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
@@ -1026,7 +1107,7 @@ const AIInsights = () => {
                           ))}
                       </div>
                     </div>
-                    
+
                     {/* Sports Suggestions */}
                     <div className="space-y-3">
                       <h3 className="text-base font-medium text-green-700 dark:text-green-400 flex items-center gap-2">
@@ -1035,9 +1116,9 @@ const AIInsights = () => {
                       </h3>
                       <div className="space-y-2 pl-6">
                         {insightData.suggestions
-                          .filter(s => s.toLowerCase().includes('sport') || 
-                                      s.toLowerCase().includes('physical') || 
-                                      s.toLowerCase().includes('team'))
+                          .filter(s => s.toLowerCase().includes('sport') ||
+                            s.toLowerCase().includes('physical') ||
+                            s.toLowerCase().includes('team'))
                           .map((suggestion, index) => (
                             <div key={index} className="flex items-center gap-3">
                               <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
@@ -1046,17 +1127,17 @@ const AIInsights = () => {
                               <span className="text-base text-gray-800 dark:text-gray-200">{suggestion}</span>
                             </div>
                           ))}
-                          {insightData.physical.recommendations.slice(0, 2).map((recommendation, index) => (
-                            <div key={`sports-${index}`} className="flex items-center gap-3">
-                              <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
-                                <Check className="h-3 w-3" />
-                              </div>
-                              <span className="text-base text-gray-800 dark:text-gray-200">{recommendation}</span>
+                        {insightData.physical.recommendations.slice(0, 2).map((recommendation, index) => (
+                          <div key={`sports-${index}`} className="flex items-center gap-3">
+                            <div className="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Check className="h-3 w-3" />
                             </div>
-                          ))}
+                            <span className="text-base text-gray-800 dark:text-gray-200">{recommendation}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    
+
                     {/* Extracurricular Suggestions */}
                     <div className="space-y-3">
                       <h3 className="text-base font-medium text-purple-700 dark:text-purple-400 flex items-center gap-2">
@@ -1065,11 +1146,11 @@ const AIInsights = () => {
                       </h3>
                       <div className="space-y-2 pl-6">
                         {insightData.suggestions
-                          .filter(s => s.toLowerCase().includes('extracurricular') || 
-                                      s.toLowerCase().includes('activit') || 
-                                      s.toLowerCase().includes('talent') ||
-                                      s.toLowerCase().includes('art') ||
-                                      s.toLowerCase().includes('music'))
+                          .filter(s => s.toLowerCase().includes('extracurricular') ||
+                            s.toLowerCase().includes('activit') ||
+                            s.toLowerCase().includes('talent') ||
+                            s.toLowerCase().includes('art') ||
+                            s.toLowerCase().includes('music'))
                           .map((suggestion, index) => (
                             <div key={index} className="flex items-center gap-3">
                               <div className="bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
@@ -1080,7 +1161,7 @@ const AIInsights = () => {
                           ))}
                       </div>
                     </div>
-                    
+
                     {/* Journal and Emotional Suggestions */}
                     <div className="space-y-3">
                       <h3 className="text-base font-medium text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
@@ -1089,9 +1170,9 @@ const AIInsights = () => {
                       </h3>
                       <div className="space-y-2 pl-6">
                         {insightData.suggestions
-                          .filter(s => s.toLowerCase().includes('journal') || 
-                                      s.toLowerCase().includes('emotion') ||
-                                      s.toLowerCase().includes('reflect'))
+                          .filter(s => s.toLowerCase().includes('journal') ||
+                            s.toLowerCase().includes('emotion') ||
+                            s.toLowerCase().includes('reflect'))
                           .map((suggestion, index) => (
                             <div key={index} className="flex items-center gap-3">
                               <div className="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0">
@@ -1114,7 +1195,7 @@ const AIInsights = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             {/* AI Forecast Section */}
             <Card className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-850 border-none shadow-lg overflow-hidden">
               <CardHeader>
@@ -1131,7 +1212,7 @@ const AIInsights = () => {
                   <p className="text-gray-800 dark:text-gray-200 text-lg">
                     {insightData.forecast || "Add more data to generate a personalized forecast."}
                   </p>
-                  
+
                   <div className="mt-6 space-y-5">
                     {insightData.childSnapshot.topSkills.length > 0 && (
                       <div className="flex items-start gap-3 bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
@@ -1141,14 +1222,14 @@ const AIInsights = () => {
                             Talent Development
                           </h4>
                           <p className="text-sm text-purple-700/80 dark:text-purple-400/80 mt-1">
-                            With continued focus on {insightData.childSnapshot.topSkills.slice(0, 2).join(' and ')}, 
-                            {insightData.childSnapshot.name} has potential to excel in these areas 
+                            With continued focus on {insightData.childSnapshot.topSkills.slice(0, 2).join(' and ')},
+                            {insightData.childSnapshot.name} has potential to excel in these areas
                             through consistent practice and guidance.
                           </p>
                         </div>
                       </div>
                     )}
-                    
+
                     {insightData.childSnapshot.weakAreas.length > 0 && (
                       <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                         <Activity className="h-5 w-5 text-blue-500 mt-1" />
@@ -1164,7 +1245,7 @@ const AIInsights = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex items-start gap-3 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
                       <Trophy className="h-5 w-5 text-green-500 mt-1" />
                       <div>
@@ -1187,7 +1268,7 @@ const AIInsights = () => {
                 </div>
               </CardFooter>
             </Card>
-            
+
             {/* Action Plan */}
             <Card className="shadow-lg">
               <CardHeader>
@@ -1207,9 +1288,9 @@ const AIInsights = () => {
                         <div className="h-2.5 w-2.5 rounded-full bg-blue-500 mr-2"></div>
                         Short-term (Next month)
                       </h3>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="text-xs"
                         onClick={() => handleAddAllGoals("Short-term")}
                       >
@@ -1224,9 +1305,9 @@ const AIInsights = () => {
                             <ChevronRight className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                             <div className="flex-1 flex items-center justify-between">
                               <span>{item}</span>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={() => handleAddGoal(item, "Short-term")}
                               >
@@ -1243,16 +1324,16 @@ const AIInsights = () => {
                       </p>
                     )}
                   </div>
-                  
+
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-base font-medium flex items-center">
                         <div className="h-2.5 w-2.5 rounded-full bg-purple-500 mr-2"></div>
                         Medium-term (Next 3 months)
                       </h3>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="text-xs"
                         onClick={() => handleAddAllGoals("Medium-term")}
                       >
@@ -1267,9 +1348,9 @@ const AIInsights = () => {
                             <ChevronRight className="h-4 w-4 text-purple-500 mr-2 flex-shrink-0 mt-0.5" />
                             <div className="flex-1 flex items-center justify-between">
                               <span>{item}</span>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={() => handleAddGoal(item, "Medium-term")}
                               >
@@ -1286,16 +1367,16 @@ const AIInsights = () => {
                       </p>
                     )}
                   </div>
-                  
+
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-base font-medium flex items-center">
                         <div className="h-2.5 w-2.5 rounded-full bg-green-500 mr-2"></div>
                         Long-term (Next year)
                       </h3>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="text-xs"
                         onClick={() => handleAddAllGoals("Long-term")}
                       >
@@ -1310,9 +1391,9 @@ const AIInsights = () => {
                             <ChevronRight className="h-4 w-4 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
                             <div className="flex-1 flex items-center justify-between">
                               <span>{item}</span>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
                                 onClick={() => handleAddGoal(item, "Long-term")}
                               >
@@ -1332,7 +1413,7 @@ const AIInsights = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             {/* Additional AI Insights */}
             <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-gray-800 dark:to-gray-850 border-none shadow-lg overflow-hidden">
               <CardHeader>
@@ -1352,7 +1433,7 @@ const AIInsights = () => {
                       <h3 className="font-medium">Learning Style</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm">
-                      {insightData.academic.averageScore > 75 
+                      {insightData.academic.averageScore > 75
                         ? "Demonstrates strong academic abilities that indicate an analytical learning style. "
                         : "Shows varied academic performance that may benefit from a multi-modal learning approach. "}
                       {insightData.talent.topActivities.length > 0
@@ -1360,13 +1441,13 @@ const AIInsights = () => {
                         : ""}
                       Consider incorporating diverse teaching methods to maximize engagement and retention.
                     </p>
-                    
+
                     <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 pt-2">
                       <Clock className="h-5 w-5" />
                       <h3 className="font-medium">Development Pace</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm">
-                      {insightData.achievements.recent.length > 3 
+                      {insightData.achievements.recent.length > 3
                         ? "Shows rapid progress across multiple areas, indicating accelerated development. "
                         : "Demonstrates steady development that benefits from consistent support and encouragement. "}
                       {insightData.goals.completed > 3
@@ -1375,7 +1456,7 @@ const AIInsights = () => {
                       Continue setting appropriate challenges to maintain motivation and growth.
                     </p>
                   </div>
-                  
+
                   <div className="bg-white/70 dark:bg-gray-900/50 p-5 rounded-lg shadow-inner space-y-4">
                     <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400">
                       <Target className="h-5 w-5" />
@@ -1390,15 +1471,15 @@ const AIInsights = () => {
                         : ""}
                       These strengths can be leveraged as anchors for building confidence and exploring related fields.
                     </p>
-                    
+
                     <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 pt-2">
                       <Activity className="h-5 w-5" />
                       <h3 className="font-medium">Growth Trajectory</h3>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 text-sm">
-                      {insightData.childSnapshot.growthScore > 75 
+                      {insightData.childSnapshot.growthScore > 75
                         ? "Currently on an excellent development path with strong indicators across multiple domains. "
-                        : insightData.childSnapshot.growthScore > 50 
+                        : insightData.childSnapshot.growthScore > 50
                           ? "Shows good progress with potential for acceleration with targeted support. "
                           : "Demonstrates potential that can be further developed with structured guidance. "}
                       {insightData.childSnapshot.weakAreas.length > 0
@@ -1419,14 +1500,14 @@ const AIInsights = () => {
 
 // Helper components
 const CheckIcon = ({ className }: { className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="3" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
     className={className}
   >
     <polyline points="20 6 9 17 4 12"></polyline>
