@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useNavigate, NavLink, useLocation } from "react-router-dom";
-import { signOut } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useState } from "react"
+import { useNavigate, NavLink, useLocation } from "react-router-dom"
+import { signOut } from "firebase/auth"
+import { auth, db } from "@/lib/firebase"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { 
   LayoutDashboard, 
   Book, 
@@ -24,29 +24,39 @@ import {
   Calendar,
   FileArchive,
   Lightbulb,
+  BrainCircuit,
+  Mic,
+  ChevronDown,
+  ChevronRight,
   Home,
   GraduationCap,
   CalendarDays,
   BookOpenText,
   MessageSquare,
   HelpCircle,
-  BrainCircuit,
-  Mic
-} from "lucide-react";
-import { useTheme } from "@/providers/ThemeProvider";
-import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
-import { doc, getDoc } from "firebase/firestore";
+  File,
+  Image
+} from "lucide-react"
+import { useTheme } from "@/providers/ThemeProvider"
+import { useAuth } from "@/contexts/AuthContext"
+import { useEffect } from "react"
+import { doc, getDoc } from "firebase/firestore"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
-interface SidebarProps {
-  isMobile: boolean;
+interface NavGroup {
+  title: string
+  items: NavItem[]
 }
 
 interface NavItem {
-  name: string;
-  icon: React.ReactNode;
-  path: string;
-  requiresPermission?: 'storage' | 'aiInsights';
+  name: string
+  icon: React.ReactNode
+  path: string
+  requiresPermission?: 'storage' | 'aiInsights' | 'quiz' | 'voicePractice'
+}
+
+interface SidebarProps {
+  isMobile: boolean;
 }
 
 const Sidebar = ({ isMobile }: SidebarProps) => {
@@ -111,52 +121,73 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
     }
   };
 
-  const getNavItems = () => {
-    const baseItems: NavItem[] = [
-      { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
-      { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights", requiresPermission: 'aiInsights' },
-      { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
-      { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
-      { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
-      { name: "Voice Practice", icon: <Mic className="w-5 h-5" />, path: "/voice-practice" },
-    ];
+  const getNavGroups = (): NavGroup[] => {
+    const groups: NavGroup[] = [
+      {
+        title: "Overview",
+        items: [
+          { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
+          { name: "AI Insights", icon: <Lightbulb className="w-5 h-5" />, path: "/ai-insights", requiresPermission: 'aiInsights' },
+        ]
+      },
+      {
+        title: "Learning",
+        items: [
+          { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
+          { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes", requiresPermission: 'quiz' },
+          { name: "Voice Practice", icon: <Mic className="w-5 h-5" />, path: "/voice-practice", requiresPermission: 'voicePractice' },
+        ]
+      },
+      {
+        title: "Activities",
+        items: [
+          { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
+          { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
+          { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
+          { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
+        ]
+      },
+      {
+        title: "Resources",
+        items: [
+          { name: "Gallery", icon: <ImageIcon className="w-5 h-5" />, path: "/gallery", requiresPermission: 'storage' },
+          { name: "Documents", icon: <FileArchive className="w-5 h-5" />, path: "/documents", requiresPermission: 'storage' },
+          { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
+        ]
+      },
+      {
+        title: "Management",
+        items: [
+          { name: "Directory", icon: <Users className="w-5 h-5" />, path: "/directory" },
+          { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
+          { name: "Profile", icon: <User className="w-5 h-5" />, path: "/profile" },
+          { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
+        ]
+      },
+    ]
 
-    const storageItems: NavItem[] = [
-      { name: "Gallery", icon: <ImageIcon className="w-5 h-5" />, path: "/gallery", requiresPermission: 'storage' },
-      { name: "Documents", icon: <FileArchive className="w-5 h-5" />, path: "/documents", requiresPermission: 'storage' },
-    ];
-
-    const remainingItems: NavItem[] = [
-      { name: "Resources", icon: <FileText className="w-5 h-5" />, path: "/resources" },
-      { name: "Directory", icon: <Users className="w-5 h-5" />, path: "/directory" },
-      { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
-      { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
-      { name: "Milestones", icon: <Archive className="w-5 h-5" />, path: "/milestones" },
-      { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes" },
-      { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
-      { name: "Feedback", icon: <MessageSquare className="w-5 h-5" />, path: "/feedback" },
-      { name: "Help", icon: <HelpCircle className="w-5 h-5" />, path: "/help" },
-      { name: "Profile", icon: <User className="w-5 h-5" />, path: "/profile" },
-      { name: "Settings", icon: <Settings className="w-5 h-5" />, path: "/settings" },
-    ];
-
-    const items = [
-      ...baseItems,
-      ...storageItems,
-      ...remainingItems
-    ];
-
-    const processedItems = items.map(item => ({
-      ...item,
-      disabled: item.requiresPermission && !isAdmin ? !currentUser?.permissions?.[item.requiresPermission] : false,
-    }));
-
+    // Add admin section if user is admin
     if (isAdmin) {
-      processedItems.push({ name: "User Management", icon: <Users className="w-5 h-5" />, path: "/users", disabled: false });
+      groups.push({
+        title: "Admin",
+        items: [
+          { name: "User Management", icon: <Users className="w-5 h-5" />, path: "/users" },
+        ]
+      })
     }
 
-    return processedItems;
-  };
+    return groups
+  }
+
+  const [openGroups, setOpenGroups] = useState<string[]>(['Overview'])
+
+  const toggleGroup = (title: string) => {
+    setOpenGroups(prev =>
+      prev.includes(title)
+        ? prev.filter(t => t !== title)
+        : [...prev, title]
+    )
+  }
 
   return (
     <div className="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen">
@@ -174,26 +205,47 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       <ScrollArea className="flex-1 overflow-auto">
         <nav className="px-3 py-2">
           <div className="space-y-1">
-            {getNavItems().map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.disabled ? "#" : item.path}
-                className={({ isActive }) => `
-                  flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
-                  transition-colors duration-150 ease-in-out
-                  ${item.disabled 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : isActive 
-                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
-                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
-                `}
+            {getNavGroups().map((group) => (
+              <Collapsible
+                key={group.title}
+                open={openGroups.includes(group.title)}
+                onOpenChange={() => toggleGroup(group.title)}
+                className="space-y-1"
               >
-                {item.icon}
-                <span>{item.name}</span>
-                {item.disabled && (
-                  <span className="ml-auto text-xs text-gray-500">(Disabled)</span>
-                )}
-              </NavLink>
+                <CollapsibleTrigger asChild>
+                  <button className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md">
+                    {group.title}
+                    {openGroups.includes(group.title) ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1">
+                  {group.items.map((item) => (
+                    <NavLink
+                      key={item.path}
+                      to={item.disabled ? "#" : item.path}
+                      className={({ isActive }) => `
+                        flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium ml-2
+                        transition-colors duration-150 ease-in-out
+                        ${item.disabled 
+                          ? 'opacity-50 cursor-not-allowed' 
+                          : isActive 
+                            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
+                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
+                      `}
+                    >
+                      {item.icon}
+                      <span>{item.name}</span>
+                      {item.disabled && (
+                        <span className="ml-auto text-xs text-gray-500">(Disabled)</span>
+                      )}
+                    </NavLink>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
             ))}
           </div>
         </nav>
@@ -234,10 +286,10 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         </button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar
 
 export const navItems = [
   {
