@@ -55,7 +55,7 @@ export function QuizSummarySection() {
           const data = doc.data() as QuizAttempt
           attempts.push({
             id: doc.id,
-            title: data.title || 'Unnamed Quiz',
+            title: data.title || data.categoryName || 'Unnamed Quiz',
             percentage: data.percentage || 0,
             date: data.date,
             userId: data.userId

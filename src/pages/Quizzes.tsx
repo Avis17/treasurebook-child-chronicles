@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,6 +5,7 @@ import { collection, query, where, orderBy, getDocs, addDoc, Timestamp } from "f
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
 import { z } from "zod";
+import { incrementProgressCounter } from "@/lib/badge-service";
 
 import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +25,6 @@ import { QuizResultsModal } from "@/components/quiz/QuizResultsModal";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
-// Interface for quiz attempt records
 export interface QuizAttempt {
   id?: string;
   userId: string;
@@ -50,7 +49,6 @@ export interface QuizAttempt {
   date: string;
 }
 
-// Schema for quiz form validation
 const quizSchema = z.object({
   class: z.string({ required_error: "Please select a class" }),
   category: z.string({ required_error: "Please select a category" }),
@@ -90,7 +88,6 @@ const Quizzes = () => {
     }
   });
 
-  // Fetch categories from the Open Trivia API
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -110,7 +107,6 @@ const Quizzes = () => {
     fetchCategories();
   }, [toast]);
 
-  // Fetch quiz attempts from Firebase
   useEffect(() => {
     fetchQuizAttempts();
   }, [currentUser]);
@@ -119,7 +115,6 @@ const Quizzes = () => {
     setIsLoading(true);
     
     try {
-      // Prepare the API URL with selected parameters
       const categoryId = values.category;
       const difficulty = values.difficulty;
       const type = values.type === "multiple" ? "multiple" : "boolean";
@@ -130,7 +125,6 @@ const Quizzes = () => {
       const data = await response.json();
       
       if (data.response_code === 0) {
-        // Decode HTML entities in questions and answers
         const decodedQuestions = data.results.map((q: any) => ({
           ...q,
           question: decodeHTMLEntities(q.question),
@@ -140,7 +134,6 @@ const Quizzes = () => {
         
         setQuestions(decodedQuestions);
         
-        // Find the category name based on ID
         const categoryObj = categories.find(c => c.id.toString() === categoryId);
         const categoryName = categoryObj ? categoryObj.name : "General Knowledge";
         
@@ -173,34 +166,28 @@ const Quizzes = () => {
     }
   };
 
-  // Function to decode HTML entities in text
   function decodeHTMLEntities(text: string) {
     const textArea = document.createElement('textarea');
     textArea.innerHTML = text;
     return textArea.value;
   }
 
-  // Reset the quiz state when modal is closed
   const handleQuizModalClose = (open: boolean) => {
     if (!open) {
-      // Ask for confirmation before closing
       if (window.confirm("Are you sure you want to exit the quiz? Your progress will be lost.")) {
         setQuizModalOpen(false);
-        // Don't need to reset currentQuiz here as it will be overwritten on next quiz start
       }
     } else {
       setQuizModalOpen(open);
     }
   };
 
-  // Handle quiz completion
   const handleQuizComplete = async (result: any) => {
     if (!currentUser) return;
     
     setQuizModalOpen(false);
     
     try {
-      // Save the quiz attempt to Firebase
       const quizAttempt = {
         userId: currentUser.uid,
         class: currentQuiz.class,
@@ -216,18 +203,21 @@ const Quizzes = () => {
         percentage: result.percentage,
         timestamp: Timestamp.now(),
         date: new Date().toISOString(),
+        title: currentQuiz.categoryName,
       };
       
-      await addDoc(collection(db, "quizAttempts"), quizAttempt);
+      const docRef = await addDoc(collection(db, "quizAttempts"), quizAttempt);
       
-      // Update the local state with the new quiz attempt
-      setQuizAttempts([{ ...quizAttempt, id: "temp-id" }, ...quizAttempts]);
+      setQuizAttempts([{ ...quizAttempt, id: docRef.id }, ...quizAttempts]);
       
-      // Show the results modal
-      setViewQuiz(quizAttempt as QuizAttempt);
+      setViewQuiz({...quizAttempt, id: docRef.id} as QuizAttempt);
       setResultModalOpen(true);
       
-      // Refresh the quiz attempts list
+      const unlockedBadges = await incrementProgressCounter(currentUser.uid, 'Quiz');
+      if (unlockedBadges && unlockedBadges.length > 0) {
+        localStorage.setItem('newlyUnlockedBadge', 'true');
+      }
+      
       fetchQuizAttempts();
       
       toast({
@@ -244,13 +234,11 @@ const Quizzes = () => {
     }
   };
 
-  // Function to fetch quiz attempts
   const fetchQuizAttempts = async () => {
     if (!currentUser) return;
     
     setTableLoading(true);
     try {
-      // Create a compound query with proper indexing (userId and timestamp)
       const attemptQuery = query(
         collection(db, "quizAttempts"),
         where("userId", "==", currentUser.uid),
@@ -277,7 +265,6 @@ const Quizzes = () => {
     }
   };
 
-  // Reset form when dialog is closed
   const handleDialogOpenChange = (open: boolean) => {
     if (!open) {
       form.reset({
@@ -290,7 +277,6 @@ const Quizzes = () => {
     setIsDialogOpen(open);
   };
 
-  // Define DataTable columns
   const columns = [
     {
       header: "Date",
@@ -364,7 +350,6 @@ const Quizzes = () => {
     },
   ];
 
-  // Filter quiz attempts based on class, difficulty, category, and search term
   const filteredAttempts = quizAttempts.filter(attempt => {
     const classMatch = filterClass === "all" || attempt.class === filterClass;
     const difficultyMatch = filterDifficulty === "all" || attempt.difficulty === filterDifficulty;
@@ -377,7 +362,6 @@ const Quizzes = () => {
     return classMatch && difficultyMatch && categoryMatch && searchMatch;
   });
 
-  // Class options for dropdown
   const classOptions = [
     "Pre-KG", "LKG", "UKG", 
     "1st Standard", "2nd Standard", "3rd Standard", "4th Standard", "5th Standard",
@@ -468,7 +452,6 @@ const Quizzes = () => {
         </Card>
       </div>
 
-      {/* Quiz Setup Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -601,7 +584,6 @@ const Quizzes = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Quiz Attempt Modal */}
       {currentQuiz && (
         <QuizAttemptModal
           open={quizModalOpen}
@@ -611,7 +593,6 @@ const Quizzes = () => {
         />
       )}
 
-      {/* Quiz Results Modal */}
       {viewQuiz && (
         <QuizResultsModal
           open={resultModalOpen}

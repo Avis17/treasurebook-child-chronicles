@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
@@ -82,7 +83,7 @@ const formatDate = (timestamp: any) => {
   }
 };
 
-const BadgeItem = ({ badge }: { badge: Badge }) => {
+const BadgeItem: React.FC<{ badge: Badge }> = ({ badge }) => {
   const CategoryIcon = CATEGORY_DETAILS[badge.category]?.icon || Award;
   const isLocked = badge.status === 'Locked';
   const colorTheme = BADGE_COLORS[badge.level];
@@ -176,6 +177,7 @@ const playConfetti = () => {
   });
 };
 
+// Fix the Info component definition with correct React type
 const Info: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
@@ -207,18 +209,23 @@ export const BadgesSection = () => {
     extraCurricularParticipationsCount: 0
   });
   
+  // Refresh badges data when component mounts or when localStorage changes
   useEffect(() => {
     const loadBadges = async () => {
       if (!currentUser?.uid) return;
       
       try {
         setLoading(true);
+        
+        // Get the latest badge data
         const userBadges = await fetchUserBadges(currentUser.uid);
         setBadges(userBadges);
         
+        // Get the latest progress counts
         const counts = await getUserProgressCounts(currentUser.uid);
         setProgressCounts(counts);
         
+        // Check for newly unlocked badge to play confetti
         const newlyUnlockedBadge = localStorage.getItem('newlyUnlockedBadge');
         if (newlyUnlockedBadge) {
           setTimeout(() => {
@@ -239,6 +246,16 @@ export const BadgesSection = () => {
     };
     
     loadBadges();
+    
+    // Set up a listener for storage changes (for badge unlocks)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'newlyUnlockedBadge') {
+        loadBadges();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [currentUser]);
   
   const groupedBadges = badges.reduce((groups: Record<string, Badge[]>, badge) => {
