@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -56,40 +57,48 @@ const Dashboard = () => {
           
           {/* Badges Section */}
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold">Badges & Achievements</h2>
-            <BadgeInfoDialog />
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <span className="text-gradient-primary">Badges & Achievements</span>
+              <BadgeInfoDialog />
+            </h2>
           </div>
           <BadgesSection />
           
-          {/* Main Content - Single Column Layout */}
-          <div className="space-y-8">
-            {/* Quiz Summary Section */}
-            <QuizSummarySection />
+          {/* Main Content - Two Column Layout for desktop, single column for mobile */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column */}
+            <div className="space-y-8">
+              {/* Quiz Summary Section */}
+              <QuizSummarySection />
+              
+              {/* Goals Section */}
+              <GoalsSection />
+              
+              {/* Milestones */}
+              <MilestonesSection />
+              
+              {/* Feedback */}
+              <FeedbackSection />
+            </div>
             
-            {/* Academic Performance */}
-            <AcademicPerformanceSection />
-            
-            {/* Goals Section */}
-            <GoalsSection />
-            
-            {/* Sports Section */}
-            <SportsSection />
-            
-            {/* Calendar & Events */}
-            <CalendarSection />
-            
-            {/* Milestones */}
-            <MilestonesSection />
-            
-            {/* Journals */}
-            <JournalsSection />
-            
-            {/* Feedback */}
-            <FeedbackSection />
-            
-            {/* Resources */}
-            <ResourcesSection />
+            {/* Right Column */}
+            <div className="space-y-8">
+              {/* Academic Performance */}
+              <AcademicPerformanceSection />
+              
+              {/* Sports Section */}
+              <SportsSection />
+              
+              {/* Calendar & Events */}
+              <CalendarSection />
+              
+              {/* Journals */}
+              <JournalsSection />
+            </div>
           </div>
+          
+          {/* Full Width Resources Section */}
+          <ResourcesSection />
         </div>
       </div>
     </AppLayout>

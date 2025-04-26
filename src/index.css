@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
+@import "./styles/badges.css";
+@import "./styles/responsive.css";
 
 @tailwind base;
 @tailwind components;
@@ -6,168 +7,106 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 225 92% 60%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 38 100% 55%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 134 100% 35%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 225 92% 60%;
-
-    --radius: 0.8rem;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 225 92% 60%;
-    --sidebar-primary: 225 92% 60%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 225 92% 96%;
-    --sidebar-accent-foreground: 225 92% 60%;
-    --sidebar-border: 225 92% 90%;
-    --sidebar-ring: 225 92% 60%;
+    --ring: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --radius: 0.5rem;
+    
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 221.2 83.2% 53.3%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 222.2 84% 4.9%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 225 92% 60%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 38 100% 55%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 134 100% 35%;
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+    --accent: 216 34% 17%;
     --accent-foreground: 210 40% 98%;
-
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20.2% 65.1%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --ring: 224 71% 4%;
+    --primary: 217.2 91.4% 60.6%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 225 92% 60%;
+    --radius: 0.5rem;
     
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 225 92% 60%;
-    --sidebar-primary: 225 92% 60%;
-    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 225 92% 60%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 225 92% 60%;
+    --sidebar-background: 224 71% 4%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-primary: 217.2 91.4% 60.6%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 216 34% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 216 34% 17%;
+    --sidebar-ring: 224 71% 4%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-heading font-bold;
-  }
-}
-
-.card-academic {
-  @apply bg-treasure-lightBlue border-treasure-blue dark:bg-blue-950 dark:border-blue-700;
-}
-
-.card-sports {
-  @apply bg-treasure-lightOrange border-treasure-orange dark:bg-amber-950 dark:border-amber-700;
-}
-
-.card-talents {
-  @apply bg-treasure-lightGreen border-treasure-green dark:bg-green-950 dark:border-green-700;
-}
-
-.card-health {
-  @apply bg-gray-100 border-gray-400 dark:bg-gray-800 dark:border-gray-600;
-}
-
-/* Import responsive styles */
-@import './styles/responsive.css';
-
-/* Add responsive utilities */
-.hide-on-mobile {
-  @media (max-width: 768px) {
-    display: none;
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
   }
 }
 
-.show-on-mobile {
-  @media (min-width: 769px) {
-    display: none;
+@layer components {
+  .text-gradient-primary {
+    background: linear-gradient(to right, #4361EE, #833AB4, #F77737, #C624FE);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 }
 
-/* Make tables responsive by default */
-.table-responsive {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  max-width: 100%;
-}
-
-/* Add responsive container class */
-.container-responsive {
-  width: 100%;
-  margin-right: auto;
-  margin-left: auto;
-  padding-right: 1rem;
-  padding-left: 1rem;
-}
-
-@media (min-width: 640px) {
-  .container-responsive {
-    max-width: 640px;
+@layer utilities {
+  .ring-offset-background {
+    @apply ring-offset-2 dark:ring-offset-0;
   }
-}
 
-@media (min-width: 768px) {
-  .container-responsive {
-    max-width: 768px;
+  .ring-border {
+    @apply ring-ring dark:ring-offset-background;
   }
-}
-
-@media (min-width: 1024px) {
-  .container-responsive {
-    max-width: 1024px;
+  
+  /* Badge glow effects */
+  .glow-gold {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
   }
-}
-
-@media (min-width: 1280px) {
-  .container-responsive {
-    max-width: 1280px;
+  
+  .glow-silver {
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.5);
+  }
+  
+  .glow-bronze {
+    box-shadow: 0 0 15px rgba(205, 127, 50, 0.5);
   }
 }
