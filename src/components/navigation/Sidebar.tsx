@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, NavLink, useLocation } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -46,7 +47,7 @@ interface NavItem {
   name: string;
   icon: React.ReactNode;
   path: string;
-  requiresPermission?: 'storage' | 'aiInsights' | 'quiz'; // Added quiz permission
+  requiresPermission?: 'storage' | 'aiInsights'; // Make this optional with specific allowed values
 }
 
 const Sidebar = ({ isMobile }: SidebarProps) => {
@@ -123,7 +124,6 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
       { name: "Sports", icon: <Trophy className="w-5 h-5" />, path: "/sports" },
       { name: "Extracurricular", icon: <Award className="w-5 h-5" />, path: "/extracurricular" },
-      { name: "Voice Practice", icon: <BrainCircuit className="w-5 h-5" />, path: "/voice-practice" },
     ];
 
     const storageItems: NavItem[] = [
@@ -137,7 +137,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
       { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
       { name: "Milestones", icon: <Archive className="w-5 h-5" />, path: "/milestones" },
-      { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes", requiresPermission: 'quiz' },
+      { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes" },
       { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
       { name: "Feedback", icon: <MessageSquare className="w-5 h-5" />, path: "/feedback" },
       { name: "Help", icon: <HelpCircle className="w-5 h-5" />, path: "/help" },
@@ -207,7 +207,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         </nav>
       </ScrollArea>
 
-      {/* Footer Actions */}
+      {/* Footer Actions - Completely separate from scrollable area */}
       <div className="shrink-0 p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <button
           onClick={toggleTheme}
