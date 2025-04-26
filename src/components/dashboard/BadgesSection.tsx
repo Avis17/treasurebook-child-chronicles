@@ -177,7 +177,6 @@ const playConfetti = () => {
   });
 };
 
-// Fix the Info component definition with correct React type
 const Info: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg 
     xmlns="http://www.w3.org/2000/svg" 
@@ -208,8 +207,8 @@ export const BadgesSection = () => {
     sportsParticipationsCount: 0,
     extraCurricularParticipationsCount: 0
   });
+  const [isExpanded, setIsExpanded] = useState(true);
   
-  // Refresh badges data when component mounts or when localStorage changes
   useEffect(() => {
     const loadBadges = async () => {
       if (!currentUser?.uid) return;
@@ -217,15 +216,12 @@ export const BadgesSection = () => {
       try {
         setLoading(true);
         
-        // Get the latest badge data
         const userBadges = await fetchUserBadges(currentUser.uid);
         setBadges(userBadges);
         
-        // Get the latest progress counts
         const counts = await getUserProgressCounts(currentUser.uid);
         setProgressCounts(counts);
         
-        // Check for newly unlocked badge to play confetti
         const newlyUnlockedBadge = localStorage.getItem('newlyUnlockedBadge');
         if (newlyUnlockedBadge) {
           setTimeout(() => {
@@ -247,7 +243,6 @@ export const BadgesSection = () => {
     
     loadBadges();
     
-    // Set up a listener for storage changes (for badge unlocks)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'newlyUnlockedBadge') {
         loadBadges();
@@ -297,50 +292,48 @@ export const BadgesSection = () => {
     return counts;
   }, {Bronze: 0, Silver: 0, Gold: 0});
 
-  const [isExpanded, setIsExpanded] = useState(true);
-
   return (
     <DashboardCard
-      title={
-        <CollapsibleTrigger 
-          className="flex items-center gap-2 w-full cursor-pointer"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <div className="flex items-center gap-2 flex-1">
-            <Trophy className="h-6 w-6 text-yellow-500" />
-            <span>My Achievements</span>
-          </div>
-          <ChevronDown className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-        </CollapsibleTrigger>
-      }
-      action={
-        <div className="flex items-center gap-2">
-          <div className="text-right text-xs">
-            <p className="font-medium">{unlockedCount}/{totalBadgesCount}</p>
-            <p className="text-muted-foreground">Badges</p>
-          </div>
-          <div className="flex gap-1">
-            {badgeLevelCounts.Gold > 0 && (
-              <UiBadge variant="outline" className="bg-gradient-to-r from-yellow-500 to-amber-400 text-white border-none">
-                {badgeLevelCounts.Gold} Gold
-              </UiBadge>
-            )}
-            {badgeLevelCounts.Silver > 0 && (
-              <UiBadge variant="outline" className="bg-gradient-to-r from-gray-400 to-gray-500 text-white border-none">
-                {badgeLevelCounts.Silver} Silver
-              </UiBadge>
-            )}
-            {badgeLevelCounts.Bronze > 0 && (
-              <UiBadge variant="outline" className="bg-gradient-to-r from-amber-700 to-amber-600 text-white border-none">
-                {badgeLevelCounts.Bronze} Bronze
-              </UiBadge>
-            )}
-          </div>
-        </div>
-      }
       className="col-span-full"
     >
       <Collapsible defaultOpen={true}>
+        <div className="flex items-center justify-between border-b pb-5 -mt-5 -mx-5 px-5">
+          <CollapsibleTrigger 
+            className="flex items-center gap-2 w-full cursor-pointer"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <div className="flex items-center gap-2 flex-1">
+              <Trophy className="h-6 w-6 text-yellow-500" />
+              <span className="font-semibold text-lg text-foreground">My Achievements</span>
+            </div>
+            <ChevronDown className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          </CollapsibleTrigger>
+          
+          <div className="flex items-center gap-2">
+            <div className="text-right text-xs">
+              <p className="font-medium">{unlockedCount}/{totalBadgesCount}</p>
+              <p className="text-muted-foreground">Badges</p>
+            </div>
+            <div className="flex gap-1">
+              {badgeLevelCounts.Gold > 0 && (
+                <UiBadge variant="outline" className="bg-gradient-to-r from-yellow-500 to-amber-400 text-white border-none">
+                  {badgeLevelCounts.Gold} Gold
+                </UiBadge>
+              )}
+              {badgeLevelCounts.Silver > 0 && (
+                <UiBadge variant="outline" className="bg-gradient-to-r from-gray-400 to-gray-500 text-white border-none">
+                  {badgeLevelCounts.Silver} Silver
+                </UiBadge>
+              )}
+              {badgeLevelCounts.Bronze > 0 && (
+                <UiBadge variant="outline" className="bg-gradient-to-r from-amber-700 to-amber-600 text-white border-none">
+                  {badgeLevelCounts.Bronze} Bronze
+                </UiBadge>
+              )}
+            </div>
+          </div>
+        </div>
+        
         <CollapsibleContent>
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
