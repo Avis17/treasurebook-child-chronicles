@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { db } from "@/lib/firebase"
-import { deleteDoc, doc } from "firebase/firestore"
+import { deleteDoc, doc, updateDoc, increment } from "firebase/firestore"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface DeleteQuizButtonProps {
   quizId: string
@@ -15,15 +16,26 @@ interface DeleteQuizButtonProps {
 export function DeleteQuizButton({ quizId, onDelete }: DeleteQuizButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const { currentUser } = useAuth()
 
   const handleDelete = async () => {
     try {
       setIsDeleting(true)
-      await deleteDoc(doc(db, "quizzes", quizId))
+      await deleteDoc(doc(db, "quizAttempts", quizId))
+      
+      // Update the profile count
+      if (currentUser?.uid) {
+        const userProfileRef = doc(db, "profiles", currentUser.uid)
+        await updateDoc(userProfileRef, {
+          quizAttemptsCount: increment(-1)
+        })
+      }
+      
       toast({
         title: "Quiz deleted",
         description: "The quiz has been successfully deleted.",
       })
+      
       onDelete()
     } catch (error) {
       console.error("Error deleting quiz:", error)

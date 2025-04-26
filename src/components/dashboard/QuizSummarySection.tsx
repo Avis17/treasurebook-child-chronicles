@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { auth, db } from "@/lib/firebase"
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore"
+import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from "firebase/firestore"
 import { Sparkles, Award, ThumbsUp, TrendingUp } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { toast } from "@/hooks/use-toast"
@@ -40,6 +40,17 @@ export function QuizSummarySection() {
         const user = auth.currentUser
         if (!user) return
 
+        // First check the profile for the count
+        const profileRef = doc(db, "profiles", user.uid)
+        const profileSnap = await getDoc(profileRef)
+        let totalAttempts = 0
+        
+        if (profileSnap.exists()) {
+          const profileData = profileSnap.data()
+          totalAttempts = profileData?.quizAttemptsCount || 0
+        }
+        
+        // Get the quiz attempts for detailed data
         const quizRef = collection(db, "quizAttempts")
         const q = query(
           quizRef,
@@ -66,12 +77,17 @@ export function QuizSummarySection() {
           highestScore = Math.max(highestScore, data.percentage || 0)
         })
 
+        // If the profile count doesn't match the actual count, update it
+        if (profileSnap.exists() && attempts.length !== totalAttempts) {
+          totalAttempts = attempts.length
+        }
+
         // Calculate improvement (difference between most recent and previous quiz)
         const recentImprovement = attempts.length >= 2 ? 
           attempts[0].percentage - attempts[1].percentage : 0
 
         setQuizData({
-          totalAttempts: attempts.length,
+          totalAttempts: totalAttempts,
           completedQuizzes: attempts.slice(0, 3), // Show only last 3
           averageScore: attempts.length > 0 ? Math.round(totalScore / attempts.length) : 0,
           highestScore,
@@ -90,6 +106,26 @@ export function QuizSummarySection() {
     }
 
     fetchQuizData()
+    
+    // Set up listener for new badge unlocks
+    const handleStorageChange = () => {
+      if (localStorage.getItem('newlyUnlockedBadge') === 'true') {
+        fetchQuizData()
+        localStorage.removeItem('newlyUnlockedBadge')
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    // Check on mount as well
+    if (localStorage.getItem('newlyUnlockedBadge') === 'true') {
+      fetchQuizData()
+      localStorage.removeItem('newlyUnlockedBadge')
+    }
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
   }, [])
 
   // Get appropriate color based on score

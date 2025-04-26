@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { collection, query, where, orderBy, getDocs, addDoc, Timestamp } from "firebase/firestore";
+import { collection, query, where, orderBy, getDocs, addDoc, Timestamp, doc, updateDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/components/ui/use-toast";
 import { z } from "zod";
@@ -24,6 +24,7 @@ import { QuizAttemptModal } from "@/components/quiz/QuizAttemptModal";
 import { QuizResultsModal } from "@/components/quiz/QuizResultsModal";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { DeleteQuizButton } from "@/components/quiz/DeleteQuizButton";
 
 export interface QuizAttempt {
   id?: string;
@@ -208,6 +209,13 @@ const Quizzes = () => {
       
       const docRef = await addDoc(collection(db, "quizAttempts"), quizAttempt);
       
+      if (currentUser.uid) {
+        const userProfileRef = doc(db, "profiles", currentUser.uid);
+        await updateDoc(userProfileRef, {
+          quizAttemptsCount: increment(1)
+        });
+      }
+      
       setQuizAttempts([{ ...quizAttempt, id: docRef.id }, ...quizAttempts]);
       
       setViewQuiz({...quizAttempt, id: docRef.id} as QuizAttempt);
@@ -275,6 +283,26 @@ const Quizzes = () => {
       });
     }
     setIsDialogOpen(open);
+  };
+
+  const handleDeleteQuiz = async (quizId: string) => {
+    try {
+      if (currentUser?.uid) {
+        const userProfileRef = doc(db, "profiles", currentUser.uid);
+        await updateDoc(userProfileRef, {
+          quizAttemptsCount: increment(-1)
+        });
+      }
+      
+      setQuizAttempts(quizAttempts.filter(quiz => quiz.id !== quizId));
+      
+      toast({
+        title: "Quiz deleted",
+        description: "The quiz has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error("Error handling quiz deletion:", error);
+    }
   };
 
   const columns = [
@@ -442,6 +470,19 @@ const Quizzes = () => {
               onEdit={(quiz) => {
                 setViewQuiz(quiz);
                 setResultModalOpen(true);
+              }}
+              onDelete={(quiz) => {
+                if (quiz.id) {
+                  const quizId = quiz.id;
+                  return async () => {
+                    await handleDeleteQuiz(quizId);
+                  };
+                }
+                return undefined;
+              }}
+              deleteDialogProps={{
+                title: "Delete Quiz Attempt",
+                description: "Are you sure you want to delete this quiz attempt? This action cannot be undone."
               }}
               searchable={false}
               searchFields={["categoryName", "class"]}
