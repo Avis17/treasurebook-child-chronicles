@@ -30,7 +30,8 @@ import {
   CalendarDays,
   BookOpenText,
   MessageSquare,
-  HelpCircle
+  HelpCircle,
+  BrainCircuit
 } from "lucide-react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { useAuth } from "@/contexts/AuthContext";
@@ -136,6 +137,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       { name: "Journal", icon: <BookOpen className="w-5 h-5" />, path: "/journal" },
       { name: "Goals", icon: <Target className="w-5 h-5" />, path: "/goals" },
       { name: "Milestones", icon: <Archive className="w-5 h-5" />, path: "/milestones" },
+      { name: "Quiz Master", icon: <BrainCircuit className="w-5 h-5" />, path: "/quizzes" },
       { name: "Calendar", icon: <Calendar className="w-5 h-5" />, path: "/calendar" },
       { name: "Feedback", icon: <MessageSquare className="w-5 h-5" />, path: "/feedback" },
       { name: "Help", icon: <HelpCircle className="w-5 h-5" />, path: "/help" },

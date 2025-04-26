@@ -31,6 +31,7 @@ import Feedback from "@/pages/Feedback";
 import FeedbackTable from "@/pages/FeedbackTable";
 import Calendar from "@/pages/Calendar";
 import Help from "@/pages/Help";
+import Quizzes from "@/pages/Quizzes";
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
               <Route path="feedback" element={<PrivateRoute><Feedback /></PrivateRoute>} />
               <Route path="feedback-table" element={<PrivateRoute><FeedbackTable /></PrivateRoute>} />
               <Route path="help" element={<PrivateRoute><Help /></PrivateRoute>} />
+              <Route path="quizzes" element={<PrivateRoute><Quizzes /></PrivateRoute>} />
               <Route path="users" element={<PrivateRoute requiresAdmin={true}><UsersManagement /></PrivateRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

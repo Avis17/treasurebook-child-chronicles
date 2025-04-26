@@ -1,17 +1,32 @@
-import { useState, useEffect } from "react";
-import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { collection, addDoc, Timestamp, updateDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
+
 import AppLayout from "@/components/layout/AppLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
-import { MessageSquare, Edit, Trash2, Plus, Calendar, User } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { format } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { FeedbackTable } from "@/components/feedback/FeedbackTable";
+import { PlusCircle, Search } from "lucide-react";
+
+// Define the schema for the form
+const feedbackSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  content: z.string().min(10, "Content must be at least 10 characters"),
+  category: z.string().min(1, "Please select a category"),
+});
+
+type FeedbackFormValues = z.infer<typeof feedbackSchema>;
 
 interface FeedbackNote {
   id?: string;
@@ -22,372 +37,266 @@ interface FeedbackNote {
   author: string;
   userId: string;
   createdAt: Date;
-  [key: string]: any; // Add index signature for Firebase compatibility
 }
 
-const FeedbackPage = () => {
-  const [notes, setNotes] = useState<FeedbackNote[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [formData, setFormData] = useState<Partial<FeedbackNote>>({
-    title: "",
-    content: "",
-    date: new Date().toISOString().split("T")[0],
-    category: "Teacher",
-    author: ""
-  });
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentId, setCurrentId] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState<string>("all");
+const Feedback = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentFeedback, setCurrentFeedback] = useState<FeedbackNote | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const { currentUser } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchFeedbackNotes();
-  }, [filterCategory]);
-
-  const fetchFeedbackNotes = async () => {
-    try {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const feedbackRef = collection(db, "feedback");
-      const q = query(
-        feedbackRef,
-        where("userId", "==", user.uid)
-      );
-
-      const querySnapshot = await getDocs(q);
-      const notesData: FeedbackNote[] = [];
-      querySnapshot.forEach((doc) => {
-        notesData.push({
-          id: doc.id,
-          ...doc.data() as FeedbackNote
-        });
-      });
-      
-      // Sort locally instead of in the query
-      notesData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      
-      // Filter by category if needed
-      let filteredNotes = notesData;
-      if (filterCategory !== "all") {
-        filteredNotes = notesData.filter(note => note.category === filterCategory);
-      }
-
-      setNotes(filteredNotes);
-    } catch (error) {
-      console.error("Error fetching feedback notes:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load feedback notes",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const noteData = {
-        ...formData,
-        userId: user.uid,
-        createdAt: new Date()
-      } as FeedbackNote;
-      
-      if (isEditing && currentId) {
-        // Create a copy without id before updating
-        const { id, ...updateData } = noteData;
-        await updateDoc(doc(db, "feedback", currentId), updateData);
-        toast({
-          title: "Feedback note updated",
-          description: "Your feedback note has been successfully updated",
-        });
-      } else {
-        await addDoc(collection(db, "feedback"), noteData);
-        toast({
-          title: "Feedback note added",
-          description: "Your feedback note has been successfully added",
-        });
-      }
-      
-      resetForm();
-      fetchFeedbackNotes();
-      setOpenDialog(false);
-    } catch (error) {
-      console.error("Error saving feedback note:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save feedback note",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleEdit = (note: FeedbackNote) => {
-    setIsEditing(true);
-    setCurrentId(note.id);
-    setFormData({
-      title: note.title,
-      content: note.content,
-      date: note.date,
-      category: note.category,
-      author: note.author
-    });
-    setOpenDialog(true);
-  };
-
-  const handleDelete = async (id: string | undefined) => {
-    if (!id) return;
-    
-    try {
-      await deleteDoc(doc(db, "feedback", id));
-      toast({
-        title: "Feedback note deleted",
-        description: "The feedback note has been successfully deleted",
-      });
-      fetchFeedbackNotes();
-    } catch (error) {
-      console.error("Error deleting feedback note:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete feedback note",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
+  const form = useForm<FeedbackFormValues>({
+    resolver: zodResolver(feedbackSchema),
+    defaultValues: {
       title: "",
       content: "",
-      date: new Date().toISOString().split("T")[0],
-      category: "Teacher",
-      author: ""
+      category: "",
+    },
+  });
+
+  const handleCreateFeedback = () => {
+    setCurrentFeedback(null);
+    form.reset({
+      title: "",
+      content: "",
+      category: "",
     });
-    setIsEditing(false);
-    setCurrentId(null);
+    setIsDialogOpen(true);
   };
 
-  if (loading) {
-    return (
-      <AppLayout title="Feedback & Notes" hideHeader={true}>
-        <div className="animate-pulse space-y-4">
-          <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-          <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-        </div>
-      </AppLayout>
-    );
-  }
+  const handleEditFeedback = (feedback: FeedbackNote) => {
+    setCurrentFeedback(feedback);
+    form.reset({
+      title: feedback.title,
+      content: feedback.content,
+      category: feedback.category,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const onSubmit = async (values: FeedbackFormValues) => {
+    if (!currentUser) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: "You must be logged in to submit feedback.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const feedbackData = {
+        title: values.title,
+        content: values.content,
+        category: values.category,
+        author: currentUser.displayName || currentUser.email || "Anonymous",
+        userId: currentUser.uid,
+        date: new Date().toISOString(),
+        createdAt: Timestamp.now(),
+      };
+
+      if (currentFeedback?.id) {
+        // Update existing feedback
+        await updateDoc(doc(db, "feedback", currentFeedback.id), feedbackData);
+        toast({
+          title: "Feedback Updated",
+          description: "Your feedback has been updated successfully.",
+        });
+      } else {
+        // Create new feedback
+        await addDoc(collection(db, "feedback"), feedbackData);
+        toast({
+          title: "Feedback Submitted",
+          description: "Your feedback has been submitted successfully.",
+        });
+      }
+
+      setIsDialogOpen(false);
+      form.reset();
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "There was an error submitting your feedback.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    // This will trigger useEffect in FeedbackTable to reload data
+    setFilterCategory(filterCategory);
+  };
+
+  const categories = [
+    { value: "all", label: "All Categories" },
+    { value: "academic", label: "Academic" },
+    { value: "sports", label: "Sports" },
+    { value: "extracurricular", label: "Extracurricular" },
+    { value: "parent", label: "Parent" },
+    { value: "general", label: "General" },
+    { value: "other", label: "Other" },
+  ];
 
   return (
-    <AppLayout title="Feedback & Notes" hideHeader={true}>
+    <AppLayout title="Feedback">
       <div className="space-y-6">
-        <div className="flex justify-between items-center flex-wrap gap-4">
-          <h1 className="text-2xl font-bold">Feedback & Notes</h1>
-          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-            <DialogTrigger asChild>
-              <Button onClick={() => {
-                resetForm();
-                setOpenDialog(true);
-              }}>
-                <Plus className="mr-2 h-4 w-4" /> Add Note
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>{isEditing ? "Edit Feedback Note" : "Add New Feedback Note"}</DialogTitle>
-                <DialogDescription>
-                  Record feedback and notes from teachers, mentors, or personal reflections.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="title" className="text-sm font-medium">Title</label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={formData.title || ""}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Feedback on Presentation Skills"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="content" className="text-sm font-medium">Content</label>
-                  <textarea
-                    id="content"
-                    name="content"
-                    value={formData.content || ""}
-                    onChange={handleInputChange}
-                    placeholder="Details about this feedback"
-                    className="w-full p-2 rounded border min-h-[80px]"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="date" className="text-sm font-medium">Date</label>
-                    <Input
-                      type="date"
-                      id="date"
-                      name="date"
-                      value={formData.date || ""}
-                      onChange={handleInputChange}
-                      max={new Date().toISOString().split('T')[0]}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="category" className="text-sm font-medium">Category</label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => handleSelectChange("category", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Teacher">Teacher</SelectItem>
-                        <SelectItem value="Mentor">Mentor</SelectItem>
-                        <SelectItem value="Self">Self</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="author" className="text-sm font-medium">Author</label>
-                  <Input
-                    id="author"
-                    name="author"
-                    value={formData.author || ""}
-                    onChange={handleInputChange}
-                    placeholder="Name of the person providing feedback"
-                    required
-                  />
-                </div>
-
-                <DialogFooter>
-                  <Button variant="outline" type="button" onClick={() => {
-                    resetForm();
-                    setOpenDialog(false);
-                  }}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {isEditing ? "Update" : "Save"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
         <Card>
-          <CardHeader>
-            <CardTitle>Filter Notes</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Manage Feedback</CardTitle>
+              <CardDescription>
+                Submit and track feedback for various aspects of the student's journey.
+              </CardDescription>
+            </div>
+            <Button onClick={handleCreateFeedback}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Feedback
+            </Button>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="category" className="text-sm font-medium">Category</label>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="Teacher">Teacher</SelectItem>
-                    <SelectItem value="Mentor">Mentor</SelectItem>
-                    <SelectItem value="Self">Self</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 mb-6">
+              <div className="relative w-full sm:w-1/2">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search feedback..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="w-full sm:w-1/3">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            <FeedbackTable
+              onEdit={handleEditFeedback}
+              onRefresh={handleRefresh}
+              filterCategory={filterCategory}
+              searchTerm={searchTerm}
+            />
           </CardContent>
         </Card>
-
-        {notes.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center p-10 gap-4">
-              <MessageSquare className="h-16 w-16 text-muted-foreground" />
-              <div className="text-center">
-                <h3 className="text-lg font-medium">No feedback notes yet</h3>
-                <p className="text-muted-foreground">Record feedback from teachers, mentors, or your own reflections</p>
-              </div>
-              <Button onClick={() => setOpenDialog(true)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Your First Note
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {notes.map((note) => (
-              <Card key={note.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex gap-2 items-center">
-                        <CardTitle className="text-xl">{note.title}</CardTitle>
-                        <Badge variant="secondary">{note.category}</Badge>
-                      </div>
-                      <CardDescription className="flex items-center">
-                        <Calendar className="h-4 w-4 inline mr-1" />
-                        {note.date && format(new Date(note.date), "MMMM d, yyyy")}
-                      </CardDescription>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleEdit(note)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDelete(note.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="whitespace-pre-wrap">{note.content}</p>
-                  <Separator className="my-4" />
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span className="text-sm font-medium">Author:</span>
-                    <span className="text-sm text-muted-foreground">{note.author}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>
+              {currentFeedback ? "Edit Feedback" : "Create Feedback"}
+            </DialogTitle>
+            <DialogDescription>
+              {currentFeedback
+                ? "Update your feedback information below."
+                : "Fill out the form below to submit your feedback."}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter a title" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="content"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Content</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Enter your feedback details"
+                        className="min-h-[120px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="academic">Academic</SelectItem>
+                        <SelectItem value="sports">Sports</SelectItem>
+                        <SelectItem value="extracurricular">Extracurricular</SelectItem>
+                        <SelectItem value="parent">Parent</SelectItem>
+                        <SelectItem value="general">General</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <span className="animate-spin mr-2">⭮</span>
+                      {currentFeedback ? "Updating..." : "Submitting..."}
+                    </>
+                  ) : (
+                    <>{currentFeedback ? "Update" : "Submit"}</>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
 
-export default FeedbackPage;
+export default Feedback;
