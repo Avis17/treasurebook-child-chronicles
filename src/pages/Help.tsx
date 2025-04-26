@@ -3,7 +3,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Graduation, 
+  GraduationCap, 
   Trophy, 
   Award, 
   Target, 
