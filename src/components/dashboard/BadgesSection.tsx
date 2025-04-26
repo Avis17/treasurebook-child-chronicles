@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { Award, Trophy, Star, Medal, Sparkles, CheckCircle, BookOpen, Calendar, Target, Activity } from "lucide-react";
@@ -11,7 +10,6 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "@/hooks/use-toast";
 import confetti from "canvas-confetti";
 
-// Badge theme colors mapping (bright and professional)
 const BADGE_COLORS = {
   Bronze: {
     bg: "from-amber-700 to-amber-600", 
@@ -36,7 +34,6 @@ const BADGE_COLORS = {
   }
 };
 
-// Category icon and color mapping
 const CATEGORY_DETAILS = {
   Quiz: { 
     icon: Star, 
@@ -70,7 +67,6 @@ const CATEGORY_DETAILS = {
   }
 };
 
-// Utility to format date from Firestore timestamp
 const formatDate = (timestamp: any) => {
   if (!timestamp) return "";
   try {
@@ -86,18 +82,15 @@ const formatDate = (timestamp: any) => {
   }
 };
 
-// Component to display a single badge
 const BadgeItem = ({ badge }: { badge: Badge }) => {
   const CategoryIcon = CATEGORY_DETAILS[badge.category]?.icon || Award;
   const isLocked = badge.status === 'Locked';
   const colorTheme = BADGE_COLORS[badge.level];
   
-  // Calculate progress percentage
   const progressPercent = badge.required && badge.progress !== undefined
     ? Math.min(Math.round((badge.progress / badge.required) * 100), 100)
     : 0;
   
-  // Determine how many more achievements needed
   const remaining = badge.required && badge.progress !== undefined
     ? Math.max(badge.required - badge.progress, 0)
     : 0;
@@ -174,7 +167,6 @@ const BadgeItem = ({ badge }: { badge: Badge }) => {
   );
 };
 
-// Play confetti effect when a badge is unlocked
 const playConfetti = () => {
   confetti({
     particleCount: 150,
@@ -183,6 +175,25 @@ const playConfetti = () => {
     colors: ['#9b59b6', '#3498db', '#2ecc71', '#f39c12', '#e74c3c']
   });
 };
+
+const Info: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="24" 
+    height="24" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M12 16v-4"/>
+    <path d="M12 8h.01"/>
+  </svg>
+);
 
 export const BadgesSection = () => {
   const { currentUser } = useAuth();
@@ -196,7 +207,6 @@ export const BadgesSection = () => {
     extraCurricularParticipationsCount: 0
   });
   
-  // Load badges on component mount
   useEffect(() => {
     const loadBadges = async () => {
       if (!currentUser?.uid) return;
@@ -206,11 +216,9 @@ export const BadgesSection = () => {
         const userBadges = await fetchUserBadges(currentUser.uid);
         setBadges(userBadges);
         
-        // Get progress counts
         const counts = await getUserProgressCounts(currentUser.uid);
         setProgressCounts(counts);
         
-        // Check if any new badges were just unlocked (would be marked in localStorage)
         const newlyUnlockedBadge = localStorage.getItem('newlyUnlockedBadge');
         if (newlyUnlockedBadge) {
           setTimeout(() => {
@@ -233,7 +241,6 @@ export const BadgesSection = () => {
     loadBadges();
   }, [currentUser]);
   
-  // Group badges by category for display
   const groupedBadges = badges.reduce((groups: Record<string, Badge[]>, badge) => {
     const category = badge.category;
     if (!groups[category]) {
@@ -243,17 +250,14 @@ export const BadgesSection = () => {
     return groups;
   }, {});
   
-  // Calculate next badge to unlock for each category
   const getNextBadgeInfo = (category: keyof typeof BADGE_THRESHOLDS) => {
     const categoryBadges = badges.filter(badge => badge.category === category && badge.status === 'Locked');
     if (!categoryBadges.length) return null;
     
-    // Sort by required threshold
     categoryBadges.sort((a, b) => (a.required || 0) - (b.required || 0));
     return categoryBadges[0];
   };
   
-  // Get progress count for a category
   const getProgressCount = (category: keyof typeof BADGE_THRESHOLDS) => {
     switch(category) {
       case 'Quiz': return progressCounts.quizAttemptsCount;
@@ -265,12 +269,10 @@ export const BadgesSection = () => {
     }
   };
   
-  // Calculate number of unlocked badges and levels
   const unlockedCount = badges.filter(badge => badge.status === 'Unlocked').length;
   const totalBadgesCount = badges.length;
   const unlockedPercentage = totalBadgesCount > 0 ? (unlockedCount / totalBadgesCount) * 100 : 0;
 
-  // Get a summary of badges by level
   const badgeLevelCounts = badges.reduce((counts: {[key: string]: number}, badge) => {
     if (badge.status === 'Unlocked') {
       counts[badge.level] = (counts[badge.level] || 0) + 1;
@@ -329,7 +331,6 @@ export const BadgesSection = () => {
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Overall progress */}
           <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl p-4 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="flex-1">
@@ -357,7 +358,6 @@ export const BadgesSection = () => {
             </div>
           </div>
 
-          {/* Badge categories */}
           {Object.entries(groupedBadges).map(([category, categoryBadges]) => (
             <div key={category} className="space-y-4">
               <div className="flex items-center gap-2">
@@ -379,7 +379,6 @@ export const BadgesSection = () => {
                 ))}
               </div>
               
-              {/* Progress towards next badge */}
               {getNextBadgeInfo(category as keyof typeof BADGE_THRESHOLDS) && (
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                   <div className="flex justify-between items-center mb-1 text-sm">
@@ -414,22 +413,4 @@ export const BadgesSection = () => {
   );
 };
 
-// Helper Icon component
-const Info = (props: any) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width="24" 
-    height="24" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    {...props}
-  >
-    <circle cx="12" cy="12" r="10"/>
-    <path d="M12 16v-4"/>
-    <path d="M12 8h.01"/>
-  </svg>
-);
+export { Info };
