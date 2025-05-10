@@ -125,39 +125,39 @@ const Profile = () => {
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     const user = auth.currentUser;
     if (!user) return;
 
     setUploadingImage(true);
-    
+
     try {
       const storageRef = ref(storage, `profile-images/${user.uid}/${file.name}`);
-      
+
       await uploadBytes(storageRef, file);
-      
+
       const photoURL = await getDownloadURL(storageRef);
-      
+
       setFormData((prev) => ({ ...prev, photoURL }));
-      
+
       const profileDocRef = doc(db, "profiles", user.uid);
       const profileDoc = await getDoc(profileDocRef);
-      
+
       if (profileDoc.exists()) {
         await updateDoc(profileDocRef, { photoURL });
       } else {
-        await setDoc(profileDocRef, { 
+        await setDoc(profileDocRef, {
           photoURL,
           email: user.email || "",
           createdAt: new Date(),
         });
       }
-      
+
       toast({
         title: "Success",
         description: "Profile photo updated successfully",
       });
-      
+
     } catch (error) {
       console.error("Error uploading image:", error);
       toast({
@@ -178,14 +178,14 @@ const Profile = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      const updatedFormData = { 
-        ...formData, 
-        userId: user.uid 
+      const updatedFormData = {
+        ...formData,
+        userId: user.uid
       };
 
       const profileDocRef = doc(db, "profiles", user.uid);
       const profileDoc = await getDoc(profileDocRef);
-      
+
       if (profileDoc.exists()) {
         await updateDoc(profileDocRef, updatedFormData);
       } else {
@@ -233,13 +233,13 @@ const Profile = () => {
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-center gap-4">
               <div className="relative w-32 h-32 group">
-                <div 
+                <div
                   className="cursor-pointer w-full h-full rounded-full overflow-hidden border-2 border-primary/20"
                   onClick={handleImageClick}
                 >
                   {formData.photoURL ? (
-                    <img 
-                      src={formData.photoURL} 
+                    <img
+                      src={formData.photoURL}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
@@ -251,14 +251,14 @@ const Profile = () => {
                     </Avatar>
                   )}
                 </div>
-                <div 
+                <div
                   className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-full transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
                   onClick={handleImageClick}
                 >
                   <Camera className="text-white h-8 w-8" />
                 </div>
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   ref={fileInputRef}
                   accept="image/*"
                   onChange={handleImageChange}
@@ -293,14 +293,14 @@ const Profile = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
+                <TabsList className="flex flex-wrap gap-2 justify-start sm:justify-between w-full overflow-x-auto">
                   <TabsTrigger value="personal">Personal</TabsTrigger>
                   <TabsTrigger value="family">Family</TabsTrigger>
                   <TabsTrigger value="education">Education</TabsTrigger>
                   <TabsTrigger value="medical">Medical</TabsTrigger>
                   <TabsTrigger value="location">Location</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value="personal" className="mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -423,7 +423,7 @@ const Profile = () => {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="family" className="space-y-4 mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -495,7 +495,7 @@ const Profile = () => {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="education" className="space-y-4 mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -533,7 +533,7 @@ const Profile = () => {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="location" className="space-y-4 mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -592,7 +592,7 @@ const Profile = () => {
                     </div>
                   </div>
                 </TabsContent>
-                
+
                 <TabsContent value="medical" className="space-y-4 mt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">

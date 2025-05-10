@@ -129,12 +129,12 @@ const RegisterForm = () => {
         </form>
       </CardContent>
       <CardFooter className="flex justify-center">
-        <p className="text-sm text-muted-foreground">
+        {/* <p className="text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link to="/login" className="text-treasure-blue hover:underline">
             Login
           </Link>
-        </p>
+        </p> */}
       </CardFooter>
     </Card>
   );

@@ -5,9 +5,9 @@ import { auth, db } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { 
-  LayoutDashboard, 
-  Book, 
+import {
+  LayoutDashboard,
+  Book,
   Trophy,
   Award,
   ImageIcon,
@@ -93,19 +93,21 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   const { theme, toggleTheme } = useTheme();
   const { isAdmin, currentUser } = useAuth();
   const [profileName, setProfileName] = useState<string | null>(null);
-  
+
   const { isCollapsed: initialCollapsed, openGroups: initialOpenGroups } = getSidebarState();
-  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return window.innerWidth < 768 ? false : initialCollapsed;
+  });
   const [openGroups, setOpenGroups] = useState<string[]>(initialOpenGroups);
 
   useEffect(() => {
     const fetchProfileName = async () => {
       if (!currentUser?.uid) return;
-      
+
       try {
         const profileRef = doc(db, "profiles", currentUser.uid);
         const profileSnap = await getDoc(profileRef);
-        
+
         if (profileSnap.exists()) {
           const data = profileSnap.data();
           if (data.childName) {
@@ -113,10 +115,10 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
             return;
           }
         }
-        
+
         const userRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userRef);
-        
+
         if (userSnap.exists()) {
           const data = userSnap.data();
           if (data.displayName) {
@@ -124,13 +126,13 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
             return;
           }
         }
-        
+
         setProfileName(currentUser.displayName);
       } catch (error) {
         console.error("Error fetching profile data:", error);
       }
     };
-    
+
     fetchProfileName();
   }, [currentUser]);
 
@@ -168,10 +170,10 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         title: "Overview",
         items: [
           { name: "Dashboard", icon: <LayoutDashboard className="w-5 h-5" />, path: "/dashboard" },
-          { 
-            name: "AI Insights", 
-            icon: hasAIInsightsAccess ? <Lightbulb className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
-            path: "/ai-insights", 
+          {
+            name: "AI Insights",
+            icon: hasAIInsightsAccess ? <Lightbulb className="w-5 h-5" /> : <Lock className="w-5 h-5" />,
+            path: "/ai-insights",
             requiresPermission: 'aiInsights',
             disabled: !hasAIInsightsAccess
           },
@@ -181,24 +183,24 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
         title: "Learning",
         items: [
           { name: "Academic Records", icon: <Book className="w-5 h-5" />, path: "/academics" },
-          { 
-            name: "Quiz Master", 
-            icon: hasQuizAccess ? <BrainCircuit className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
-            path: "/quizzes", 
+          {
+            name: "Quiz Master",
+            icon: hasQuizAccess ? <BrainCircuit className="w-5 h-5" /> : <Lock className="w-5 h-5" />,
+            path: "/quizzes",
             requiresPermission: 'quiz',
             disabled: !hasQuizAccess
           },
-          { 
-            name: "Fun Learning", 
-            icon: hasFunLearningAccess ? <Gamepad className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
-            path: "/fun-learning", 
+          {
+            name: "Fun Learning",
+            icon: hasFunLearningAccess ? <Gamepad className="w-5 h-5" /> : <Lock className="w-5 h-5" />,
+            path: "/fun-learning",
             requiresPermission: 'funLearning',
             disabled: !hasFunLearningAccess
           },
-          { 
-            name: "Voice Practice", 
-            icon: hasVoicePracticeAccess ? <Mic className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
-            path: "/voice-practice", 
+          {
+            name: "Voice Practice",
+            icon: hasVoicePracticeAccess ? <Mic className="w-5 h-5" /> : <Lock className="w-5 h-5" />,
+            path: "/voice-practice",
             requiresPermission: 'voicePractice',
             disabled: !hasVoicePracticeAccess
           },
@@ -216,17 +218,17 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
       {
         title: "Resources",
         items: [
-          { 
-            name: "Gallery", 
-            icon: hasStorageAccess ? <ImageIcon className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
-            path: "/gallery", 
+          {
+            name: "Gallery",
+            icon: hasStorageAccess ? <ImageIcon className="w-5 h-5" /> : <Lock className="w-5 h-5" />,
+            path: "/gallery",
             requiresPermission: 'storage',
             disabled: !hasStorageAccess
           },
-          { 
-            name: "Documents", 
-            icon: hasStorageAccess ? <FileArchive className="w-5 h-5" /> : <Lock className="w-5 h-5" />, 
-            path: "/documents", 
+          {
+            name: "Documents",
+            icon: hasStorageAccess ? <FileArchive className="w-5 h-5" /> : <Lock className="w-5 h-5" />,
+            path: "/documents",
             requiresPermission: 'storage',
             disabled: !hasStorageAccess
           },
@@ -269,25 +271,26 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
   };
 
   return (
-    <div className={`fixed inset-y-0 left-0 z-40 transition-all duration-300 ease-in-out ${
-      isCollapsed ? 'w-16' : 'w-64'
-    } bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen`}>
+    <div className={`fixed inset-y-0 left-0 z-40 transition-all duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'
+      } bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen`}>
       <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-800">
         {!isCollapsed && (
-          <img 
-            src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png" 
-            alt="Treasure Book Logo" 
+          <img
+            src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png"
+            alt="Treasure Book Logo"
             className="h-10 w-auto"
           />
         )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleSidebar}
-          className={`${isCollapsed ? 'mx-auto' : ''}`}
-        >
-          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
+        {!isMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className={`${isCollapsed ? 'mx-auto' : ''}`}
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        )}
       </div>
 
       <ScrollArea className="flex-1 overflow-auto">
@@ -301,9 +304,8 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
                 className="space-y-1"
               >
                 <CollapsibleTrigger asChild>
-                  <button className={`flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md ${
-                    isCollapsed ? 'justify-center' : ''
-                  }`}>
+                  <button className={`flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 rounded-md ${isCollapsed ? 'justify-center' : ''
+                    }`}>
                     {!isCollapsed && group.title}
                     {!isCollapsed && (
                       openGroups.includes(group.title) ? (
@@ -324,13 +326,12 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
                               to={item.disabled ? "#" : item.path}
                               className={({ isActive }) => `
                                 flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium
-                                transition-colors duration-150 ease-in-out ${
-                                  isCollapsed ? 'justify-center' : 'ml-2'
+                                transition-colors duration-150 ease-in-out ${isCollapsed ? 'justify-center' : 'ml-2'
                                 }
-                                ${item.disabled 
-                                  ? 'opacity-50 cursor-not-allowed text-gray-400 dark:text-gray-600' 
-                                  : isActive 
-                                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' 
+                                ${item.disabled
+                                  ? 'opacity-50 cursor-not-allowed text-gray-400 dark:text-gray-600'
+                                  : isActive
+                                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400'
                                     : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800'}
                               `}
                               onClick={(e) => {
@@ -377,7 +378,7 @@ const Sidebar = ({ isMobile }: SidebarProps) => {
           )}
           {!isCollapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
         </button>
-        
+
         <button
           onClick={handleLogout}
           className={`flex items-center justify-${isCollapsed ? 'center' : 'between'} w-full gap-3 px-3 py-2 mt-2 text-sm font-medium rounded-md transition-colors duration-150 ease-in-out

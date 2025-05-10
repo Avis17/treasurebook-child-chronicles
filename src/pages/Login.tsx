@@ -18,12 +18,12 @@ const Login: React.FC = () => {
           <LoginForm />
         </CardContent>
         <CardFooter className="flex flex-col space-y-2">
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+          {/* <div className="text-center text-sm text-gray-500 dark:text-gray-400">
             Don't have an account?{' '}
             <Link to="/register" className="underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
               Register
             </Link>
-          </div>
+          </div> */}
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">
             <Link to="/reset-password" className="underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
               Forgot password?

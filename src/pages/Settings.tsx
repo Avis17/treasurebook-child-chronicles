@@ -199,7 +199,7 @@ const Settings = () => {
               </CardContent>
             </Card>
 
-            <Card className="dark:bg-gray-800">
+            {/* <Card className="dark:bg-gray-800">
               <CardHeader>
                 <CardTitle className="dark:text-white">Notifications</CardTitle>
                 <CardDescription className="dark:text-gray-300">Manage how you receive notifications</CardDescription>
@@ -267,7 +267,7 @@ const Settings = () => {
                   </Button>
                 </CardFooter>
               )}
-            </Card>
+            </Card> */}
           </TabsContent>
           
           <TabsContent value="academic" className="mt-6 space-y-6">
