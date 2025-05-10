@@ -1,9 +1,14 @@
-
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { VERIFICATION_STATUS, ADMIN_EMAIL } from "@/lib/constants";
 
-const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.ReactNode, requiresAdmin?: boolean }) => {
+interface PrivateRouteProps {
+  children: React.ReactNode;
+  requiresAdmin?: boolean;
+  requirePermission?: string;
+}
+
+const PrivateRoute = ({ children, requiresAdmin = false, requirePermission }: PrivateRouteProps) => {
   const { currentUser, loading, isAdmin } = useAuth();
   const location = useLocation();
 
@@ -13,7 +18,8 @@ const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.Rea
     isAdmin,
     adminEmail: ADMIN_EMAIL,
     isAdminComparison: currentUser?.email === ADMIN_EMAIL,
-    verificationStatus: currentUser?.verificationStatus
+    verificationStatus: currentUser?.verificationStatus,
+    requirePermission
   });
 
   if (loading) {
@@ -51,6 +57,14 @@ const PrivateRoute = ({ children, requiresAdmin = false }: { children: React.Rea
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Check for specific permission requirement
+  if (requirePermission && !currentUser.permissions?.[requirePermission as keyof typeof currentUser.permissions]) {
+    console.log(`${requirePermission} permission needed but not granted`);
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // The code below can be removed now that we have a general permission check above
+  // Keep this for backward compatibility temporarily
   // Check storage permission for storage routes
   const isStorageRoute = ['/gallery', '/documents'].includes(location.pathname);
   if (isStorageRoute && !currentUser.permissions?.storage) {
