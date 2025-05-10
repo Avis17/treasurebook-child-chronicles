@@ -2,12 +2,11 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.632f20bb87da4eb8804e7a31bd06ee2d',
-  appName: 'treasurebook-child-chronicles',
+  appId: 'com.treasurebook.app',
+  appName: 'treasure-book',
   webDir: 'dist',
   server: {
-    url: 'https://632f20bb-87da-4eb8-804e-7a31bd06ee2d.lovableproject.com?forceHideBadge=true',
-    cleartext: true
+    androidScheme: 'https'
   },
   plugins: {
     SplashScreen: {

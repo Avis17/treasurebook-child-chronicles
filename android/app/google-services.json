@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "235976888120",
+    "project_id": "treasurebook-e2641",
+    "storage_bucket": "treasurebook-e2641.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:235976888120:android:83953bcef31d426bcafbcd",
+        "android_client_info": {
+          "package_name": "com.treasurebook.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "235976888120-ns2f5pcbr446mbks3vte3vqh482s4qcv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLlZVYRKCbx7vGwzCVb3DSBYSHZ-zgZfs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "235976888120-ns2f5pcbr446mbks3vte3vqh482s4qcv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">treasure-book</string>
+    <string name="title_activity_main">treasure-book</string>
+    <string name="package_name">com.treasurebook.app</string>
+    <string name="custom_url_scheme">com.treasurebook.app</string>
+</resources>
