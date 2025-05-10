@@ -1,5 +1,7 @@
+
 @import "./styles/badges.css";
 @import "./styles/responsive.css";
+@import "./styles/mobile.css";
 
 @tailwind base;
 @tailwind components;

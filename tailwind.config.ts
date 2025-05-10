@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -107,7 +106,26 @@ export default {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'float': 'float 6s ease-in-out infinite'
-			}
+			},
+			spacing: {
+				'safe-top': 'var(--safe-area-inset-top)',
+				'safe-right': 'var(--safe-area-inset-right)',
+				'safe-bottom': 'var(--safe-area-inset-bottom)',
+				'safe-left': 'var(--safe-area-inset-left)',
+			},
+			padding: {
+				'safe-top': 'var(--safe-area-inset-top)',
+				'safe-right': 'var(--safe-area-inset-right)',
+				'safe-bottom': 'var(--safe-area-inset-bottom)',
+				'safe-left': 'var(--safe-area-inset-left)',
+				'safe-sides': 'var(--safe-area-inset-left) var(--safe-area-inset-right)',
+			},
+			margin: {
+				'safe-top': 'var(--safe-area-inset-top)',
+				'safe-right': 'var(--safe-area-inset-right)',
+				'safe-bottom': 'var(--safe-area-inset-bottom)',
+				'safe-left': 'var(--safe-area-inset-left)',
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

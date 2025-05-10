@@ -1,14 +1,27 @@
-import React from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const isMobile = useIsMobile();
+  const [isCapacitor, setIsCapacitor] = useState(false);
+
+  useEffect(() => {
+    // Check if running in Capacitor
+    const checkCapacitor = () => {
+      return window.location.href.includes('capacitor://') || 
+             window.location.href.includes('localhost') && 
+             /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    };
+    
+    setIsCapacitor(checkCapacitor());
+  }, []);
 
   return (
     <footer className={`fixed bottom-0 ${isMobile ? 'left-0' : 'left-64'} right-0 
       bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 
-      py-4 z-20`}>
+      py-4 z-20 ${isCapacitor ? 'capacitor-footer' : ''}`}>
       <div className="container mx-auto px-4 flex items-center justify-center text-center text-sm text-gray-600 dark:text-gray-400">
         <img 
           src="/lovable-uploads/48331f19-76fe-409d-9a1d-f0861cac4194.png" 
