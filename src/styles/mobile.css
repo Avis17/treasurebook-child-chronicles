@@ -34,6 +34,28 @@ textarea {
   font-size: 16px;
 }
 
+/* Login page specific mobile styles */
+@media (max-width: 640px) {
+  .login-page-content {
+    width: 90%;
+    max-width: 100%;
+  }
+  
+  .login-logo {
+    height: 60px;
+  }
+  
+  .login-title {
+    font-size: 1.5rem;
+  }
+  
+  /* Add more padding for buttons on small screens for better touch targets */
+  .login-button {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+}
+
 /* Adjust footer for mobile devices */
 footer.capacitor-footer {
   padding-bottom: calc(0.5rem + var(--safe-area-inset-bottom));
@@ -43,4 +65,41 @@ footer.capacitor-footer {
 .sidebar-mobile {
   padding-top: var(--safe-area-inset-top);
   padding-bottom: var(--safe-area-inset-bottom);
+}
+
+/* Enhanced input styling for mobile */
+.mobile-input-focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.3);
+}
+
+/* Handling smaller screen heights */
+@media (max-height: 700px) {
+  .login-container {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  .login-form-spacing {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .login-logo {
+    height: 50px;
+  }
+}
+
+/* Fix auth components on mobile */
+@media (max-width: 480px) {
+  .auth-form-container {
+    width: 100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .auth-social-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }

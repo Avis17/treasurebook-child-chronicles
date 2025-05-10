@@ -27,13 +27,22 @@ const LoginPage = () => {
   }, [currentUser, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-treasure-blue">TreasureBook</h1>
-          <p className="mt-2 text-gray-600">Your child's journey, beautifully documented</p>
+    <div className="auth-container animate-fade-in">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gradient-primary font-heading">TreasureBook</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Your child's journey, beautifully documented</p>
         </div>
-        <LoginForm />
+        
+        <div className="auth-card bg-white/90 dark:bg-gray-800/90">
+          <LoginForm />
+        </div>
+        
+        <div className="mt-6 text-center text-sm">
+          <p className="text-gray-600 dark:text-gray-400">
+            Need assistance? <a href="mailto:support@treasurebook.app" className="text-treasure-blue dark:text-blue-400 hover:underline">Contact support</a>
+          </p>
+        </div>
       </div>
     </div>
   );

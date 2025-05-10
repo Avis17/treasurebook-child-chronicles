@@ -1,36 +1,30 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import LoginForm from '@/components/auth/LoginForm';
 
 const Login: React.FC = () => {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-2xl font-bold">TreasureBook</CardTitle>
-          <CardDescription>
-            Enter your email and password to sign in
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <LoginForm />
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-2">
-          {/* <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-            Don't have an account?{' '}
-            <Link to="/register" className="underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-              Register
-            </Link>
-          </div> */}
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-            <Link to="/reset-password" className="underline text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
-              Forgot password?
-            </Link>
-          </div>
-        </CardFooter>
-      </Card>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-6">
+          <h1 className="text-4xl font-bold text-treasure-blue dark:text-blue-400 font-heading">TreasureBook</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Your child's journey, beautifully documented</p>
+        </div>
+        
+        <Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 shadow-lg">
+          <CardContent className="pt-6">
+            <LoginForm />
+          </CardContent>
+        </Card>
+        
+        <div className="mt-8 text-center text-sm">
+          <p className="text-gray-600 dark:text-gray-400">
+            Need help? <Link to="/help" className="text-treasure-blue dark:text-blue-400 hover:underline">Contact support</Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
